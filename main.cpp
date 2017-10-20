@@ -4,7 +4,9 @@
 #include <QObject>
 #include <QQuickItem>
 #include <QQuickView>
+//#include <QWebEngineView>
 #include <QtWebEngine>
+#include <QShortcut>
 #include <QTextEdit>
 
 #include <memory>
@@ -20,7 +22,7 @@ int main(int argc, char *argv[])
     std::shared_ptr<QQuickView> view(new QQuickView);
 
 //    qmlRegisterType<QTextEdit>("org.qt.qtextedit", 1, 0, "QTextEdit");
-
+//    qmlRegisterType<QWebEngineView>("org.qt.qwebengineview", 1, 0, "QWebEngineView");
 
 
 
@@ -34,43 +36,21 @@ int main(int argc, char *argv[])
     if (!webViewContainer)
         throw std::runtime_error("No webViewContainer object found");
 
-    ViewHandler vh(webViewContainer);
-
-    {
-        int newView = vh.createNewView();
-        vh.viewSelected(newView);
-    }
-
-//    MessageBoard msgBoard;
-//    QQuickView view;
-    view->engine()->rootContext()->setContextProperty("viewHandler", &vh);
-
-
     QQuickItem* tabSelector = qobject_cast<QQuickItem*>(
             view->rootObject()->findChild<QObject*>("tabSelector"));
+
+    ViewHandler vh(webViewContainer, tabSelector);
+    view->engine()->rootContext()->setContextProperty("viewHandler", &vh);
+    vh.loadTabs();
+//    MessageBoard msgBoard;
+//    QQuickView view;
+
+
     if (tabSelector)
     {
         QObject::connect(tabSelector, SIGNAL(viewSelected(int)), &vh, SLOT(viewSelected(int)));
+        QObject::connect(tabSelector, SIGNAL(closeTab(int)), &vh, SLOT(closeTab(int)));
     }
-
-
-//    QObject* webVC = view->rootObject()->findChild<QObject*>("webViewContainer");
-//    if (webVC)
-//    {
-//        webVC->
-//        QObject::connect(webVC, SIGNAL(accept(QUrl, QObject*)), &imp, SLOT(importTex(QUrl, QObject*)));
-//    }
-//
-//
-//    QObject* tip = view->rootObject()->findChild<QObject*>("texImportPreview");
-//    if (tip)
-//    {
-//        QObject::connect(tip, SIGNAL(accept(int, QString)), &imp, SLOT(importAccepted(int, QString)));
-//        QObject::connect(tip, SIGNAL(decline(int)), &imp, SLOT(importDeclined(int)));
-//        QObject::connect(tip, SIGNAL(provideCollections(int, QString)), &imp, SLOT(provideCollections(int, QString)));
-//    }
-
-
 
     return app.exec();
 }

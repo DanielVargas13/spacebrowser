@@ -18,6 +18,7 @@ Rectangle
 	anchors.rightMargin: Style.margin
 	
 	signal close()
+	signal selected()
 
 	Image
 	{
@@ -41,6 +42,15 @@ Rectangle
 		
 		elide: Text.ElideRight
 		text: title
+	}
+	
+	MouseArea
+	{
+	    anchors.fill: root
+	    onClicked:
+        {
+	        root.selected()
+        }
 	}
 	
 	Rectangle

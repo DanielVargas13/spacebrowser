@@ -33,6 +33,10 @@ set(CMAKE_AUTOMOC ON)
 
 SET(SOURCES
   main.cpp
+  db/Tabs.cpp
+  db/Sql.cpp
+  db/Config.cpp
+  misc/DebugHelpers.cpp
   ViewHandler.cpp
   )
 
