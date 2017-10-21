@@ -4,7 +4,7 @@
 
 #include <QAbstractListModel>
 #include <QModelIndex>
-#include <QtWebEngine/5.9.1/QtWebEngine/private/qquickwebenginehistory_p.h>
+//#include <QtWebEngine/5.9.1/QtWebEngine/private/qquickwebenginehistory_p.h>
 
 #include <deque>
 #include <iostream>
@@ -200,6 +200,7 @@ void ViewHandler::historyUpdated(int _viewId, QQuickWebEngineHistory* navHistory
 //        std::cout << "null or invalid\n";
 //    QAbstractListModel* p = qvariant_cast<QQuickWebEngineHistoryListModel *>(items);
 
+    /*
     QQuickWebEngineHistoryListModel*  items = navHistory->items();
 
     std::cout << "~~~~~>>>>\n";
@@ -244,7 +245,7 @@ void ViewHandler::historyUpdated(int _viewId, QQuickWebEngineHistory* navHistory
         std::cout << e.what() << std::endl;
     }
     std::cout << "~~~~~<<<<\n";
-
+*/
 //    std::cout << "history items:\n";
 //    inspectMethods(p->metaObject());
 

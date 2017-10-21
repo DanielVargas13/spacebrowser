@@ -33,7 +33,7 @@ Rectangle
         placeholderText: "https://"
         inputMethodHints: Qt.ImhUrlCharactersOnly
         
-        onAccepted: { // FIXME: move logic to c++
+        onAccepted: {
             if (!text.toLowerCase().startsWith("https://") &&
                     !text.toLowerCase().startsWith("http://"))
             {
