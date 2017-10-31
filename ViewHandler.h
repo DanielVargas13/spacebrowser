@@ -97,6 +97,12 @@ public slots:
      */
     void prevTab();
 
+    /**
+     * Mark selected tab as active on TabSelectorPanel and make selected view visible
+     * @param viewId viewId id of tab / view
+     */
+    void selectTab(int viewId);
+
     // deprecated, does not work
     void historyUpdated(int _viewId, QQuickWebEngineHistory* navHistory);
 
@@ -137,12 +143,6 @@ private:
      * @param viewId id of tab for which indentation needs to be fixed
      */
     void fixIndentation(int viewId);
-
-    /**
-     * Mark selected tab as active on TabSelectorPanel and make selected view visible
-     * @param viewId viewId id of tab / view
-     */
-    void selectTab(int viewId);
 };
 
 #endif /* VIEWHANDLER_H_ */

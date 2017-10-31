@@ -52,7 +52,7 @@ Rectangle
         anchors.right: parent.right
         anchors.bottom: mainWindow.bottom
         width: Style.tabSelector.width
-
+        
     }
     
     WebViewContainer
@@ -73,6 +73,7 @@ Rectangle
             tabSelectorPanel.createNewTab(obj, insertAfter)
 
             var view = viewComp.createObject(null);
+            view.zoomFactor = 1.2 // FIXME: set in style or configuration
             view.myViewId = newViewId
 
             return view
@@ -100,7 +101,7 @@ Rectangle
             id: webView
             viewContainer: webViewContainer
         }
-
+            
     }
 
     Shortcut {
@@ -110,6 +111,31 @@ Rectangle
     Shortcut {
         sequence: "Ctrl+Shift+Tab"
         onActivated: viewHandler.prevTab();
+    }
+    Shortcut {
+    	sequence: "Ctrl++"
+		onActivated: webViewContainer.currentView.zoomFactor += 0.1
+    }
+    Shortcut {
+    	sequence: "Ctrl+-"
+		onActivated: webViewContainer.currentView.zoomFactor -= 0.1
+    }
+    Shortcut {
+    	sequence: "Ctrl+0"
+		onActivated: webViewContainer.currentView.zoomFactor = 1.0
+    }
+    Shortcut {
+    	sequence: "Ctrl+t"
+		onActivated: {
+			var id = viewHandler.createTab()
+			viewHandler.selectTab(id)
+		}
+    }
+    Shortcut {
+    	sequence: "Ctrl+w"
+		onActivated: {
+			viewHandler.closeTab(webViewContainer.currentView.myViewId)
+		}
     }
 
 

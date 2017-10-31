@@ -85,13 +85,13 @@ Item
         if (id < 0)
         {
             if (tabSelectorModel.count < 1)
-                return;
+                return -1;
             
             id = tabSelectorModel.count-1
         }
 
         tabSelectorView.currentIndex = id
-        //viewHandler.viewSelected(tabSelectorModel.get(id).viewId)
+        return tabSelectorModel.get(id).viewId
     }
     
     function updateIcon(viewId, icon)

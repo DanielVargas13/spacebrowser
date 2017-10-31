@@ -20,7 +20,8 @@ Rectangle
         anchors.fill: root
         onClicked:
         {
-            viewHandler.createTab();
+            var id = viewHandler.createTab();
+            viewHandler.selectTab(id)
         }
     }
 }
