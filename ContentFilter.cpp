@@ -1,8 +1,6 @@
 #include <ContentFilter.h>
 #include <db/ScriptBlock.h>
 
-#include <iostream>
-
 ContentFilter::ContentFilter()
 {
 

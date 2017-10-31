@@ -411,8 +411,8 @@ void ViewHandler::openScriptBlockingView(int viewId)
         throw std::runtime_error("ViewHandler::openScriptBlockingView(): there is no view "
                 "associated with this viewId: " + std::to_string(viewId));
 
-    QUrl url = view->property("url").toUrl();
-    std::set<std::string> urls = cf.getUrlsFor(url.host().toStdString());
+    QString url = view->property("url").toUrl().host();
+    std::set<std::string> urls = cf.getUrlsFor(url.toStdString());
 
     QJSEngine engine;
 
@@ -422,12 +422,18 @@ void ViewHandler::openScriptBlockingView(int viewId)
     QMetaObject::invokeMethod(scriptBlockingView, "clearEntries",
             Q_RETURN_ARG(QVariant, noValue));
 
+    using bst = db::ScriptBlock::State;
     for (const std::string& u: urls)
     {
         QJSValue val = engine.newObject();
+        bst blockState = sBlockDb.isAllowed(url.toStdString(), u, false);
+
+        bool allowed = blockState == bst::AllowedBoth || blockState == bst::Allowed;
+        bool gallowed = blockState == bst::AllowedBoth || blockState == bst::AllowedGlobally;
+
         val.setProperty("url", u.c_str());
-        val.setProperty("allowed", false);
-        val.setProperty("gallowed", false);
+        val.setProperty("allowed", allowed);
+        val.setProperty("gallowed", gallowed);
 
         QMetaObject::invokeMethod(scriptBlockingView, "addEntry",
                 Q_RETURN_ARG(QVariant, noValue),
@@ -437,7 +443,7 @@ void ViewHandler::openScriptBlockingView(int viewId)
     /// Show scriptBlockingView and hide webViewContainer and
     /// also TabSelector (which is hidden by webViewContainer
     ///
-    scriptBlockingView->setProperty("targetUrl", url.host());
+    scriptBlockingView->setProperty("targetUrl", url);
     scriptBlockingView->setProperty("visible", true);
     webViewContainer->setProperty("visible", false);
 

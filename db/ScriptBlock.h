@@ -30,6 +30,7 @@ public:
 private:
     static std::string globalTableName;
     static std::string localTableName;
+    static std::string siteTableName;
 
     pqxx::connection conn;
 };

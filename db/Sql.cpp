@@ -48,19 +48,19 @@ void Helpers::createTableIfNotExists(pqxx::connection& conn, const QString& sche
 
     if (!tableExists)
     {
-        std::cout << "spaceBrowser.tabs table doesn't exist, creating one\n";
+        std::cout << tableName.toStdString() << " table doesn't exist, creating one\n";
         r = txn.exec(sql::createTable.arg(schemaName).arg(QString(tableName))
                 .arg(columnDescription).toStdString());
         txn.commit();
     }
 }
 
-void Helpers::createUIndex(pqxx::connection& conn, const QString& schemaName,
+void Helpers::createIndex(pqxx::connection& conn, const QString& schemaName,
         const QString& tableName, const QString& columnName)
 {
     pqxx::work txn(conn);
 
-    pqxx::result r = txn.exec(sql::createUIndex.arg(columnName).arg(schemaName)
+    pqxx::result r = txn.exec(sql::createIndex.arg(columnName).arg(schemaName)
             .arg(tableName).toStdString());
 
     txn.commit();

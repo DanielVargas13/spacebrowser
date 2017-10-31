@@ -3,6 +3,7 @@
 
 #include <db/Tabs.h>
 #include <db/Config.h>
+#include <db/ScriptBlock.h>
 #include <ContentFilter.h>
 
 #include <QObject>
@@ -120,6 +121,7 @@ public slots:
 private:
     db::Tabs tabsDb;                     /// Tabs database abstraction
     db::Config configDb;                 /// Config database abstraction
+    db::ScriptBlock sBlockDb;            /// Script blocker database abstraction
     QQuickItem* webViewContainer;        /// Pointer to WebViewContainer QML object
     QQuickItem* tabSelector;             /// Pointer to TabSelector QML object
     QQuickItem* scriptBlockingView;      /// Pointer to ScriptBlockingView QML object
