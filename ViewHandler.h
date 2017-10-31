@@ -3,6 +3,7 @@
 
 #include <db/Tabs.h>
 #include <db/Config.h>
+#include <ContentFilter.h>
 
 #include <QObject>
 #include <QQuickItem>
@@ -25,8 +26,11 @@ public:
      * Creates ViewHandler object associated with webViewContainer
      * @param _webViewContainer pointer to QML instantiated WebViewContainer object
      * @param _tabSelector pointer to QML instantiated TabSelector object
+     * @param _scriptBlockingView pointer to QML instantiated ScriptBlockingView object
+     * @param _cf reference to ContentFilter class that provides interface for handling script blocking etc.
      */
-    ViewHandler(QQuickItem* _webViewContainer, QQuickItem* _tabSelector);
+    ViewHandler(QQuickItem* _webViewContainer, QQuickItem* _tabSelector,
+            QQuickItem* _scriptBlockingView, ContentFilter& _cf);
 
     virtual ~ViewHandler();
 
@@ -103,6 +107,13 @@ public slots:
      */
     void selectTab(int viewId);
 
+    /**
+     * Show view allowing modification of script blocking rules for site opened
+     * in selected tab
+     * @param viewId id of tab / view for which list of blocked script sources will be shown
+     */
+    void openScriptBlockingView(int viewId);
+
     // deprecated, does not work
     void historyUpdated(int _viewId, QQuickWebEngineHistory* navHistory);
 
@@ -111,6 +122,8 @@ private:
     db::Config configDb;                 /// Config database abstraction
     QQuickItem* webViewContainer;        /// Pointer to WebViewContainer QML object
     QQuickItem* tabSelector;             /// Pointer to TabSelector QML object
+    QQuickItem* scriptBlockingView;      /// Pointer to ScriptBlockingView QML object
+    ContentFilter& cf;
 
     /// Structure for holding WebViewContainer QML object and
     /// accompanying tab meta information

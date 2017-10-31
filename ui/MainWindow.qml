@@ -49,6 +49,7 @@ Rectangle
         id: tabSelectorPanel
         
         anchors.top: addressBar.bottom
+        anchors.topMargin: Style.margin
         anchors.right: parent.right
         anchors.bottom: mainWindow.bottom
         width: Style.tabSelector.width
@@ -66,6 +67,11 @@ Rectangle
         anchors.right: tabSelectorPanel.left
         anchors.bottom: parent.bottom
 
+        onVisibleChanged:
+        {
+            tabSelectorPanel.visible = visible
+        }
+        
         function createNewView(newViewId, _indent, insertAfter)
         {
             var obj = {title:"Empty", icon:"", viewId:newViewId, indent:_indent}
@@ -138,5 +144,21 @@ Rectangle
 		}
     }
 
+    ScriptBlockingView
+    {
+        id: scriptBlockingView
+        objectName: "scriptBlockingView"
+        visible: false
+        
+        anchors.top: addressBar.bottom
+        anchors.topMargin: Style.margin
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        
+        onVisibleChanged: {
+            webViewContainer.visible = !visible
+        }
+    }
 
 }

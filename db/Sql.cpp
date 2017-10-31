@@ -55,5 +55,16 @@ void Helpers::createTableIfNotExists(pqxx::connection& conn, const QString& sche
     }
 }
 
+void Helpers::createUIndex(pqxx::connection& conn, const QString& schemaName,
+        const QString& tableName, const QString& columnName)
+{
+    pqxx::work txn(conn);
+
+    pqxx::result r = txn.exec(sql::createUIndex.arg(columnName).arg(schemaName)
+            .arg(tableName).toStdString());
+
+    txn.commit();
+}
+
 } // namespace sql
 } // namespace db

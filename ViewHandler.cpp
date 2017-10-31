@@ -3,14 +3,18 @@
 #include <misc/DebugHelpers.h>
 
 #include <QAbstractListModel>
+#include <QJSEngine>
+#include <QJSValue>
 #include <QModelIndex>
 //#include <QtWebEngine/5.9.1/QtWebEngine/private/qquickwebenginehistory_p.h>
 
 #include <deque>
 #include <iostream>
 
-ViewHandler::ViewHandler(QQuickItem* _webViewContainer, QQuickItem* _tabSelector)
-    : webViewContainer(_webViewContainer), tabSelector(_tabSelector)
+ViewHandler::ViewHandler(QQuickItem* _webViewContainer, QQuickItem* _tabSelector,
+        QQuickItem* _scriptBlockingView, ContentFilter& _cf)
+    : webViewContainer(_webViewContainer), tabSelector(_tabSelector),
+      scriptBlockingView(_scriptBlockingView), cf(_cf)
 {
     //connect(webViewContainer, SIGNAL(viewSelected(int)), this, SLOT(viewSelected(int)));
     //connect(webViewContainer, SIGNAL(historyUpdated(int)), this, SLOT(historyUpdated(int)));
@@ -394,4 +398,47 @@ void ViewHandler::prevTab()
 
         selectTab(prevId);
     }
+}
+
+void ViewHandler::openScriptBlockingView(int viewId)
+{
+    /// Find current url for viewId and fetch list of script source urls
+    /// that were accessed while loading the view
+    ///
+
+    QObject* view = qvariant_cast<QObject *>(views.at(viewId).view);
+    if (!view)
+        throw std::runtime_error("ViewHandler::openScriptBlockingView(): there is no view "
+                "associated with this viewId: " + std::to_string(viewId));
+
+    QUrl url = view->property("url").toUrl();
+    std::set<std::string> urls = cf.getUrlsFor(url.host().toStdString());
+
+    QJSEngine engine;
+
+    /// Clear old entries and add fetched urls to view's model
+    ///
+    QVariant noValue;
+    QMetaObject::invokeMethod(scriptBlockingView, "clearEntries",
+            Q_RETURN_ARG(QVariant, noValue));
+
+    for (const std::string& u: urls)
+    {
+        QJSValue val = engine.newObject();
+        val.setProperty("url", u.c_str());
+        val.setProperty("allowed", false);
+        val.setProperty("gallowed", false);
+
+        QMetaObject::invokeMethod(scriptBlockingView, "addEntry",
+                Q_RETURN_ARG(QVariant, noValue),
+                Q_ARG(QVariant, val.toVariant()));
+    }
+
+    /// Show scriptBlockingView and hide webViewContainer and
+    /// also TabSelector (which is hidden by webViewContainer
+    ///
+    scriptBlockingView->setProperty("targetUrl", url.host());
+    scriptBlockingView->setProperty("visible", true);
+    webViewContainer->setProperty("visible", false);
+
 }

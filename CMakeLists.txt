@@ -36,8 +36,10 @@ SET(SOURCES
   db/Tabs.cpp
   db/Sql.cpp
   db/Config.cpp
+  db/ScriptBlock.cpp
   misc/DebugHelpers.cpp
   ViewHandler.cpp
+  ContentFilter.cpp
   )
 
 #SET(HEADERS

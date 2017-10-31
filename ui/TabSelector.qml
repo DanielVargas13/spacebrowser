@@ -1,11 +1,13 @@
 import QtQuick 2.7
+import QtQuick.Controls 2.2
 
 Item
 {
     id: root
     
-    signal viewSelected(int viewId) // connected in c++ code
-    signal closeTab(int viewId)     // connected in c++ code
+    signal viewSelected(int viewId)           // connected in c++ code
+    signal closeTab(int viewId)               // connected in c++ code
+    signal openScriptBlockingView(int viewId) // connected in c++ code
     
     height: Style.tabSelector.entry.height * tabSelectorModel.count
 
@@ -37,6 +39,33 @@ Item
                 tabSelectorView.currentIndex = index
                 root.viewSelected(viewId)
             }
+        }
+    }
+    
+    Menu {
+        id: contextMenu
+
+        background: Style.contextMenu.background
+        //FIXME: background is ov erridden by style of ContextMenuEntry, no border is displayed
+        //background: Style.contextMenu.background
+        
+        ContextMenuEntry {
+            text: "Script blocking"
+            onTriggered: {
+                openScriptBlockingView(tabSelectorView.itemAt(contextMenu.x, contextMenu.y).viewId)
+            }
+        }
+    }
+    
+    MouseArea
+    {
+        anchors.fill: parent
+        acceptedButtons: Qt.RightButton // FIXME: add dragging here??
+        
+        onClicked: {
+            contextMenu.x = mouseX
+            contextMenu.y = mouseY
+            contextMenu.open()
         }
     }
 

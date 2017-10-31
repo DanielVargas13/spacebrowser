@@ -1,4 +1,5 @@
 #include <ViewHandler.h>
+#include <ContentFilter.h>
 
 #include <QApplication>
 #include <QObject>
@@ -6,6 +7,7 @@
 #include <QQuickView>
 //#include <QWebEngineView>
 #include <QtWebEngine>
+#include <QQuickWebEngineProfile>
 #include <QShortcut>
 #include <QTextEdit>
 
@@ -19,6 +21,9 @@ int main(int argc, char *argv[])
 
     QtWebEngine::initialize();
 
+    ContentFilter cf;
+    QQuickWebEngineProfile::defaultProfile()->setRequestInterceptor(&cf);
+
     std::shared_ptr<QQuickView> view(new QQuickView);
 
 //    qmlRegisterType<QTextEdit>("org.qt.qtextedit", 1, 0, "QTextEdit");
@@ -26,7 +31,7 @@ int main(int argc, char *argv[])
 
 
 
-    view->setSource(QUrl::fromLocalFile("/home/krbo/src/browser/ui/MainWindow.qml"));
+    view->setSource(QUrl::fromLocalFile("/home/tuvok/src/browser/ui/MainWindow.qml"));
     view->setResizeMode(QQuickView::SizeRootObjectToView);
 
     view->show();
@@ -36,10 +41,15 @@ int main(int argc, char *argv[])
     if (!webViewContainer)
         throw std::runtime_error("No webViewContainer object found");
 
+    QQuickItem* scriptBlockingView = qobject_cast<QQuickItem*>(
+            view->rootObject()->findChild<QObject*>("scriptBlockingView"));
+    if (!scriptBlockingView)
+        throw std::runtime_error("No scriptBlockingView object found");
+
     QQuickItem* tabSelector = qobject_cast<QQuickItem*>(
             view->rootObject()->findChild<QObject*>("tabSelector"));
 
-    ViewHandler vh(webViewContainer, tabSelector);
+    ViewHandler vh(webViewContainer, tabSelector, scriptBlockingView, cf);
     view->engine()->rootContext()->setContextProperty("viewHandler", &vh);
     vh.loadTabs();
 //    MessageBoard msgBoard;
@@ -50,7 +60,17 @@ int main(int argc, char *argv[])
     {
         QObject::connect(tabSelector, SIGNAL(viewSelected(int)), &vh, SLOT(viewSelected(int)));
         QObject::connect(tabSelector, SIGNAL(closeTab(int)), &vh, SLOT(closeTab(int)));
+        QObject::connect(tabSelector, SIGNAL(openScriptBlockingView(int)), &vh, SLOT(openScriptBlockingView(int)));
     }
+
+    QObject::connect(scriptBlockingView, SIGNAL(whitelistLocal(QString, QString)),
+            &cf, SLOT(whitelistLocal(QString, QString)));
+    QObject::connect(scriptBlockingView, SIGNAL(whitelistGlobal(QString)),
+            &cf, SLOT(whitelistGlobal(QString)));
+    QObject::connect(scriptBlockingView, SIGNAL(removeLocal(QString, QString)),
+            &cf, SLOT(removeLocal(QString, QString)));
+    QObject::connect(scriptBlockingView, SIGNAL(removeGlobal(QString)),
+            &cf, SLOT(removeGlobal(QString)));
 
     return app.exec();
 }

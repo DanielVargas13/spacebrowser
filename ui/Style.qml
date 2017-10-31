@@ -3,49 +3,93 @@ import QtQuick 2.7
 
 QtObject
 {
-	id: general
-	
+    id: general
+    
     property color background: "#444444"
     property color lightBackground: "#777777"
-	property color border: "#222222"
-	
-	property int margin: 5
-		
-	property QtObject mainWindow: QtObject
-	{
-		property int width: 1280
-		property int height: 768
-	}
+    property color border: "#222222"
 
-	property QtObject addressBar: QtObject
-	{
-		property int height: 25
-		
-		property Item style: Rectangle
-		{
-			color: lightBackground
-			border.color: general.border
-	        border.width: 2
-	        radius: 4
-		}
-	}
-		
-	property QtObject tabSelector: QtObject
-	{
-		property int width: 250
-		
-		property QtObject entry: QtObject
-		{
-			property int height: 30
-			property color selected: "#999999"
-			
-			property QtObject icon: QtObject
-			{
-				property int width: 22
-				property int height: 22
-			}
-		}
-		
-	}
-	
+    property int margin: 5
+    property int buttonWidth: 120
+    property int buttonHeight: 40
+
+    property QtObject mainWindow: QtObject
+    {
+        property int width: 1280
+        property int height: 768
+    }
+
+    property QtObject addressBar: QtObject
+    {
+        property int height: 25
+        
+        property Item style: Rectangle
+        {
+            color: lightBackground
+            border.color: general.border
+            border.width: 2
+            radius: 4
+        }
+    }
+
+    property QtObject tabSelector: QtObject
+    {
+        property int width: 250
+        
+        property QtObject entry: QtObject
+        {
+            property int height: 30
+            property color selected: "#999999"
+            	
+            property QtObject icon: QtObject
+            {
+                property int width: 22
+                property int height: 22
+            }
+        }
+    }
+
+    property QtObject contextMenu: QtObject
+    {
+        property int width: 200
+        
+        property color borderColor: general.border
+        property int borderWidth: 2
+        
+        property Rectangle background: Rectangle
+        {
+            color: general.lightBackground
+            border.color: general.contextMenu.borderColor
+            border.width: general.contextMenu.borderWidth
+            implicitWidth: general.contextMenu.width
+            implicitHeight: general.contextMenu.entry.height
+        }
+        
+        property QtObject entry: QtObject
+        {
+            property int height: 25
+            property color selected: general.tabSelector.entry.selected
+        }
+    }
+
+    property QtObject scriptBlockingView: QtObject
+    {
+        property int margin: 20
+        property int colWidth: 100
+        property color headerBackground: "#666666"
+
+        property QtObject entry: QtObject
+        {
+            property int height: 30
+            property color lightBackground: "#888888"
+
+            property QtObject button: QtObject
+            {
+                property int size: 20
+                property color blocked: "brown"
+                property color allowed: "green"
+            }
+        }
+
+    }
 }
