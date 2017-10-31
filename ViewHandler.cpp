@@ -280,11 +280,14 @@ void ViewHandler::iconChanged(int viewId, QUrl icon)
 
 void ViewHandler::selectTab(int viewId)
 {
-    QVariant novalue;
+    QVariant selected;
     QMetaObject::invokeMethod(tabSelector, "selectView",
-            Q_RETURN_ARG(QVariant, novalue), Q_ARG(QVariant, viewId));
+            Q_RETURN_ARG(QVariant, selected), Q_ARG(QVariant, viewId));
 
-    viewSelected(viewId);
+    if (selected.toInt() < 0)
+        return;
+
+    viewSelected(selected.toInt());
 }
 
 void ViewHandler::loadTabs()
