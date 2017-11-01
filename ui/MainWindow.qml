@@ -78,7 +78,7 @@ Rectangle
 
             tabSelectorPanel.createNewTab(obj, insertAfter)
 
-            var view = viewComp.createObject(null);
+            var view = viewComp.createObject(webViewContainer);
             view.zoomFactor = 1.2 // FIXME: set in style or configuration
             view.myViewId = newViewId
 
@@ -106,8 +106,10 @@ Rectangle
         {
             id: webView
             viewContainer: webViewContainer
-        }
             
+            Component.onDestruction: console.log("\n\n\ndestroying view: " + myViewId)
+        }
+
     }
 
     Shortcut {
@@ -119,29 +121,30 @@ Rectangle
         onActivated: viewHandler.prevTab();
     }
     Shortcut {
-    	sequence: "Ctrl++"
-		onActivated: webViewContainer.currentView.zoomFactor += 0.1
+        sequence: "Ctrl++"
+        onActivated: webViewContainer.currentView.zoomFactor += 0.1
     }
     Shortcut {
-    	sequence: "Ctrl+-"
-		onActivated: webViewContainer.currentView.zoomFactor -= 0.1
+        sequence: "Ctrl+-"
+        onActivated: webViewContainer.currentView.zoomFactor -= 0.1
     }
     Shortcut {
-    	sequence: "Ctrl+0"
-		onActivated: webViewContainer.currentView.zoomFactor = 1.0
+        sequence: "Ctrl+0"
+        onActivated: webViewContainer.currentView.zoomFactor = 1.0
     }
     Shortcut {
-    	sequence: "Ctrl+t"
-		onActivated: {
-			var id = viewHandler.createTab()
-			viewHandler.selectTab(id)
-		}
+        sequence: "Ctrl+t"
+        onActivated: {
+            var id = viewHandler.createTab()
+            viewHandler.selectTab(id)
+            addressBar.focus = true
+        }
     }
     Shortcut {
-    	sequence: "Ctrl+w"
-		onActivated: {
-			viewHandler.closeTab(webViewContainer.currentView.myViewId)
-		}
+        sequence: "Ctrl+w"
+        onActivated: {
+        viewHandler.closeTab(webViewContainer.currentView.myViewId)
+        }
     }
 
     ScriptBlockingView

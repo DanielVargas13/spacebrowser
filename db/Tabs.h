@@ -21,7 +21,7 @@ public:
         int parent;
         std::string url;
         std::string title;
-        std::string icon;
+        std::string icon; // FIXME: add zoom level
     };
 
     Tabs();
