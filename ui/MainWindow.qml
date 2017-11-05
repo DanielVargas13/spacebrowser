@@ -54,6 +54,7 @@ Rectangle
         anchors.bottom: mainWindow.bottom
         width: Style.tabSelector.width
         
+        onNewTabCreated: addressBar.focus = true
     }
     
     WebViewContainer

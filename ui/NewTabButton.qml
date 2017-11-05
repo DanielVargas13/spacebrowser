@@ -7,7 +7,9 @@ Rectangle
 
     color: Style.lightBackground
     height: Style.tabSelector.entry.height
-    
+
+    signal newTabCreated()
+
     Text
     {
         text: "+";
@@ -22,6 +24,7 @@ Rectangle
         {
             var id = viewHandler.createTab();
             viewHandler.selectTab(id)
+            root.newTabCreated()
         }
     }
 }

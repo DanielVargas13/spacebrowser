@@ -9,6 +9,8 @@ ScrollView
 
     clip: true
 
+    signal newTabCreated()
+    
     Item
     {
         id: tabSelectorItem
@@ -35,6 +37,8 @@ ScrollView
             anchors.left: parent.left
             anchors.leftMargin: Style.margin
             anchors.rightMargin: Style.margin
+            
+            onNewTabCreated: root.newTabCreated()
         }
     }
     

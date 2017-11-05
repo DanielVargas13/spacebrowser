@@ -20,6 +20,7 @@ WebEngineView
 
     onNewViewRequested: function(request) {
         var viewId = viewHandler.createTab(myViewId)
+        viewHandler.getView(viewId).visible = false
         request.openIn(viewHandler.getView(viewId))
     }
 
