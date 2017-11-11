@@ -1,0 +1,16 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+    <file>ui/ContextMenuEntry.qml</file>
+    <file>ui/MainWindow.qml</file>
+    <file>ui/NewTabButton.qml</file>
+    <file>ui/qmldir</file>
+    <file>ui/ScriptBlockingView.qml</file>
+    <file>ui/ScriptBlockListEntry.qml</file>
+    <file>ui/Style.qml</file>
+    <file>ui/TabSelector.qml</file>
+    <file>ui/TabSelectorEntry.qml</file>
+    <file>ui/TabSelectorPanel.qml</file>
+    <file>ui/WebViewComponent.qml</file>
+    <file>ui/WebViewContainer.qml</file>
+</qresource>
+</RCC>

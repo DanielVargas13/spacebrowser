@@ -30,6 +30,7 @@ FIND_PACKAGE(Qt5 COMPONENTS Core Widgets Quick WebEngine REQUIRED)
 INCLUDE_DIRECTORIES(.)
 
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 
 SET(SOURCES
   main.cpp
@@ -40,6 +41,7 @@ SET(SOURCES
   misc/DebugHelpers.cpp
   ViewHandler.cpp
   ContentFilter.cpp
+  resources.qrc
   )
 
 #SET(HEADERS

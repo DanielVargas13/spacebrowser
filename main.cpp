@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
 
 
 
-    view->setSource(QUrl::fromLocalFile("/home/tuvok/src/browser/ui/MainWindow.qml"));
+    view->setSource(QUrl("qrc:/ui/MainWindow.qml"));
     view->setResizeMode(QQuickView::SizeRootObjectToView);
 
     view->show();
