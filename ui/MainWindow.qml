@@ -20,6 +20,48 @@ Rectangle
     width: Style.mainWindow.width
     height: Style.mainWindow.height
 
+    property var downloadDialog: Dialog {
+        id: dialog
+        title: "Download file"
+        
+        standardButtons: Dialog.Save | Dialog.Cancel
+        modal:true
+        
+        x: parent.width / 2 - width / 2
+        y: parent.height / 2 - height / 2
+        
+        implicitWidth: 320
+        implicitHeight: 240
+
+        header: Label
+        {
+            text: dialog.title
+            
+//            background: Rectangle {
+//                color: "green"//Style.lightBackground
+//                border.width: 1
+//                border.color: Style.border
+//            }
+        }
+
+        background: Rectangle {
+            color: Style.lightBackground
+            border.width: 1
+        }
+
+        onAccepted: console.log("Ok clicked")
+        onRejected: console.log("Cancel clicked")
+    }
+    
+    Component.onCompleted: {
+        WebEngine.defaultProfile.downloadRequested.connect(downloadHandler);
+    }
+    
+    function downloadHandler(dItem)
+    {
+        downloadDialog.open()
+    }
+
     TextField
     {
         id: addressBar
@@ -144,7 +186,13 @@ Rectangle
     Shortcut {
         sequence: "Ctrl+w"
         onActivated: {
-        viewHandler.closeTab(webViewContainer.currentView.myViewId)
+            viewHandler.closeTab(webViewContainer.currentView.myViewId)
+        }
+    }
+    Shortcut { // test shorcut
+        sequence: "Ctrl+g"
+        onActivated: {
+            console.log("abc");
         }
     }
 
@@ -164,5 +212,5 @@ Rectangle
             webViewContainer.visible = !visible
         }
     }
-
+    
 }

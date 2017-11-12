@@ -1,5 +1,6 @@
-#include <ViewHandler.h>
+#include <BasicDownloader.h>
 #include <ContentFilter.h>
+#include <ViewHandler.h>
 
 #include <QApplication>
 #include <QObject>
@@ -21,8 +22,10 @@ int main(int argc, char *argv[])
 
     QtWebEngine::initialize();
 
+    BasicDownloader bd;
     ContentFilter cf;
-    QQuickWebEngineProfile::defaultProfile()->setRequestInterceptor(&cf);
+    QQuickWebEngineProfile* profile = QQuickWebEngineProfile::defaultProfile();
+    profile->setRequestInterceptor(&cf);
 
     std::shared_ptr<QQuickView> view(new QQuickView);
 

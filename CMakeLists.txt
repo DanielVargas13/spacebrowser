@@ -41,6 +41,7 @@ SET(SOURCES
   misc/DebugHelpers.cpp
   ViewHandler.cpp
   ContentFilter.cpp
+  BasicDownloader.cpp
   resources.qrc
   )
 
