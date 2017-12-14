@@ -2,6 +2,8 @@
 
 #include <db/Sql.h>
 
+#include <iostream>
+
 namespace db
 {
 
@@ -30,7 +32,7 @@ ScriptBlock::ScriptBlock()
     sql::Helpers::createTableIfNotExists(conn, sql::schemaName, localTableName.c_str(),
             ("id serial PRIMARY KEY, \"siteUrl\" varchar REFERENCES \"" +
                     sql::schemaName.toStdString() + "\".\"" + siteTableName +
-                    "\", url varchar UNIQUE").c_str());
+                    "\", url varchar").c_str());
 
     sql::Helpers::createIndex(conn, sql::schemaName, localTableName.c_str(), "siteUrl");
 }
@@ -94,7 +96,12 @@ void ScriptBlock::whitelistLocal(const std::string& site, const std::string& url
     r = ntx.exec(sql::insert.arg(sql::schemaName).arg(localTableName.c_str())
             .arg("\"siteUrl\", url")
             .arg(("'" + ntx.esc(site) + "', '" + ntx.esc(url) + "'").c_str())
-            .arg("ON CONFLICT (url) DO NOTHING").toStdString());
+            .arg(" ").toStdString());
+
+    std::cout << sql::insert.arg(sql::schemaName).arg(localTableName.c_str())
+                    .arg("\"siteUrl\", url")
+                    .arg(("'" + ntx.esc(site) + "', '" + ntx.esc(url) + "'").c_str())
+                    .arg(" ").toStdString() << std::endl;
 }
 
 void ScriptBlock::whitelistGlobal(const std::string& url)
@@ -104,6 +111,10 @@ void ScriptBlock::whitelistGlobal(const std::string& url)
     pqxx::result r = ntx.exec(sql::insert.arg(sql::schemaName).arg(globalTableName.c_str())
             .arg("url").arg(("'" + ntx.esc(url) + "'").c_str())
             .arg("ON CONFLICT (url) DO NOTHING").toStdString());
+
+    std::cout << sql::insert.arg(sql::schemaName).arg(globalTableName.c_str())
+            .arg("url").arg(("'" + ntx.esc(url) + "'").c_str())
+            .arg("ON CONFLICT (url) DO NOTHING").toStdString() << std::endl;
 }
 
 void ScriptBlock::removeLocal(const std::string& site, const std::string& url)
