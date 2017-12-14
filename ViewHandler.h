@@ -8,6 +8,7 @@
 
 #include <QObject>
 #include <QQuickItem>
+#include <QQuickView>
 
 #include <mutex>
 #include <vector>
@@ -29,9 +30,10 @@ public:
      * @param _tabSelector pointer to QML instantiated TabSelector object
      * @param _scriptBlockingView pointer to QML instantiated ScriptBlockingView object
      * @param _cf reference to ContentFilter class that provides interface for handling script blocking etc.
+     * @param _qView shared pointer to the main window QQuickView object
      */
     ViewHandler(QQuickItem* _webViewContainer, QQuickItem* _tabSelector,
-            QQuickItem* _scriptBlockingView, ContentFilter& _cf);
+            QQuickItem* _scriptBlockingView, ContentFilter& _cf, std::shared_ptr<QQuickView> _qView);
 
     virtual ~ViewHandler();
 
@@ -115,6 +117,19 @@ public slots:
      */
     void openScriptBlockingView(int viewId);
 
+    /**
+     * Show dialog asking user to confirm download, optionally allow target path to be changed.
+     * @param dItem pointer to WebEngineDownloadItem QML object
+     * @return return true if download was accepted and should proceed, false otherwise
+     */
+    bool downloadRequested(QObject* dItem);
+
+    /**
+     * Enter fullscreen mode
+     * @param fullscreen If true application will enter fullscreen mode, if false - the opposite
+     */
+    void showFullscreen(bool fullscreen = true);
+
     // deprecated, does not work
     void historyUpdated(int _viewId, QQuickWebEngineHistory* navHistory);
 
@@ -125,7 +140,8 @@ private:
     QQuickItem* webViewContainer;        /// Pointer to WebViewContainer QML object
     QQuickItem* tabSelector;             /// Pointer to TabSelector QML object
     QQuickItem* scriptBlockingView;      /// Pointer to ScriptBlockingView QML object
-    ContentFilter& cf;
+    ContentFilter& cf;                   /// Reference to content filtering class
+    std::shared_ptr<QQuickView> qView;   /// Smart pointer to main window object
 
     /// Structure for holding WebViewContainer QML object and
     /// accompanying tab meta information

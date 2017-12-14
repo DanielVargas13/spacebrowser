@@ -23,4 +23,9 @@ Item
     {
         view.destroy()
     }
+    
+    function setFocus()
+    {
+        currentView.focus = true
+    }
 }
