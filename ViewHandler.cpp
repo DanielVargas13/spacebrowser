@@ -3,6 +3,7 @@
 #include <misc/DebugHelpers.h>
 
 #include <QAbstractListModel>
+#include <QFileDialog>
 #include <QJSEngine>
 #include <QJSValue>
 #include <QModelIndex>
@@ -12,9 +13,9 @@
 #include <iostream>
 
 ViewHandler::ViewHandler(QQuickItem* _webViewContainer, QQuickItem* _tabSelector,
-        QQuickItem* _scriptBlockingView, ContentFilter& _cf)
+        QQuickItem* _scriptBlockingView, ContentFilter& _cf, std::shared_ptr<QQuickView> _qView)
     : webViewContainer(_webViewContainer), tabSelector(_tabSelector),
-      scriptBlockingView(_scriptBlockingView), cf(_cf)
+      scriptBlockingView(_scriptBlockingView), cf(_cf), qView(_qView)
 {
     //connect(webViewContainer, SIGNAL(viewSelected(int)), this, SLOT(viewSelected(int)));
     //connect(webViewContainer, SIGNAL(historyUpdated(int)), this, SLOT(historyUpdated(int)));
@@ -115,6 +116,15 @@ void ViewHandler::fixHierarchy(int viewId)
         children.insert(pos, thisView.children.begin(), thisView.children.end());
         children.erase(std::remove(children.begin(), children.end(), viewId));
     }
+}
+
+void ViewHandler::showFullscreen(bool fullscreen)
+{
+    std::cout << "showFullscreen called\n";
+    if (fullscreen)
+        qView->showFullScreen();
+    else
+        qView->showNormal();
 }
 
 void ViewHandler::fixIndentation(int viewId)
@@ -447,4 +457,21 @@ void ViewHandler::openScriptBlockingView(int viewId)
     scriptBlockingView->setProperty("visible", true);
     webViewContainer->setProperty("visible", false);
 
+}
+
+bool ViewHandler::downloadRequested(QObject* dItem)
+{
+    std::cout << dItem << std::endl;
+    QFileDialog qfd;
+    qfd.setFileMode(QFileDialog::AnyFile);
+    qfd.setAcceptMode(QFileDialog::AcceptSave);
+
+    qfd.selectFile(dItem->property("path").toString());
+
+    bool accepted = qfd.exec() == QDialog::Accepted;
+
+    if (accepted)
+        dItem->setProperty("path", qfd.selectedFiles().first());
+
+    return accepted;
 }

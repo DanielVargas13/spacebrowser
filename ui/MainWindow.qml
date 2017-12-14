@@ -20,46 +20,38 @@ Rectangle
     width: Style.mainWindow.width
     height: Style.mainWindow.height
 
-    property var downloadDialog: Dialog {
-        id: dialog
-        title: "Download file"
-        
-        standardButtons: Dialog.Save | Dialog.Cancel
-        modal:true
-        
-        x: parent.width / 2 - width / 2
-        y: parent.height / 2 - height / 2
-        
-        implicitWidth: 320
-        implicitHeight: 240
-
-        header: Label
-        {
-            text: dialog.title
-            
-//            background: Rectangle {
-//                color: "green"//Style.lightBackground
-//                border.width: 1
-//                border.color: Style.border
-//            }
-        }
-
-        background: Rectangle {
-            color: Style.lightBackground
-            border.width: 1
-        }
-
-        onAccepted: console.log("Ok clicked")
-        onRejected: console.log("Cancel clicked")
-    }
+//    property var downloadDialog: Dialog {
+//        id: dialog
+//        title: "Download file"
+//        property var item
+//        standardButtons: Dialog.Save | Dialog.Cancel
+//        modal:true
+//
+//        x: parent.width / 2 - width / 2
+//        y: parent.height / 2 - height / 2
+//
+//        implicitWidth: 320
+//        implicitHeight: 240
+//        
+//        onAccepted: {
+//            console.log("accepted")
+//            console.log(item)
+//        }
+//    }
     
+    property bool isFullscreen: false
+
     Component.onCompleted: {
         WebEngine.defaultProfile.downloadRequested.connect(downloadHandler);
     }
     
     function downloadHandler(dItem)
     {
-        downloadDialog.open()
+        var accepted = viewHandler.downloadRequested(dItem)
+        if (accepted)
+            dItem.accept()
+        else
+            dItem.cancel()
     }
 
     TextField
@@ -74,6 +66,7 @@ Rectangle
 
         placeholderText: "https://"
         inputMethodHints: Qt.ImhUrlCharactersOnly
+        selectByMouse: true
         
         onAccepted: {
             if (!text.toLowerCase().startsWith("https://") &&
@@ -83,6 +76,7 @@ Rectangle
             }
 
             webViewContainer.setUrl(text)
+            webViewContainer.setFocus()
         }
     }
 
@@ -151,6 +145,13 @@ Rectangle
             viewContainer: webViewContainer
             
             Component.onDestruction: console.log("\n\n\ndestroying view: " + myViewId)
+            
+            onFullScreenRequested: function(request) {
+                mainWindow.isFullscreen = request.toggleOn
+                viewHandler.showFullscreen(request.toggleOn)
+                request.accept()
+                webViewContainer.currentView.parent = request.toggleOn ? mainWindow : webViewContainer
+            }
         }
 
     }
@@ -164,11 +165,11 @@ Rectangle
         onActivated: viewHandler.prevTab();
     }
     Shortcut {
-        sequence: "Ctrl++"
+        sequence: StandardKey.ZoomIn//"Ctrl++"
         onActivated: webViewContainer.currentView.zoomFactor += 0.1
     }
     Shortcut {
-        sequence: "Ctrl+-"
+        sequence: StandardKey.ZoomOut//"Ctrl+-"
         onActivated: webViewContainer.currentView.zoomFactor -= 0.1
     }
     Shortcut {
@@ -193,6 +194,14 @@ Rectangle
         sequence: "Ctrl+g"
         onActivated: {
             console.log("abc");
+        }
+    }
+    
+    Shortcut {
+        sequence: "Escape"
+        onActivated: {
+            if (mainWindow.isFullscreen)
+                webViewContainer.currentView.triggerWebAction(WebEngineView.ExitFullScreen);
         }
     }
 

@@ -19,7 +19,8 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
     app.setApplicationName("Space Browser v1");
-
+    //FIXME: test this
+    //QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QtWebEngine::initialize();
 
     BasicDownloader bd;
@@ -31,8 +32,6 @@ int main(int argc, char *argv[])
 
 //    qmlRegisterType<QTextEdit>("org.qt.qtextedit", 1, 0, "QTextEdit");
 //    qmlRegisterType<QWebEngineView>("org.qt.qwebengineview", 1, 0, "QWebEngineView");
-
-
 
     view->setSource(QUrl("qrc:/ui/MainWindow.qml"));
     view->setResizeMode(QQuickView::SizeRootObjectToView);
@@ -52,9 +51,10 @@ int main(int argc, char *argv[])
     QQuickItem* tabSelector = qobject_cast<QQuickItem*>(
             view->rootObject()->findChild<QObject*>("tabSelector"));
 
-    ViewHandler vh(webViewContainer, tabSelector, scriptBlockingView, cf);
+    ViewHandler vh(webViewContainer, tabSelector, scriptBlockingView, cf, view);
     view->engine()->rootContext()->setContextProperty("viewHandler", &vh);
     vh.loadTabs();
+
 //    MessageBoard msgBoard;
 //    QQuickView view;
 
