@@ -39,7 +39,7 @@ WebEngineView
     }
 
     function setup() {
-        if (url == "" && targetUrl != "")
+        if (url == "" && targetUrl && targetUrl != "")
             url = targetUrl
     }
 }
