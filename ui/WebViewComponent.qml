@@ -8,10 +8,13 @@ WebEngineView
     property int myViewId
     property var viewContainer
     
+    property var targetUrl // FIXME: these two are needed to handle lazy loading of webpages
+    property var targetTitle // it would be cleaner to handle this on qt level
+    
     anchors.fill: parent
 
     onTitleChanged: {
-        viewContainer.updateTitle(myViewId, title)
+        viewContainer.updateTitle(myViewId, title, true)
     }
 
     onIconChanged: {
@@ -25,9 +28,18 @@ WebEngineView
     }
 
     onUrlChanged: {
-        if (viewContainer.currentView.myViewId == myViewId)
+        if (viewContainer.currentView && viewContainer.currentView.myViewId == myViewId)
             viewContainer.updateAddressBar(url)
 
         viewHandler.urlChanged(myViewId, url)
+    }
+
+    onTargetTitleChanged: {
+        viewContainer.updateTitle(myViewId, targetTitle, false)
+    }
+
+    function setup() {
+        if (url == "" && targetUrl != "")
+            url = targetUrl
     }
 }

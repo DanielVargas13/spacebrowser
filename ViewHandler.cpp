@@ -334,7 +334,9 @@ void ViewHandler::loadTabs()
                     Q_ARG(QVariant, tab.parent));
 
             QObject* v = qvariant_cast<QObject *>(newView);
-            v->setProperty("url", tab.url.c_str());
+
+            v->setProperty("targetTitle", tab.title.c_str());
+            v->setProperty("targetUrl", tab.url.c_str()); // FIXME: lazy page loading
 
             /// Put the view in proper container, and if parent was defined
             /// update it's children list

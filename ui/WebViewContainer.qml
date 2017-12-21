@@ -11,6 +11,7 @@ Item
     onCurrentViewChanged: {
         children = currentView
         currentView.visible = true
+        currentView.setup()
         updateAddressBar(currentView.url)
     }
     

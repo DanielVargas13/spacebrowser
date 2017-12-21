@@ -122,10 +122,11 @@ Rectangle
             return view
         }
 
-        function updateTitle(viewId, title)
+        function updateTitle(viewId, title, updateModel)
         {
             tabSelectorPanel.updateTitle(viewId, title)
-            viewHandler.titleChanged(viewId, title)
+            if (updateModel)
+                viewHandler.titleChanged(viewId, title)
         }
         
         function updateIcon(viewId, icon)
