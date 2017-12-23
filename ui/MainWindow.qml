@@ -222,5 +222,24 @@ Rectangle
             webViewContainer.visible = !visible
         }
     }
-    
+
+//    MouseArea  // FIXME: this works, but unfortunately prevents WebView from changing cursor shape
+//    {
+//        anchors.fill: webViewContainer // FIXME: it would be great to have this MouseArea in webViewContainer, but it won't get events there
+//        acceptedButtons: Qt.NoButton
+//        onWheel:
+//        {
+//            if (wheel.modifiers & Qt.ControlModifier)
+//            {
+//                console.log(wheel.angleDelta)
+//                if (wheel.angleDelta.y > 0)
+//                    webViewContainer.currentView.zoomFactor += 0.1
+//                else
+//                    webViewContainer.currentView.zoomFactor -= 0.1
+//                wheel.accepted = true
+//            }
+//
+//            wheel.accepted = false
+//        }
+//    }
 }
