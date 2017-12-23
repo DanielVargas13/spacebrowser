@@ -4,7 +4,7 @@ import "."
 Rectangle
 {
     id: root
-    color: Style.lightBackground
+    color: Style.tabSelector.entry.background
     property string title: ""
     property string icon: ""
     property int viewId: 0
@@ -16,6 +16,9 @@ Rectangle
     anchors.right: parent.right
     anchors.leftMargin: Style.margin
     anchors.rightMargin: Style.margin
+
+    border.width: Style.tabSelector.entry.border.width
+    border.color: Style.tabSelector.entry.border.color
 
     signal close()
     signal selected()
