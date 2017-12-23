@@ -35,16 +35,22 @@ QtObject
     property QtObject tabSelector: QtObject
     {
         property int width: 250
-        
         property QtObject entry: QtObject
         {
             property int height: 30
+            property color background: general.lightBackground
             property color selected: "#999999"
             	
             property QtObject icon: QtObject
             {
                 property int width: 22
                 property int height: 22
+            }
+
+            property QtObject border: QtObject
+            {
+                property int width: 1
+                property color color: "#888888"
             }
         }
     }
