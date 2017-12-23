@@ -44,7 +44,7 @@ Rectangle
     Component.onCompleted: {
         WebEngine.defaultProfile.downloadRequested.connect(downloadHandler);
     }
-    
+
     function downloadHandler(dItem)
     {
         var accepted = viewHandler.downloadRequested(dItem)
@@ -77,6 +77,17 @@ Rectangle
 
             webViewContainer.setUrl(text)
             webViewContainer.setFocus()
+        }
+
+        ProgressComponent
+        {
+            id: pageLoadProgressBar
+            anchors.right: addressBar.right
+            anchors.rightMargin: Style.margin
+            anchors.verticalCenter: addressBar.verticalCenter
+            progress: webViewContainer.currentView ? webViewContainer.currentView.loadProgress / 100.0 : 0
+
+            stateVisible: webViewContainer.currentView ? webViewContainer.currentView.loading : false
         }
     }
 

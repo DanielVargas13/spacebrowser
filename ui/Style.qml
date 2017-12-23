@@ -96,6 +96,21 @@ QtObject
                 property color allowed: "green"
             }
         }
+    }
 
+    property QtObject progressComponent: QtObject
+    {
+        property int width: 200
+        property int height: 21
+        property real opacity: 0.6
+        property color background: "transparent"
+        property color color: "#A3FF3C"
+        property int radius: 8
+
+        property QtObject border: QtObject
+        {
+            property int width: 1
+            property color color: "#A3FF3C"
+        }
     }
 }

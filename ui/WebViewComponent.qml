@@ -42,4 +42,5 @@ WebEngineView
         if (url == "" && targetUrl && targetUrl != "")
             url = targetUrl
     }
+
 }

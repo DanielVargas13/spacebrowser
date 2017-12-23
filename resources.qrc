@@ -3,6 +3,7 @@
     <file>ui/ContextMenuEntry.qml</file>
     <file>ui/MainWindow.qml</file>
     <file>ui/NewTabButton.qml</file>
+    <file>ui/ProgressComponent.qml</file>
     <file>ui/qmldir</file>
     <file>ui/ScriptBlockingView.qml</file>
     <file>ui/ScriptBlockListEntry.qml</file>
