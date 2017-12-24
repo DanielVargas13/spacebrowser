@@ -42,39 +42,75 @@ Rectangle
         anchors.verticalCenter: parent.verticalCenter
         anchors.right: closeIcon.left
         anchors.rightMargin: Style.margin
-        
+
         elide: Text.ElideRight
         text: title
     }
-    
+
     MouseArea
     {
         anchors.fill: root
+        hoverEnabled: true
         onClicked:
         {
-            root.selected()
+            console.log(mouse.button)
+            if (mouse.button & Qt.MiddleButton)
+            {
+                root.close()
+                mouse.accepted = true
+                console.log("middle")
+            }
+            else if (mouse.button == Qt.LeftButton)
+            {
+                root.selected()
+                mouse.accepted = true
+                console.log("left")
+            }
+        }
+        onEntered:
+        {
+            closeIcon.stateVisible = true
+        }
+        onExited:
+        {
+            closeIcon.stateVisible = false
         }
     }
 
-    Rectangle
+    Image
     {
         id: closeIcon
-        width: Style.tabSelector.entry.icon.width
-        height: Style.tabSelector.entry.icon.height
         
-        color:"brown"
-        
+        property bool stateVisible: false
+        visible: opacity > 0.01
+
+        sourceSize: Qt.size(Style.tabSelector.entry.closeIcon.width, Style.tabSelector.entry.closeIcon.height)
+        source: "qrc:/ui/icons/close.svg"
+
         anchors.verticalCenter: parent.verticalCenter
         anchors.right: parent.right
         anchors.rightMargin: Style.margin
-        
+
         MouseArea
         {
             anchors.fill: closeIcon
             onClicked:
             {
-                close()
-            } 
-	    }
-	}
+                root.close()
+                mouse.accepted = true
+            }
+        }
+
+        states: [
+            State { when: closeIcon.stateVisible;
+                PropertyChanges { target: closeIcon; opacity: 1.0}
+            },
+            State { when: !closeIcon.stateVisible;
+                PropertyChanges { target: closeIcon; opacity: 0.0}
+            }
+        ]
+        transitions: Transition {
+            NumberAnimation { property: "opacity"; duration: 250}
+        }
+    }
 }

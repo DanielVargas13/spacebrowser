@@ -40,11 +40,17 @@ QtObject
             property int height: 30
             property color background: general.lightBackground
             property color selected: "#999999"
-            	
+
             property QtObject icon: QtObject
             {
                 property int width: 22
                 property int height: 22
+            }
+
+            property QtObject closeIcon: QtObject
+            {
+                property int width: 15
+                property int height: 15
             }
 
             property QtObject border: QtObject

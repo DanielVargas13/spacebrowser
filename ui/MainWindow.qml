@@ -156,7 +156,7 @@ Rectangle
             id: webView
             viewContainer: webViewContainer
             
-            Component.onDestruction: console.log("\n\n\ndestroying view: " + myViewId)
+            //Component.onDestruction: console.log("\n\n\ndestroying view: " + myViewId)
             
             onFullScreenRequested: function(request) {
                 mainWindow.isFullscreen = request.toggleOn

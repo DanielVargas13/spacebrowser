@@ -41,10 +41,10 @@ Rectangle
     }
 
     states: [
-        State { when: stateVisible;
+        State { when: root.stateVisible;
             PropertyChanges { target: root; opacity: 1.0}
         },
-        State { when: !stateVisible;
+        State { when: !root.stateVisible;
             PropertyChanges { target: root; opacity: 0.0}
         }
     ]

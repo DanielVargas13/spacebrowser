@@ -63,9 +63,12 @@ Item
         acceptedButtons: Qt.RightButton // FIXME: add dragging here??
         
         onClicked: {
+            console.log("context clicked")
+            console.log(mouse.button)
             contextMenu.x = mouseX
             contextMenu.y = mouseY
             contextMenu.open()
+            mouse.accepted = true
         }
     }
 

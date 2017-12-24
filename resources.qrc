@@ -13,5 +13,6 @@
     <file>ui/TabSelectorPanel.qml</file>
     <file>ui/WebViewComponent.qml</file>
     <file>ui/WebViewContainer.qml</file>
+    <file>ui/icons/close.svg</file>
 </qresource>
 </RCC>
