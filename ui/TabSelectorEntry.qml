@@ -50,21 +50,19 @@ Rectangle
     MouseArea
     {
         anchors.fill: root
+        acceptedButtons: Qt.MiddleButton | Qt.LeftButton
         hoverEnabled: true
         onClicked:
         {
-            console.log(mouse.button)
             if (mouse.button & Qt.MiddleButton)
             {
                 root.close()
                 mouse.accepted = true
-                console.log("middle")
             }
             else if (mouse.button == Qt.LeftButton)
             {
                 root.selected()
                 mouse.accepted = true
-                console.log("left")
             }
         }
         onEntered:
