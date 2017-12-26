@@ -140,10 +140,11 @@ Rectangle
                 viewHandler.titleChanged(viewId, title)
         }
         
-        function updateIcon(viewId, icon)
+        function updateIcon(viewId, icon, updateModel)
         {
             tabSelectorPanel.updateIcon(viewId, icon)
-            viewHandler.iconChanged(viewId, icon.toString())
+            if (updateModel)
+                viewHandler.iconChanged(viewId, icon.toString())
         }
         
         function updateAddressBar(url)

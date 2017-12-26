@@ -10,6 +10,7 @@ WebEngineView
     
     property var targetUrl // FIXME: these two are needed to handle lazy loading of webpages
     property var targetTitle // it would be cleaner to handle this on qt level
+    property var targetIcon
     
     anchors.fill: parent
 
@@ -18,7 +19,7 @@ WebEngineView
     }
 
     onIconChanged: {
-        viewContainer.updateIcon(myViewId, icon.toString())
+        viewContainer.updateIcon(myViewId, icon.toString(), true)
     }
 
     onNewViewRequested: function(request) {
@@ -36,6 +37,11 @@ WebEngineView
 
     onTargetTitleChanged: {
         viewContainer.updateTitle(myViewId, targetTitle, false)
+    }
+
+    onTargetIconChanged: {
+        var iconUri = targetIcon.toString().replace("image://favicon/", "")
+        viewContainer.updateIcon(myViewId, iconUri, false)
     }
 
     function setup() {
