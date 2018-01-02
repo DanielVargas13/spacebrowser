@@ -209,12 +209,18 @@ Rectangle
             console.log("abc");
         }
     }
-    
     Shortcut {
         sequence: "Escape"
         onActivated: {
             if (mainWindow.isFullscreen)
                 webViewContainer.currentView.triggerWebAction(WebEngineView.ExitFullScreen);
+        }
+    }
+    Shortcut {
+        sequence: "Ctrl+r"
+        onActivated: {
+            if (webViewContainer.currentView)
+                webViewContainer.currentView.reload()
         }
     }
 
