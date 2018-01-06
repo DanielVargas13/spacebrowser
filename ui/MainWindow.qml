@@ -69,8 +69,11 @@ Rectangle
         selectByMouse: true
         
         onAccepted: {
-            if (!text.toLowerCase().startsWith("https://") &&
-                    !text.toLowerCase().startsWith("http://"))
+            if (text.startsWith("/"))
+            {
+                text = text.substring(1)
+                text = "https://www.google.com/search?q=" + encodeURIComponent(text)
+            } else if (text.indexOf("://") == -1)
             {
                 text = "https://" + text
             }
