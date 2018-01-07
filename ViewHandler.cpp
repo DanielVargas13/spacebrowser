@@ -3,7 +3,6 @@
 #include <misc/DebugHelpers.h>
 
 #include <QAbstractListModel>
-#include <QFileDialog>
 #include <QJSEngine>
 #include <QJSValue>
 #include <QModelIndex>
@@ -460,21 +459,4 @@ void ViewHandler::openScriptBlockingView(int viewId)
     scriptBlockingView->setProperty("visible", true);
     webViewContainer->setProperty("visible", false);
 
-}
-
-bool ViewHandler::downloadRequested(QObject* dItem)
-{
-    std::cout << dItem << std::endl;
-    QFileDialog qfd;
-    qfd.setFileMode(QFileDialog::AnyFile);
-    qfd.setAcceptMode(QFileDialog::AcceptSave);
-
-    qfd.selectFile(dItem->property("path").toString());
-
-    bool accepted = qfd.exec() == QDialog::Accepted;
-
-    if (accepted)
-        dItem->setProperty("path", qfd.selectedFiles().first());
-
-    return accepted;
 }

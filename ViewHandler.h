@@ -65,7 +65,7 @@ public slots:
      * Sets the selected view as currently visible
      * @param viewId viewId id of tab / view
      */
-    void viewSelected(int viewId);
+    void viewSelected(int viewId); // FIXME: rename to selectView
 
     /**
      * Updates url database entry for given tab
@@ -116,13 +116,6 @@ public slots:
      * @param viewId id of tab / view for which list of blocked script sources will be shown
      */
     void openScriptBlockingView(int viewId);
-
-    /**
-     * Show dialog asking user to confirm download, optionally allow target path to be changed.
-     * @param dItem pointer to WebEngineDownloadItem QML object
-     * @return return true if download was accepted and should proceed, false otherwise
-     */
-    bool downloadRequested(QObject* dItem);
 
     /**
      * Enter fullscreen mode

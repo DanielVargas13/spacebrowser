@@ -142,7 +142,8 @@ Item
             
             /// if currently visible tab is closed, select next tab before it in the model
             if (tabSelectorView.currentIndex == i && tabSelectorModel.count > 0)
-            {
+            {//FIXME: select first child, then next on the same level, then parent
+                // doing it correctly will probably require proper tree model
                 var j = 0
                 if (i > 0)
                     j = i - 1
