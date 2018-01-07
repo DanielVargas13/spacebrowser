@@ -23,7 +23,6 @@ int main(int argc, char *argv[])
     //QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QtWebEngine::initialize();
 
-    BasicDownloader bd;
     ContentFilter cf;
     QQuickWebEngineProfile* profile = QQuickWebEngineProfile::defaultProfile();
     profile->setRequestInterceptor(&cf);
@@ -54,6 +53,19 @@ int main(int argc, char *argv[])
     ViewHandler vh(webViewContainer, tabSelector, scriptBlockingView, cf, view);
     view->engine()->rootContext()->setContextProperty("viewHandler", &vh);
     vh.loadTabs();
+
+    /// Set-up downloader module
+    ///
+    QQuickItem* downloaderProgressBar = qobject_cast<QQuickItem*>(
+            view->rootObject()->findChild<QObject*>("downloadProgressBar"));
+    if (!downloaderProgressBar)
+        throw std::runtime_error("No downloaderProgressBar object found");
+    BasicDownloader bd(downloaderProgressBar);
+    QObject::connect(profile, SIGNAL(downloadRequested(QQuickWebEngineDownloadItem*)),
+            &bd, SLOT(downloadRequested(QQuickWebEngineDownloadItem*)));
+    QObject::connect(profile, SIGNAL(downloadFinished(QQuickWebEngineDownloadItem*)),
+                &bd, SLOT(downloadFinished(QQuickWebEngineDownloadItem*)));
+
 
 //    MessageBoard msgBoard;
 //    QQuickView view;

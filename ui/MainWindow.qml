@@ -20,39 +20,7 @@ Rectangle
     width: Style.mainWindow.width
     height: Style.mainWindow.height
 
-//    property var downloadDialog: Dialog {
-//        id: dialog
-//        title: "Download file"
-//        property var item
-//        standardButtons: Dialog.Save | Dialog.Cancel
-//        modal:true
-//
-//        x: parent.width / 2 - width / 2
-//        y: parent.height / 2 - height / 2
-//
-//        implicitWidth: 320
-//        implicitHeight: 240
-//        
-//        onAccepted: {
-//            console.log("accepted")
-//            console.log(item)
-//        }
-//    }
-    
     property bool isFullscreen: false
-
-    Component.onCompleted: {
-        WebEngine.defaultProfile.downloadRequested.connect(downloadHandler);
-    }
-
-    function downloadHandler(dItem)
-    {
-        var accepted = viewHandler.downloadRequested(dItem)
-        if (accepted)
-            dItem.accept()
-        else
-            dItem.cancel()
-    }
 
     TextField
     {
@@ -89,8 +57,25 @@ Rectangle
             anchors.rightMargin: Style.margin
             anchors.verticalCenter: addressBar.verticalCenter
             progress: webViewContainer.currentView ? webViewContainer.currentView.loadProgress / 100.0 : 0
+            text: "Loading page: "
 
             stateVisible: webViewContainer.currentView ? webViewContainer.currentView.loading : false
+        }
+
+        ProgressComponent
+        {
+            id: downloadProgressBar
+            objectName: "downloadProgressBar"
+            anchors.right: pageLoadProgressBar.stateVisible ? pageLoadProgressBar.left : addressBar.right
+            anchors.rightMargin: Style.margin
+            anchors.verticalCenter: addressBar.verticalCenter
+
+            componentBorderColor: Style.downloadProgressComponent.border.color
+            componentColor: Style.downloadProgressComponent.color
+
+            progress: 1.0
+            text: "Downloading: "
+            stateVisible: progress != 1.0
         }
     }
 
@@ -106,7 +91,7 @@ Rectangle
         
         onNewTabCreated: addressBar.focus = true
     }
-    
+
     WebViewContainer
     {
         id: webViewContainer
@@ -149,7 +134,7 @@ Rectangle
             if (updateModel)
                 viewHandler.iconChanged(viewId, icon.toString())
         }
-        
+
         function updateAddressBar(url)
         {
             addressBar.text = url
@@ -159,9 +144,7 @@ Rectangle
         {
             id: webView
             viewContainer: webViewContainer
-            
-            //Component.onDestruction: console.log("\n\n\ndestroying view: " + myViewId)
-            
+
             onFullScreenRequested: function(request) {
                 mainWindow.isFullscreen = request.toggleOn
                 viewHandler.showFullscreen(request.toggleOn)

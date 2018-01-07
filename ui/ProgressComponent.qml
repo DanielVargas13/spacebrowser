@@ -7,13 +7,16 @@ Rectangle
 
     property real progress: 0.0
     property bool stateVisible: false
+    property string text: ""
+    property color componentColor: Style.progressComponent.color
+    property color componentBorderColor: Style.progressComponent.border.color
     visible: opacity > 0.01
     
     width: Style.progressComponent.width
     height: Style.progressComponent.height
 
     border.width: Style.progressComponent.border.width
-    border.color: Style.progressComponent.border.color
+    border.color: root.componentBorderColor
     radius: Style.progressComponent.radius
     
     color: Style.progressComponent.background
@@ -28,7 +31,7 @@ Rectangle
         height: Style.progressComponent.height
 
         radius: Style.progressComponent.radius
-        color: Style.progressComponent.color
+        color: root.componentColor
         opacity: Style.progressComponent.opacity
     }
 
@@ -37,7 +40,7 @@ Rectangle
         anchors.verticalCenter: root.verticalCenter
         anchors.horizontalCenter: root.horizontalCenter
         
-        text: "Loading page: " + Math.round(progress * 100) + "%"
+        text: root.text + Math.round(progress * 100) + "%"
     }
 
     states: [

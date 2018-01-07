@@ -116,7 +116,17 @@ QtObject
         property QtObject border: QtObject
         {
             property int width: 1
-            property color color: "#A3FF3C"
+            property color color: progressComponent.color
+        }
+    }
+
+    property QtObject downloadProgressComponent: QtObject
+    {
+        property color color: "#49D2FF"
+
+        property QtObject border: QtObject
+        {
+            property color color: downloadProgressComponent.color
         }
     }
 }
