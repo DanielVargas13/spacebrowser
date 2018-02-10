@@ -1,5 +1,6 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
+    <file>ui/AddressBar.qml</file>
     <file>ui/ContextMenuEntry.qml</file>
     <file>ui/MainWindow.qml</file>
     <file>ui/NewTabButton.qml</file>

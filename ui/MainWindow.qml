@@ -22,7 +22,7 @@ Rectangle
 
     property bool isFullscreen: false
 
-    TextField
+    AddressBar
     {
         id: addressBar
         
@@ -35,7 +35,10 @@ Rectangle
         placeholderText: "https://"
         inputMethodHints: Qt.ImhUrlCharactersOnly
         selectByMouse: true
-        
+
+        loadProgress: webViewContainer.currentView ? webViewContainer.currentView.loadProgress / 100.0 : 0
+        loadProgressVisible: webViewContainer.currentView ? webViewContainer.currentView.loading : false
+
         onAccepted: {
             if (text.startsWith("/"))
             {
@@ -48,34 +51,6 @@ Rectangle
 
             webViewContainer.setUrl(text)
             webViewContainer.setFocus()
-        }
-
-        ProgressComponent
-        {
-            id: pageLoadProgressBar
-            anchors.right: addressBar.right
-            anchors.rightMargin: Style.margin
-            anchors.verticalCenter: addressBar.verticalCenter
-            progress: webViewContainer.currentView ? webViewContainer.currentView.loadProgress / 100.0 : 0
-            text: "Loading page: "
-
-            stateVisible: webViewContainer.currentView ? webViewContainer.currentView.loading : false
-        }
-
-        ProgressComponent
-        {
-            id: downloadProgressBar
-            objectName: "downloadProgressBar"
-            anchors.right: pageLoadProgressBar.stateVisible ? pageLoadProgressBar.left : addressBar.right
-            anchors.rightMargin: Style.margin
-            anchors.verticalCenter: addressBar.verticalCenter
-
-            componentBorderColor: Style.downloadProgressComponent.border.color
-            componentColor: Style.downloadProgressComponent.color
-
-            progress: 1.0
-            text: "Downloading: "
-            stateVisible: progress != 1.0
         }
     }
 
