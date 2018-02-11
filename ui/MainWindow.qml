@@ -30,7 +30,9 @@ Rectangle
         background: Style.addressBar.style
 
         anchors.left: parent.left
-        anchors.right: parent.right
+        anchors.leftMargin: Style.margin
+        anchors.right: downloadHistoryButton.visible ? downloadHistoryButton.left : parent.right
+        anchors.rightMargin: Style.margin
 
         placeholderText: "https://"
         inputMethodHints: Qt.ImhUrlCharactersOnly
@@ -53,6 +55,25 @@ Rectangle
             webViewContainer.setFocus()
         }
     }
+    
+    Rectangle
+    {
+        id: downloadHistoryButton
+        objectName: "downloadHistoryButton"
+
+        height: Style.button.size
+        width: Style.button.size
+
+        color: Style.button.background
+        radius: Style.button.radius
+        border.color: Style.button.border.color
+        border.width: Style.button.border.width
+
+        anchors.right: parent.right
+        anchors.rightMargin: Style.margin
+        
+        visible: false
+    }
 
     TabSelectorPanel
     {
@@ -63,7 +84,7 @@ Rectangle
         anchors.right: parent.right
         anchors.bottom: mainWindow.bottom
         width: Style.tabSelector.width
-        
+
         onNewTabCreated: addressBar.focus = true
     }
 

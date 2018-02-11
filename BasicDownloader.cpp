@@ -5,7 +5,7 @@
 //#include <QtWebEngine/5.10.0/QtWebEngine/private/qquickwebenginedownloaditem_p.h>
 #include <iostream>
 
-BasicDownloader::BasicDownloader(QQuickItem* _progressBar) : progressBar(_progressBar)
+BasicDownloader::BasicDownloader(/*QQuickItem* _progressBar*/)// : progressBar(_progressBar)
 {
 
 }
@@ -33,10 +33,17 @@ void BasicDownloader::downloadRequested(QQuickWebEngineDownloadItem* download)
         dm.paused = d->property("isPaused").toBool();
         itemsMetadata[id] = dm;
 
-        /// Set-up signal handlers and accept download
+        /// Set-up signal handlers, emit historyUpdated signal and accept download
         ///
         connect(d, SIGNAL(receivedBytesChanged()), SLOT(updateProgress()));
         connect(d, SIGNAL(totalBytesChanged()), SLOT(updateTotalSize()));
+
+        if (itemsMetadata.size() == 1)
+        {
+            std::cout << "emitting signal\n";
+            emit historyChanged(true);
+        }
+        std::cout << "count: " << itemsMetadata.size() << std::endl;
 
         QMetaObject::invokeMethod(d, "accept", Qt::DirectConnection);
     }
@@ -85,7 +92,9 @@ void BasicDownloader::updateProgress()
     DownloadMetadata& md = itemsMetadata[source->property("id").toInt()];
     md.received = source->property("receivedBytes").toLongLong();
 
-    progressBar->setProperty("progress", getProgress());
+    emit progressUpdated(getProgress());
+
+    //progressBar->setProperty("progress", getProgress());
 }
 
 void BasicDownloader::updateTotalSize()
@@ -97,7 +106,8 @@ void BasicDownloader::updateTotalSize()
     DownloadMetadata& md = itemsMetadata[source->property("id").toInt()];
     md.total = source->property("totalBytes").toLongLong();
 
-    progressBar->setProperty("progress", getProgress());
+    emit progressUpdated(getProgress());
+    //progressBar->setProperty("progress", getProgress());
 }
 
 double BasicDownloader::getProgress()
@@ -115,4 +125,9 @@ double BasicDownloader::getProgress()
     });
 
     return (received / total);
+}
+
+bool BasicDownloader::hasHistory() const
+{
+    return itemsMetadata.size() != 0;
 }

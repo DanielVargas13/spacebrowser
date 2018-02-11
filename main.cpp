@@ -60,15 +60,20 @@ int main(int argc, char *argv[])
             view->rootObject()->findChild<QObject*>("downloadProgressBar"));
     if (!downloaderProgressBar)
         throw std::runtime_error("No downloaderProgressBar object found");
-    BasicDownloader bd(downloaderProgressBar);
+    BasicDownloader bd;
     QObject::connect(profile, SIGNAL(downloadRequested(QQuickWebEngineDownloadItem*)),
             &bd, SLOT(downloadRequested(QQuickWebEngineDownloadItem*)));
     QObject::connect(profile, SIGNAL(downloadFinished(QQuickWebEngineDownloadItem*)),
                 &bd, SLOT(downloadFinished(QQuickWebEngineDownloadItem*)));
+    QObject::connect(&bd, SIGNAL(progressUpdated(QVariant)),
+            downloaderProgressBar, SLOT(updateProgress(QVariant)));
+    QQuickItem* downloadHistoryButton = qobject_cast<QQuickItem*>(
+            view->rootObject()->findChild<QObject*>("downloadHistoryButton"));
+    if (!downloadHistoryButton)
+        throw std::runtime_error("No downloadHistoryButton object found");
+    QObject::connect(&bd, &BasicDownloader::historyChanged,
+            downloadHistoryButton, &QQuickItem::setVisible);
 
-
-//    MessageBoard msgBoard;
-//    QQuickView view;
 
 
     if (tabSelector)

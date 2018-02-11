@@ -11,6 +11,8 @@ class BasicDownloader : public QObject
 {
     Q_OBJECT
 public:
+    Q_PROPERTY(bool history READ hasHistory NOTIFY historyChanged STORED false);
+
     struct DownloadMetadata
     {
         long long int received;
@@ -20,7 +22,7 @@ public:
         bool paused;
     };
 
-    BasicDownloader(QQuickItem* _progressBar);
+    BasicDownloader();
     virtual ~BasicDownloader();
 
     /**
@@ -30,6 +32,12 @@ public:
      */
     bool downloadRequestedDialog(QObject* dItem);
 
+    bool hasHistory() const;
+
+signals:
+    void progressUpdated(QVariant progress);
+    void historyChanged(bool hasHistory);
+
 public slots:
     void downloadRequested(QQuickWebEngineDownloadItem* download);
     void downloadFinished(QQuickWebEngineDownloadItem* download);
@@ -37,7 +45,6 @@ public slots:
     void updateTotalSize();
 
 private:
-    QQuickItem* progressBar;
     std::map<unsigned int, DownloadMetadata> itemsMetadata;
 
     double getProgress();

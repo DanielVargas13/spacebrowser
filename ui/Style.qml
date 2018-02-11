@@ -10,7 +10,7 @@ QtObject
     property color border: "#222222"
 
     property int margin: 5
-    property int buttonWidth: 120
+    property int buttonWidth: 120  // Context menu buttons
     property int buttonHeight: 40
 
     property QtObject mainWindow: QtObject
@@ -29,6 +29,19 @@ QtObject
             border.color: general.border
             border.width: 2
             radius: 4
+        }
+    }
+
+    property QtObject button: QtObject
+    {
+        property int size: 25
+        property int radius: 4
+        property color background: lightBackground
+        
+        property QtObject border: QtObject
+        {
+            property color color: general.border
+            property int width: 2
         }
     }
 
