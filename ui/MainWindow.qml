@@ -245,6 +245,12 @@ Rectangle
             mainWindow.printRequest(webViewContainer.currentView)
         }
     }
+    Shortcut {
+        sequence: "Ctrl+s"
+        onActivated: {
+            webViewContainer.currentView.triggerWebAction(WebEngineView.SavePage)
+        }
+    }
 
     ScriptBlockingView
     {
