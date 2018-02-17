@@ -166,7 +166,6 @@ Rectangle
         anchors.bottomMargin: Style.margin * 2
 
         onSearchRequested: {
-            console.log(text)
             webViewContainer.currentView.findText(text)
         }
     }

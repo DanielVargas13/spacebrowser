@@ -18,6 +18,10 @@ Rectangle
     border.color: Style.findBar.border.color
     border.width: Style.findBar.border.width
 
+    onVisibleChanged: {
+        searchText.focus = true
+    }
+
     MouseArea
     {
         anchors.fill: root
