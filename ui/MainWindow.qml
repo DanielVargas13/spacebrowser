@@ -13,14 +13,18 @@ import "."
 Rectangle
 {
     id: mainWindow
-    visible: true
+    objectName: "mainWindow"
 
+    property bool isFullscreen: false
+
+    signal printRequest(var webView)
+
+    visible: true
     color: Style.background
 
     width: Style.mainWindow.width
     height: Style.mainWindow.height
 
-    property bool isFullscreen: false
 
     TextField
     {
@@ -151,6 +155,11 @@ Rectangle
                 request.accept()
                 webViewContainer.currentView.parent = request.toggleOn ? mainWindow : webViewContainer
             }
+
+            onPdfPrintingFinished: //(string filePath, bool success)
+            {
+                // FIXME: Possibly show some notification
+            }
         }
     }
 
@@ -228,6 +237,12 @@ Rectangle
         sequence: "Ctrl+f"
         onActivated: {
             findBar.stateVisible = !findBar.stateVisible
+        }
+    }
+    Shortcut {
+        sequence: "Ctrl+p"
+        onActivated: {
+            mainWindow.printRequest(webViewContainer.currentView)
         }
     }
 

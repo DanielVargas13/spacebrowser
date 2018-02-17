@@ -1,6 +1,7 @@
 #include <BasicDownloader.h>
 #include <ContentFilter.h>
 #include <ViewHandler.h>
+#include <PrintHandler.h>
 
 #include <QApplication>
 #include <QObject>
@@ -27,6 +28,8 @@ int main(int argc, char *argv[])
     QQuickWebEngineProfile* profile = QQuickWebEngineProfile::defaultProfile();
     profile->setRequestInterceptor(&cf);
 
+    PrintHandler ph;
+
     std::shared_ptr<QQuickView> view(new QQuickView);
 
 //    qmlRegisterType<QTextEdit>("org.qt.qtextedit", 1, 0, "QTextEdit");
@@ -36,6 +39,9 @@ int main(int argc, char *argv[])
     view->setResizeMode(QQuickView::SizeRootObjectToView);
 
     view->show();
+
+    QObject::connect(view->rootObject(), SIGNAL(printRequest(QVariant)),
+            &ph, SLOT(printRequested(QVariant)));
 
     QQuickItem* webViewContainer = qobject_cast<QQuickItem*>(
             view->rootObject()->findChild<QObject*>("webViewContainer"));

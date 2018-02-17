@@ -42,6 +42,7 @@ SET(SOURCES
   ViewHandler.cpp
   ContentFilter.cpp
   BasicDownloader.cpp
+  PrintHandler.cpp
   resources.qrc
   )
 
