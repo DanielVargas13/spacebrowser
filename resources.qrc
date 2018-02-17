@@ -1,6 +1,8 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
     <file>ui/ContextMenuEntry.qml</file>
+    <file>ui/CloseIcon.qml</file>
+    <file>ui/FindBar.qml</file>
     <file>ui/MainWindow.qml</file>
     <file>ui/NewTabButton.qml</file>
     <file>ui/ProgressComponent.qml</file>

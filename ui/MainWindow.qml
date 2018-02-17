@@ -152,7 +152,23 @@ Rectangle
                 webViewContainer.currentView.parent = request.toggleOn ? mainWindow : webViewContainer
             }
         }
+    }
 
+    FindBar
+    {
+        id: findBar
+
+        anchors.left: webViewContainer.left
+        anchors.leftMargin: Style.margin * 2
+        anchors.right: webViewContainer.right
+        anchors.rightMargin: Style.margin * 2
+        anchors.bottom: webViewContainer.bottom
+        anchors.bottomMargin: Style.margin * 2
+
+        onSearchRequested: {
+            console.log(text)
+            webViewContainer.currentView.findText(text)
+        }
     }
 
     Shortcut {
@@ -207,6 +223,12 @@ Rectangle
         onActivated: {
             if (webViewContainer.currentView)
                 webViewContainer.currentView.reload()
+        }
+    }
+    Shortcut {
+        sequence: "Ctrl+f"
+        onActivated: {
+            findBar.stateVisible = !findBar.stateVisible
         }
     }
 
