@@ -65,50 +65,21 @@ Rectangle
                 mouse.accepted = true
             }
         }
-        onEntered:
+        onContainsMouseChanged:
         {
-            closeIcon.stateVisible = true
-        }
-        onExited:
-        {
-            closeIcon.stateVisible = false
+            closeIcon.stateVisible = containsMouse
         }
     }
 
-    Image
+    CloseIcon
     {
         id: closeIcon
-        
-        property bool stateVisible: false
-        visible: opacity > 0.01
-
-        sourceSize: Qt.size(Style.tabSelector.entry.closeIcon.width, Style.tabSelector.entry.closeIcon.height)
-        source: "qrc:/ui/icons/close.svg"
 
         anchors.verticalCenter: parent.verticalCenter
         anchors.right: parent.right
         anchors.rightMargin: Style.margin
 
-        MouseArea
-        {
-            anchors.fill: closeIcon
-            onClicked:
-            {
-                root.close()
-                mouse.accepted = true
-            }
-        }
-
-        states: [
-            State { when: closeIcon.stateVisible;
-                PropertyChanges { target: closeIcon; opacity: 1.0}
-            },
-            State { when: !closeIcon.stateVisible;
-                PropertyChanges { target: closeIcon; opacity: 0.0}
-            }
-        ]
-        transitions: Transition {
-            NumberAnimation { property: "opacity"; duration: 250}
-        }
+        onClose: root.close()
     }
+
 }

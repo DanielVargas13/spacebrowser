@@ -45,6 +45,30 @@ QtObject
         }
     }
 
+    property QtObject findBar: QtObject
+    {
+        property int height: 35
+        property int textHeight: 25
+
+        property real opacity: 0.7
+        property color background: "transparent"
+        property color color: "#D8C000" //"#81018B"
+        property QtObject border: QtObject
+        {
+            property color color: general.border
+            property int width: 2
+        }
+        property int radius: 8
+
+        property Item textStyle: Rectangle
+        {
+            color: lightBackground
+            border.color: general.border
+            border.width: 2
+            radius: 4
+        }
+    }
+
     property QtObject tabSelector: QtObject
     {
         property int width: 250
@@ -60,11 +84,6 @@ QtObject
                 property int height: 22
             }
 
-            property QtObject closeIcon: QtObject
-            {
-                property int width: 15
-                property int height: 15
-            }
 
             property QtObject border: QtObject
             {
@@ -72,6 +91,12 @@ QtObject
                 property color color: "#888888"
             }
         }
+    }
+
+    property QtObject closeIcon: QtObject
+    {
+        property int width: 15
+        property int height: 15
     }
 
     property QtObject contextMenu: QtObject

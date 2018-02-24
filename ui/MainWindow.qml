@@ -13,14 +13,18 @@ import "."
 Rectangle
 {
     id: mainWindow
-    visible: true
+    objectName: "mainWindow"
 
+    property bool isFullscreen: false
+
+    signal printRequest(var webView)
+
+    visible: true
     color: Style.background
 
     width: Style.mainWindow.width
     height: Style.mainWindow.height
 
-    property bool isFullscreen: false
 
     AddressBar
     {
@@ -147,8 +151,28 @@ Rectangle
                 request.accept()
                 webViewContainer.currentView.parent = request.toggleOn ? mainWindow : webViewContainer
             }
-        }
 
+            onPdfPrintingFinished: //(string filePath, bool success)
+            {
+                // FIXME: Possibly show some notification
+            }
+        }
+    }
+
+    FindBar
+    {
+        id: findBar
+
+        anchors.left: webViewContainer.left
+        anchors.leftMargin: Style.margin * 2
+        anchors.right: webViewContainer.right
+        anchors.rightMargin: Style.margin * 2
+        anchors.bottom: webViewContainer.bottom
+        anchors.bottomMargin: Style.margin * 2
+
+        onSearchRequested: {
+            webViewContainer.currentView.findText(text)
+        }
     }
 
     Shortcut {
@@ -203,6 +227,24 @@ Rectangle
         onActivated: {
             if (webViewContainer.currentView)
                 webViewContainer.currentView.reload()
+        }
+    }
+    Shortcut {
+        sequence: "Ctrl+f"
+        onActivated: {
+            findBar.stateVisible = !findBar.stateVisible
+        }
+    }
+    Shortcut {
+        sequence: "Ctrl+p"
+        onActivated: {
+            mainWindow.printRequest(webViewContainer.currentView)
+        }
+    }
+    Shortcut {
+        sequence: "Ctrl+s"
+        onActivated: {
+            webViewContainer.currentView.triggerWebAction(WebEngineView.SavePage)
         }
     }
 
