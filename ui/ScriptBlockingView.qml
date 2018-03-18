@@ -168,6 +168,5 @@ Rectangle
     {
         entry["myId"] = scriptBlockListModel.count
         scriptBlockListModel.append(entry)
-        console.log(scriptBlockListModel.count)
     }
 }

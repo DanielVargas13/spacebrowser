@@ -1,11 +1,14 @@
 #include <BasicDownloader.h>
 
+#include <QDesktopServices>
 #include <QFileDialog>
+#include <QJSEngine>
+#include <QJSValue>
 #include <QMetaObject>
-//#include <QtWebEngine/5.10.0/QtWebEngine/private/qquickwebenginedownloaditem_p.h>
+
 #include <iostream>
 
-BasicDownloader::BasicDownloader(/*QQuickItem* _progressBar*/)// : progressBar(_progressBar)
+BasicDownloader::BasicDownloader()
 {
 
 }
@@ -24,14 +27,16 @@ void BasicDownloader::downloadRequested(QQuickWebEngineDownloadItem* download)
     {
         /// Save meta information about download item
         ///
-        unsigned int id = d->property("id").toUInt();
+        unsigned int id = itemsMetadata.size();
+        std::cout << "ID: " << id << std::endl;
+        std::cout << "DID: " << d->property("id").toInt() << std::endl;
         DownloadMetadata dm;
         dm.received = d->property("receivedBytes").toLongLong();
         dm.total = d->property("totalBytes").toLongLong();
         dm.path = d->property("path").toString();
         dm.finished = d->property("isFinished").toBool();
         dm.paused = d->property("isPaused").toBool();
-        itemsMetadata[id] = dm;
+        itemsMetadata[id] = dm; // FIXME: can't load from db, id's will be reset on application restart
 
         /// Set-up signal handlers, emit historyUpdated signal and accept download
         ///
@@ -39,11 +44,17 @@ void BasicDownloader::downloadRequested(QQuickWebEngineDownloadItem* download)
         connect(d, SIGNAL(totalBytesChanged()), SLOT(updateTotalSize()));
 
         if (itemsMetadata.size() == 1)
-        {
-            std::cout << "emitting signal\n";
             emit historyChanged(true);
-        }
-        std::cout << "count: " << itemsMetadata.size() << std::endl;
+
+        QJSEngine engine;
+        QJSValue val = engine.newObject();
+        val.setProperty("url", "Source url here: Seems Qt doesn't provide that (yet)");
+        val.setProperty("path", dm.path);
+        val.setProperty("received", (double)dm.received);
+        val.setProperty("total", (double)dm.total);
+        val.setProperty("myId", id);
+
+        emit newHistoryEntry(val.toVariant());
 
         QMetaObject::invokeMethod(d, "accept", Qt::DirectConnection);
     }
@@ -89,12 +100,13 @@ void BasicDownloader::updateProgress()
 
     /// Update received bytes and recalculate progress
     ///
-    DownloadMetadata& md = itemsMetadata[source->property("id").toInt()];
+    int id = source->property("id").toInt();
+    DownloadMetadata& md = itemsMetadata.at(id-1);
     md.received = source->property("receivedBytes").toLongLong();
 
     emit progressUpdated(getProgress());
-
-    //progressBar->setProperty("progress", getProgress());
+    emit progressUpdated(id, source->property("receivedBytes").toReal(),
+            source->property("totalBytes").toReal());
 }
 
 void BasicDownloader::updateTotalSize()
@@ -103,17 +115,22 @@ void BasicDownloader::updateTotalSize()
 
     /// Update total bytes and recalculate progress
     ///
-    DownloadMetadata& md = itemsMetadata[source->property("id").toInt()];
+    int id = source->property("id").toInt(); // FIXME: map this to id
+    DownloadMetadata& md = itemsMetadata.at(id-1);
     md.total = source->property("totalBytes").toLongLong();
 
     emit progressUpdated(getProgress());
-    //progressBar->setProperty("progress", getProgress());
+    emit progressUpdated(id, source->property("receivedBytes").toReal(),
+            source->property("totalBytes").toReal());
 }
 
 double BasicDownloader::getProgress()
 {
     double received = 0;
     double total = 0;
+
+    /// For each running download count received and total bytes
+    ///
     std::for_each(itemsMetadata.begin(), itemsMetadata.end(),
             [&received, &total](std::pair<const unsigned int, BasicDownloader::DownloadMetadata>& d)
     {
@@ -130,4 +147,9 @@ double BasicDownloader::getProgress()
 bool BasicDownloader::hasHistory() const
 {
     return itemsMetadata.size() != 0;
+}
+
+void BasicDownloader::openUrl(QString url)
+{
+    QDesktopServices::openUrl(url);
 }

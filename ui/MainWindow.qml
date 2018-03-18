@@ -60,7 +60,7 @@ Rectangle
         }
     }
     
-    Rectangle
+    Rectangle // FIXME: export as basic button
     {
         id: downloadHistoryButton
         objectName: "downloadHistoryButton"
@@ -75,8 +75,25 @@ Rectangle
 
         anchors.right: parent.right
         anchors.rightMargin: Style.margin
-        
+
         visible: false
+        
+        MouseArea
+        {
+            anchors.fill: downloadHistoryButton
+            onClicked:
+            {
+                downloadHistoryView.visible = !downloadHistoryView.visible
+            }
+        }
+
+        Image
+        {
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.horizontalCenter: parent.horizontalCenter
+            source: "qrc:/ui/icons/download2.svg"
+            sourceSize: Qt.size(Style.button.icon.width, Style.button.icon.height)
+        }
     }
 
     TabSelectorPanel
@@ -259,6 +276,25 @@ Rectangle
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
+        anchors.bottomMargin: Style.margin
+
+        onVisibleChanged: {
+            webViewContainer.visible = !visible
+        }
+    }
+
+    DownloadHistoryView
+    {
+        id: downloadHistoryView
+        objectName: "downloadHistoryView"
+        visible: false
+
+        anchors.top: addressBar.bottom
+        anchors.topMargin: Style.margin
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: Style.margin
         
         onVisibleChanged: {
             webViewContainer.visible = !visible

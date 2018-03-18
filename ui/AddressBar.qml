@@ -37,9 +37,9 @@ TextField
         text: "Downloading: "
         stateVisible: progress != 1.0
         
-        function updateProgress(prg)
+        function updateProgress(total)
         {
-            downloadProgressBar.progress = prg
+            downloadProgressBar.progress = total
         }
     }
 

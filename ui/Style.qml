@@ -43,6 +43,12 @@ QtObject
             property color color: general.border
             property int width: 2
         }
+
+        property QtObject icon: QtObject
+        {
+            property int width: 17
+            property int height: 17
+        }
     }
 
     property QtObject findBar: QtObject
@@ -122,7 +128,7 @@ QtObject
         }
     }
 
-    property QtObject scriptBlockingView: QtObject
+    property QtObject commonListView: QtObject
     {
         property int margin: 20
         property int colWidth: 100
@@ -132,6 +138,19 @@ QtObject
         {
             property int height: 30
             property color lightBackground: "#888888"
+        }
+    }
+
+    property QtObject scriptBlockingView: QtObject
+    {
+        property int margin: commonListView.margin
+        property int colWidth: commonListView.colWidth
+        property color headerBackground: commonListView.headerBackground
+
+        property QtObject entry: QtObject
+        {
+            property int height: commonListView.entry.height
+            property color lightBackground: commonListView.entry.lightBackground
 
             property QtObject button: QtObject
             {
@@ -166,5 +185,10 @@ QtObject
         {
             property color color: downloadProgressComponent.color
         }
+    }
+    
+    property QtObject downloadHistoryView: QtObject
+    {
+        property color openFileHighlight: "#92c954"
     }
 }

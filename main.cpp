@@ -73,6 +73,7 @@ int main(int argc, char *argv[])
                 &bd, SLOT(downloadFinished(QQuickWebEngineDownloadItem*)));
     QObject::connect(&bd, SIGNAL(progressUpdated(QVariant)),
             downloaderProgressBar, SLOT(updateProgress(QVariant)));
+
     QQuickItem* downloadHistoryButton = qobject_cast<QQuickItem*>(
             view->rootObject()->findChild<QObject*>("downloadHistoryButton"));
     if (!downloadHistoryButton)
@@ -80,6 +81,16 @@ int main(int argc, char *argv[])
     QObject::connect(&bd, &BasicDownloader::historyChanged,
             downloadHistoryButton, &QQuickItem::setVisible);
 
+    QQuickItem* downloadHistoryView = qobject_cast<QQuickItem*>(
+            view->rootObject()->findChild<QObject*>("downloadHistoryView"));
+    if (!downloadHistoryView)
+        throw std::runtime_error("No downloadHistoryView object found");
+    QObject::connect(&bd, SIGNAL(newHistoryEntry(QVariant)),
+            downloadHistoryView, SLOT(addEntry(QVariant)));
+    QObject::connect(&bd, SIGNAL(progressUpdated(QVariant, QVariant, QVariant)),
+            downloadHistoryView, SLOT(updateProgress(QVariant, QVariant, QVariant)));
+    QObject::connect(downloadHistoryView, SIGNAL(openUrl(QString)),
+            &bd, SLOT(openUrl(QString)));
 
 
     if (tabSelector)

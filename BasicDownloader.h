@@ -36,11 +36,14 @@ public:
 
 signals:
     void progressUpdated(QVariant progress);
+    void progressUpdated(QVariant id, QVariant received, QVariant total);
     void historyChanged(bool hasHistory);
+    void newHistoryEntry(QVariant entry);
 
 public slots:
     void downloadRequested(QQuickWebEngineDownloadItem* download);
     void downloadFinished(QQuickWebEngineDownloadItem* download);
+    void openUrl(QString url);
     void updateProgress();
     void updateTotalSize();
 

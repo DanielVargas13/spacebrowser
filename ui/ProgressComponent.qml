@@ -27,8 +27,8 @@ Rectangle
         anchors.left: root.left
         anchors.verticalCenter: root.verticalCenter
 
-        width: Style.progressComponent.width * progress
-        height: Style.progressComponent.height
+        width: root.width * progress
+        height: root.height
 
         radius: Style.progressComponent.radius
         color: root.componentColor
