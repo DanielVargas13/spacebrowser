@@ -6,6 +6,7 @@ Rectangle
     id: root
 
     property real progress: 0.0
+    property bool showProgress: true
     property bool stateVisible: false
     property string text: ""
     property color componentColor: Style.progressComponent.color
@@ -40,7 +41,7 @@ Rectangle
         anchors.verticalCenter: root.verticalCenter
         anchors.horizontalCenter: root.horizontalCenter
         
-        text: root.text + Math.round(progress * 100) + "%"
+        text: root.text + (root.showProgress ? Math.round(progress * 100) + "%" : "")
     }
 
     states: [

@@ -1,4 +1,5 @@
 import QtQuick 2.7
+import QtQuick.Controls 2.2
 import "."
 
 Item
@@ -13,16 +14,20 @@ Item
     property real total
     property color entryColor: myId%2 ? Style.lightBackground : Style.commonListView.entry.lightBackground
     property color selectedColor: Style.downloadHistoryView.openFileHighlight
+    property bool paused: false
+    property bool canceled: false
+    property bool finished: false
 
     signal openUrl(string url)
+    signal pause(int id)
+    signal resume(int id)
+    signal cancel(int id)
 
     anchors.left: parent.left
     anchors.leftMargin: Style.commonListView.margin
     anchors.right: parent.right
     anchors.rightMargin: Style.commonListView.margin
-    
-    height: Style.commonListView.entry.height
-    
+
     Rectangle
     {
         id: urlRectangle
@@ -81,7 +86,6 @@ Item
             hoverEnabled: true
             
             onClicked: {
-                console.log("CLICKED")
                 root.openUrl(pathText.text)
             }
         }
@@ -103,13 +107,18 @@ Item
         {
             anchors.fill: parent
 
-            componentBorderColor: Style.downloadProgressComponent.border.color
-            componentColor: Style.downloadProgressComponent.color
+            componentColor: root.canceled ? Style.downloadProgressComponent.canceled : (
+                    root.paused ? Style.downloadProgressComponent.paused :
+                        Style.downloadProgressComponent.color)
+            componentBorderColor: componentColor
 
             stateVisible: root.header ? false : true
             progress: received / total
 
-            text: progress == total ? "Finished " : "Downloading: [" + received + " / " + total + "] "
+            showProgress: !(root.canceled || root.finished) 
+            text: root.canceled ? "Canceled" :
+                root.paused ? "Paused: [" + received + " / " + total + "] " :
+                    root.finished ? "Finished" : "Downloading: [" + received + " / " + total + "] "
         }
 
         Text
@@ -126,6 +135,84 @@ Item
             elide: Text.ElideRight
             text: "Download Progress"
         }
+    }
 
+    Menu {
+        id: contextMenu
+
+        background: Style.contextMenu.background
+
+        ContextMenuEntry {
+            text: "Pause"
+            enabled: !root.finished && !root.canceled && !root.paused
+            onTriggered: {
+                root.pause(root.myId)
+            }
+        }
+        ContextMenuEntry {
+            text: "Resume"
+            enabled: root.paused
+            onTriggered: {
+                root.resume(root.myId)
+            }
+        }
+        ContextMenuEntry {
+            text: "Cancel"
+            enabled: !root.finished && !root.canceled
+            onTriggered: {
+                root.cancel(root.myId)
+            }
+        }
+        
+        
+        
+//        ContextMenuEntry {
+//            text: "Remove from list"
+//            enabled: false
+//            onTriggered: {
+//                //removeFromList(downloadHistoryListView.itemAt(contextMenu.x, contextMenu.y))
+//            }
+//        }
+//        ContextMenuEntry {
+//            text: "Remove from disk"
+//            enabled: false
+//            onTriggered: {
+//                // removeFromDisk
+//            }
+//        }
+//        MenuSeparator { }
+//
+//        Menu
+//        {
+//            title: "Clear..."
+//
+//            ContextMenuEntry {
+//                text: "finished"
+//                enabled: false
+//            }
+//            ContextMenuEntry {
+//                text: "failed"
+//                enabled: false
+//            }
+//            ContextMenuEntry {
+//                text: "all"
+//                enabled: false
+//            }
+//        }
+    }
+    
+    MouseArea
+    {
+        anchors.fill: root
+        acceptedButtons: Qt.RightButton
+
+        onClicked: {
+            if (header) return;
+
+            contextMenu.x = mouseX
+            contextMenu.y = mouseY
+            contextMenu.open()
+            mouse.accepted = true
+        }
     }
 }

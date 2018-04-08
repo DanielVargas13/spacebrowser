@@ -20,6 +20,7 @@ public:
         QString path;
         bool finished;
         bool paused;
+        QObject* dItem = nullptr;
     };
 
     BasicDownloader();
@@ -39,6 +40,10 @@ signals:
     void progressUpdated(QVariant id, QVariant received, QVariant total);
     void historyChanged(bool hasHistory);
     void newHistoryEntry(QVariant entry);
+    void downloadFinished(QVariant id);
+    void downloadPaused(QVariant id);
+    void downloadResumed(QVariant id);
+    void downloadCanceled(QVariant id);
 
 public slots:
     void downloadRequested(QQuickWebEngineDownloadItem* download);
@@ -46,6 +51,9 @@ public slots:
     void openUrl(QString url);
     void updateProgress();
     void updateTotalSize();
+    void pause(int id);
+    void resume(int id);
+    void cancel(int id);
 
 private:
     std::map<unsigned int, DownloadMetadata> itemsMetadata;

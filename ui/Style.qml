@@ -180,6 +180,8 @@ QtObject
     property QtObject downloadProgressComponent: QtObject
     {
         property color color: "#49D2FF"
+        property color paused: "#D8C000"
+        property color canceled: "#E81803"
 
         property QtObject border: QtObject
         {

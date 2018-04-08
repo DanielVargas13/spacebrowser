@@ -36,6 +36,7 @@ void BasicDownloader::downloadRequested(QQuickWebEngineDownloadItem* download)
         dm.path = d->property("path").toString();
         dm.finished = d->property("isFinished").toBool();
         dm.paused = d->property("isPaused").toBool();
+        dm.dItem = d;
         itemsMetadata[id] = dm; // FIXME: can't load from db, id's will be reset on application restart
 
         /// Set-up signal handlers, emit historyUpdated signal and accept download
@@ -53,6 +54,9 @@ void BasicDownloader::downloadRequested(QQuickWebEngineDownloadItem* download)
         val.setProperty("received", (double)dm.received);
         val.setProperty("total", (double)dm.total);
         val.setProperty("myId", id);
+        val.setProperty("paused", false);
+        val.setProperty("canceled", false);
+        val.setProperty("finished", false);
 
         emit newHistoryEntry(val.toVariant());
 
@@ -66,12 +70,14 @@ void BasicDownloader::downloadFinished(QQuickWebEngineDownloadItem* download)
 {
     QObject* d = reinterpret_cast<QObject*>(download);
 
-    /// If download was started, mark as finished
+    /// If download was started, mark as finished and emit signal to update model
     ///
-    if (itemsMetadata.count(d->property("id").toInt()) != 1)
-        return;
+    int id = d->property("id").toInt();
+    DownloadMetadata& md = itemsMetadata.at(id-1);
 
-    itemsMetadata[d->property("id").toInt()].finished = true;
+    md.finished = true;
+
+    emit downloadFinished(id);
 }
 
 bool BasicDownloader::downloadRequestedDialog(QObject* dItem)
@@ -152,4 +158,37 @@ bool BasicDownloader::hasHistory() const
 void BasicDownloader::openUrl(QString url)
 {
     QDesktopServices::openUrl(url);
+}
+
+void BasicDownloader::pause(int id)
+{
+    DownloadMetadata& md = itemsMetadata.at(id);
+    if (md.finished)
+        return;
+
+    QMetaObject::invokeMethod(md.dItem, "pause", Qt::DirectConnection);
+
+    emit downloadPaused(id);
+}
+
+void BasicDownloader::resume(int id)
+{
+    DownloadMetadata& md = itemsMetadata.at(id);
+    if (md.finished)
+        return;
+
+    QMetaObject::invokeMethod(md.dItem, "resume", Qt::DirectConnection);
+
+    emit downloadResumed(id);
+}
+
+void BasicDownloader::cancel(int id)
+{
+    DownloadMetadata& md = itemsMetadata.at(id);
+    if (md.finished)
+        return;
+
+    QMetaObject::invokeMethod(md.dItem, "cancel", Qt::DirectConnection);
+
+    emit downloadCanceled(id);
 }

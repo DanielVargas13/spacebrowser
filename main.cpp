@@ -85,12 +85,26 @@ int main(int argc, char *argv[])
             view->rootObject()->findChild<QObject*>("downloadHistoryView"));
     if (!downloadHistoryView)
         throw std::runtime_error("No downloadHistoryView object found");
+    QObject::connect(&bd, SIGNAL(downloadFinished(QVariant)),
+            downloadHistoryView, SLOT(downloadFinished(QVariant)));
     QObject::connect(&bd, SIGNAL(newHistoryEntry(QVariant)),
             downloadHistoryView, SLOT(addEntry(QVariant)));
     QObject::connect(&bd, SIGNAL(progressUpdated(QVariant, QVariant, QVariant)),
             downloadHistoryView, SLOT(updateProgress(QVariant, QVariant, QVariant)));
+    QObject::connect(&bd, SIGNAL(downloadPaused(QVariant)),
+            downloadHistoryView, SLOT(downloadPaused(QVariant)));
+    QObject::connect(&bd, SIGNAL(downloadResumed(QVariant)),
+                downloadHistoryView, SLOT(downloadResumed(QVariant)));
+    QObject::connect(&bd, SIGNAL(downloadCanceled(QVariant)),
+                downloadHistoryView, SLOT(downloadCanceled(QVariant)));
     QObject::connect(downloadHistoryView, SIGNAL(openUrl(QString)),
             &bd, SLOT(openUrl(QString)));
+    QObject::connect(downloadHistoryView, SIGNAL(pause(int)),
+                &bd, SLOT(pause(int)));
+    QObject::connect(downloadHistoryView, SIGNAL(resume(int)),
+                &bd, SLOT(resume(int)));
+    QObject::connect(downloadHistoryView, SIGNAL(cancel(int)),
+                &bd, SLOT(cancel(int)));
 
 
     if (tabSelector)
