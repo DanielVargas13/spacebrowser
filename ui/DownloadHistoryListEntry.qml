@@ -28,6 +28,8 @@ Item
     anchors.right: parent.right
     anchors.rightMargin: Style.commonListView.margin
 
+    height: Style.commonListView.entry.height
+
     Rectangle
     {
         id: urlRectangle
