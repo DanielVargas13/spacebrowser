@@ -15,34 +15,93 @@
 
 #include <memory>
 
+void setupProfileDownloadHandler(BasicDownloader& bd, QQuickWebEngineProfile* profile)
+{
+    QObject::connect(profile,
+            SIGNAL(downloadRequested(QQuickWebEngineDownloadItem*)), &bd,
+            SLOT(downloadRequested(QQuickWebEngineDownloadItem*)));
+    QObject::connect(profile,
+            SIGNAL(downloadFinished(QQuickWebEngineDownloadItem*)), &bd,
+            SLOT(downloadFinished(QQuickWebEngineDownloadItem*)));
+}
+
+void setupDownloaderSignals(BasicDownloader& bd, const std::shared_ptr<QQuickView> view,
+        QQuickWebEngineProfile* profile)
+{
+    /// Set-up downloader module
+    ///
+    QQuickItem* downloaderProgressBar = qobject_cast<QQuickItem*>(
+            view->rootObject()->findChild<QObject*>("downloadProgressBar"));
+    if (!downloaderProgressBar)
+        throw std::runtime_error("No downloaderProgressBar object found");
+
+    QObject::connect(&bd, SIGNAL(progressUpdated(QVariant)),
+            downloaderProgressBar, SLOT(updateProgress(QVariant)));
+    QQuickItem* downloadHistoryButton = qobject_cast<QQuickItem*>(
+            view->rootObject()->findChild<QObject*>("downloadHistoryButton"));
+    if (!downloadHistoryButton)
+        throw std::runtime_error("No downloadHistoryButton object found");
+
+    QObject::connect(&bd, &BasicDownloader::historyChanged,
+            downloadHistoryButton, &QQuickItem::setVisible);
+    QQuickItem* downloadHistoryView = qobject_cast<QQuickItem*>(
+            view->rootObject()->findChild<QObject*>("downloadHistoryView"));
+    if (!downloadHistoryView)
+        throw std::runtime_error("No downloadHistoryView object found");
+
+    QObject::connect(&bd, SIGNAL(downloadFinished(QVariant)),
+            downloadHistoryView, SLOT(downloadFinished(QVariant)));
+    QObject::connect(&bd, SIGNAL(newHistoryEntry(QVariant)),
+            downloadHistoryView, SLOT(addEntry(QVariant)));
+    QObject::connect(&bd, SIGNAL(progressUpdated(QVariant, QVariant, QVariant)),
+            downloadHistoryView,
+            SLOT(updateProgress(QVariant, QVariant, QVariant)));
+    QObject::connect(&bd, SIGNAL(downloadPaused(QVariant)), downloadHistoryView,
+            SLOT(downloadPaused(QVariant)));
+    QObject::connect(&bd, SIGNAL(downloadResumed(QVariant)),
+            downloadHistoryView, SLOT(downloadResumed(QVariant)));
+    QObject::connect(&bd, SIGNAL(downloadCanceled(QVariant)),
+            downloadHistoryView, SLOT(downloadCanceled(QVariant)));
+    QObject::connect(downloadHistoryView, SIGNAL(openUrl(QString)), &bd,
+            SLOT(openUrl(QString)));
+    QObject::connect(downloadHistoryView, SIGNAL(pause(int)), &bd,
+            SLOT(pause(int)));
+    QObject::connect(downloadHistoryView, SIGNAL(resume(int)), &bd,
+            SLOT(resume(int)));
+    QObject::connect(downloadHistoryView, SIGNAL(cancel(int)), &bd,
+            SLOT(cancel(int)));
+}
 
 int main(int argc, char *argv[])
 {
+    /// Create and setup QApplication
+    ///
     QApplication app(argc, argv);
     app.setApplicationName("Space Browser v1");
     //FIXME: test this
     //QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QtWebEngine::initialize();
 
+    /// Create and setup content filter
+    ///
     ContentFilter cf;
     QQuickWebEngineProfile* profile = QQuickWebEngineProfile::defaultProfile();
     profile->setRequestInterceptor(&cf);
 
-    PrintHandler ph;
-
+    /// Create and setup QQuickView with MainWindow
+    ///
     std::shared_ptr<QQuickView> view(new QQuickView);
-
-//    qmlRegisterType<QTextEdit>("org.qt.qtextedit", 1, 0, "QTextEdit");
-//    qmlRegisterType<QWebEngineView>("org.qt.qwebengineview", 1, 0, "QWebEngineView");
-
     view->setSource(QUrl("qrc:/ui/MainWindow.qml"));
     view->setResizeMode(QQuickView::SizeRootObjectToView);
-
     view->show();
 
+    /// Setup printing handler
+    ///
+    PrintHandler ph;
     QObject::connect(view->rootObject(), SIGNAL(printRequest(QVariant)),
             &ph, SLOT(printRequested(QVariant)));
 
+    // FIXME: refactor below to use slots/signals instead of calling vh directly
     QQuickItem* webViewContainer = qobject_cast<QQuickItem*>(
             view->rootObject()->findChild<QObject*>("webViewContainer"));
     if (!webViewContainer)
@@ -60,52 +119,9 @@ int main(int argc, char *argv[])
     view->engine()->rootContext()->setContextProperty("viewHandler", &vh);
     vh.loadTabs();
 
-    /// Set-up downloader module
-    ///
-    QQuickItem* downloaderProgressBar = qobject_cast<QQuickItem*>(
-            view->rootObject()->findChild<QObject*>("downloadProgressBar"));
-    if (!downloaderProgressBar)
-        throw std::runtime_error("No downloaderProgressBar object found");
     BasicDownloader bd;
-    QObject::connect(profile, SIGNAL(downloadRequested(QQuickWebEngineDownloadItem*)),
-            &bd, SLOT(downloadRequested(QQuickWebEngineDownloadItem*)));
-    QObject::connect(profile, SIGNAL(downloadFinished(QQuickWebEngineDownloadItem*)),
-                &bd, SLOT(downloadFinished(QQuickWebEngineDownloadItem*)));
-    QObject::connect(&bd, SIGNAL(progressUpdated(QVariant)),
-            downloaderProgressBar, SLOT(updateProgress(QVariant)));
-
-    QQuickItem* downloadHistoryButton = qobject_cast<QQuickItem*>(
-            view->rootObject()->findChild<QObject*>("downloadHistoryButton"));
-    if (!downloadHistoryButton)
-        throw std::runtime_error("No downloadHistoryButton object found");
-    QObject::connect(&bd, &BasicDownloader::historyChanged,
-            downloadHistoryButton, &QQuickItem::setVisible);
-
-    QQuickItem* downloadHistoryView = qobject_cast<QQuickItem*>(
-            view->rootObject()->findChild<QObject*>("downloadHistoryView"));
-    if (!downloadHistoryView)
-        throw std::runtime_error("No downloadHistoryView object found");
-    QObject::connect(&bd, SIGNAL(downloadFinished(QVariant)),
-            downloadHistoryView, SLOT(downloadFinished(QVariant)));
-    QObject::connect(&bd, SIGNAL(newHistoryEntry(QVariant)),
-            downloadHistoryView, SLOT(addEntry(QVariant)));
-    QObject::connect(&bd, SIGNAL(progressUpdated(QVariant, QVariant, QVariant)),
-            downloadHistoryView, SLOT(updateProgress(QVariant, QVariant, QVariant)));
-    QObject::connect(&bd, SIGNAL(downloadPaused(QVariant)),
-            downloadHistoryView, SLOT(downloadPaused(QVariant)));
-    QObject::connect(&bd, SIGNAL(downloadResumed(QVariant)),
-                downloadHistoryView, SLOT(downloadResumed(QVariant)));
-    QObject::connect(&bd, SIGNAL(downloadCanceled(QVariant)),
-                downloadHistoryView, SLOT(downloadCanceled(QVariant)));
-    QObject::connect(downloadHistoryView, SIGNAL(openUrl(QString)),
-            &bd, SLOT(openUrl(QString)));
-    QObject::connect(downloadHistoryView, SIGNAL(pause(int)),
-                &bd, SLOT(pause(int)));
-    QObject::connect(downloadHistoryView, SIGNAL(resume(int)),
-                &bd, SLOT(resume(int)));
-    QObject::connect(downloadHistoryView, SIGNAL(cancel(int)),
-                &bd, SLOT(cancel(int)));
-
+    setupProfileDownloadHandler(bd, profile);
+    setupDownloaderSignals(bd, view, profile);
 
     if (tabSelector)
     {
