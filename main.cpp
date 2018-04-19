@@ -2,6 +2,7 @@
 #include <ContentFilter.h>
 #include <ViewHandler.h>
 #include <PrintHandler.h>
+#include <conf/conf.h>
 
 #include <QApplication>
 #include <QObject>
@@ -72,12 +73,28 @@ void setupDownloaderSignals(BasicDownloader& bd, const std::shared_ptr<QQuickVie
             SLOT(cancel(int)));
 }
 
+void writeSettings(std::shared_ptr<QQuickView> view)
+{
+    QSettings settings;
+
+    settings.setValue(conf::MainWindow::geometry, view->geometry());
+}
+
+void readSettings(std::shared_ptr<QQuickView> view)
+{
+    QSettings settings;
+
+    if (settings.contains(conf::MainWindow::geometry))
+        view->setGeometry(settings.value(conf::MainWindow::geometry).toRect());
+}
+
 int main(int argc, char *argv[])
 {
     /// Create and setup QApplication
     ///
     QApplication app(argc, argv);
-    app.setApplicationName("Space Browser v1");
+    app.setOrganizationName("SpaceFoundation");
+    app.setApplicationName("SpaceBrowser");
     //FIXME: test this
     //QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QtWebEngine::initialize();
@@ -94,6 +111,7 @@ int main(int argc, char *argv[])
     view->setSource(QUrl("qrc:/ui/MainWindow.qml"));
     view->setResizeMode(QQuickView::SizeRootObjectToView);
     view->show();
+    readSettings(view);
 
     /// Setup printing handler
     ///
@@ -139,5 +157,9 @@ int main(int argc, char *argv[])
     QObject::connect(scriptBlockingView, SIGNAL(removeGlobal(QString)),
             &cf, SLOT(removeGlobal(QString)));
 
-    return app.exec();
+    int status = app.exec();
+
+    writeSettings(view);
+
+    return status;
 }
