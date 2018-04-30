@@ -17,7 +17,7 @@ set(CMAKE_CXX_STANDARD 14)
 
 ADD_DEFINITIONS(-DBOOST_ALL_DYN_LINK=1)
 
-FIND_PACKAGE(Qt5 COMPONENTS Core Widgets Quick WebEngine REQUIRED)
+FIND_PACKAGE(Qt5 COMPONENTS Core Widgets Quick WebEngine WebChannel WebSockets REQUIRED)
 
 #SET(BOOST_ROOT "~/boost/")
 #find_package(Boost 1.55.0 REQUIRED system thread log)
@@ -39,11 +39,13 @@ SET(SOURCES
   db/Sql.cpp
   db/Config.cpp
   db/ScriptBlock.cpp
+  ext/websockettransport.cpp
   misc/DebugHelpers.cpp
   ViewHandler.cpp
   ContentFilter.cpp
   BasicDownloader.cpp
   PrintHandler.cpp
+  PasswordManager.cpp
   resources.qrc
   )
 
@@ -53,7 +55,9 @@ SET(SOURCES
 
 ADD_EXECUTABLE(${PROJECT_NAME} ${SOURCES} )
 
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} Qt5::Core Qt5::Quick Qt5::Widgets Qt5::WebEngine pqxx pthread ${Boost_LIBRARIES})
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} Qt5::Core Qt5::Quick Qt5::Widgets
+    Qt5::WebEngine Qt5::WebSockets pqxx pthread ${Boost_LIBRARIES}
+    )
 
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)
 

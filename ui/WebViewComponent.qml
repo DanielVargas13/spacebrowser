@@ -4,14 +4,14 @@ import QtWebEngine 1.5
 WebEngineView
 {
     id: root
-    
+
     property int myViewId
     property var viewContainer
-    
+
     property var targetUrl // FIXME: these two are needed to handle lazy loading of webpages
     property var targetTitle // it would be cleaner to handle this on qt level
     property var targetIcon
-    
+
     anchors.fill: parent
 
     onTitleChanged: {

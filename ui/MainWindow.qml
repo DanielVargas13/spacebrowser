@@ -18,6 +18,7 @@ Rectangle
     property bool isFullscreen: false
 
     signal printRequest(var webView)
+    signal loadSucceeded(var webView)
 
     visible: true
     color: Style.background
@@ -172,6 +173,12 @@ Rectangle
             onPdfPrintingFinished: //(string filePath, bool success)
             {
                 // FIXME: Possibly show some notification
+            }
+                
+            onLoadingChanged: {
+                if (loadRequest.status == WebEngineLoadRequest.LoadSucceededStatus) {
+                    loadSucceeded(this)
+                }
             }
         }
     }
