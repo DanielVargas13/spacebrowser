@@ -144,6 +144,15 @@ int main(int argc, char *argv[])
 
     webChannel.registerObject(QStringLiteral("pwManager"), &passMan);
 
+    QObject::connect(&passMan, SIGNAL(shouldBeSaved(QVariant, QVariant)),
+            view->rootObject(), SLOT(shouldBeSaved(QVariant, QVariant)));
+    QObject::connect(&passMan, SIGNAL(shouldBeUpdated(QVariant, QVariant)),
+                view->rootObject(), SLOT(shouldBeUpdated(QVariant, QVariant)));
+    QObject::connect(view->rootObject(), SIGNAL(savePasswordAccepted(QString, bool)),
+            &passMan, SLOT(saveAccepted(QString, bool)));
+
+
+
     // FIXME: refactor below to use slots/signals instead of calling vh directly
     QQuickItem* webViewContainer = qobject_cast<QQuickItem*>(
             view->rootObject()->findChild<QObject*>("webViewContainer"));

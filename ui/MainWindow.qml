@@ -19,6 +19,7 @@ Rectangle
 
     signal printRequest(var webView)
     signal loadSucceeded(var webView)
+    signal savePasswordAccepted(string url, bool accepted)
 
     visible: true
     color: Style.background
@@ -305,6 +306,43 @@ Rectangle
         
         onVisibleChanged: {
             webViewContainer.visible = !visible
+        }
+    }
+    
+    function shouldBeSaved(url, login)
+    {
+        savePasswordDialog.url = url
+        savePasswordDialog.login = login
+        savePasswordDialog.open()
+    }
+    
+    function shouldBeUpdated(url, login)
+    {
+        savePasswordDialog.url = url
+        savePasswordDialog.login = login
+        savePasswordDialog.open()
+    }
+    
+    Dialog
+    {
+        id: savePasswordDialog
+        title: update ? "Update password?" : "Save password?"
+        standardButtons: Dialog.Save | Dialog.Discard
+
+        property string url
+        property string login
+        property bool update: false
+        
+        onAccepted: mainWindow.savePasswordAccepted(url, true)
+        onRejected: mainWindow.savePasswordAccepted(url, false)
+        
+        Label {
+            text: update ? ("Do you want to update password for site \"" +
+                    savePasswordDialog.url + "\" for user \"" +
+                    savePasswordDialog.login + "\"?") :
+                        ("Do you want to save password for site \"" +
+                                savePasswordDialog.url + "\" for user \"" +
+                                savePasswordDialog.login + "\"?");
         }
     }
 

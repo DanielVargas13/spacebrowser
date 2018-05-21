@@ -12,13 +12,10 @@ set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Krzysztof Borowczyk")
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 
 set(CMAKE_CXX_STANDARD 14)
-#SET(C14_ON "-std=c++14")
-#SET(CMAKE_CXX_FLAGS ${C14_ON})
-
-ADD_DEFINITIONS(-DBOOST_ALL_DYN_LINK=1)
 
 FIND_PACKAGE(Qt5 COMPONENTS Core Widgets Quick WebEngine WebChannel WebSockets REQUIRED)
 
+#ADD_DEFINITIONS(-DBOOST_ALL_DYN_LINK=1)
 #SET(BOOST_ROOT "~/boost/")
 #find_package(Boost 1.55.0 REQUIRED system thread log)
 #if (Boost_FOUND)
@@ -27,6 +24,11 @@ FIND_PACKAGE(Qt5 COMPONENTS Core Widgets Quick WebEngine WebChannel WebSockets R
 #endif(Boost_FOUND)
 #INCLUDE_DIRECTORIES("~/mysql_connector/include")
 #LINK_DIRECTORIES("~/mysql_connector/lib")
+
+
+FIND_PACKAGE(Gpgme)
+INCLUDE_DIRECTORIES(${GPGME_INCLUDES})
+
 
 INCLUDE_DIRECTORIES(.)
 
@@ -39,6 +41,7 @@ SET(SOURCES
   db/Sql.cpp
   db/Config.cpp
   db/ScriptBlock.cpp
+  db/Passwords.cpp
   ext/websockettransport.cpp
   misc/DebugHelpers.cpp
   ViewHandler.cpp
@@ -57,6 +60,7 @@ ADD_EXECUTABLE(${PROJECT_NAME} ${SOURCES} )
 
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} Qt5::Core Qt5::Quick Qt5::Widgets
     Qt5::WebEngine Qt5::WebSockets pqxx pthread ${Boost_LIBRARIES}
+    ${GPGME_VANILLA_LIBRARIES}
     )
 
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)

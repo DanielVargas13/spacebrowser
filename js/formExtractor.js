@@ -23,6 +23,8 @@
 
             if (hasPassword)
             {
+                fields.push({ name: 'host', value: window.location.host, type: 'host'});
+                fields.push({ name: 'path', value: window.location.path, type: 'path'});
                 console.log("------------- has password")
                 var socket = new WebSocket("ws://localhost:61581")
                 socket.onclose = function()
@@ -44,7 +46,6 @@
                         });
                     });
                 }
-//                var request = new XMLHttpRequest();
 
 //                console.log(fields[0].name) //email
 //                console.log(fields[0].value) //a@a.pl
@@ -53,11 +54,7 @@
 //                console.log(fields[1].value)//dupa5
 //                console.log(fields[1].type)//password
 //                console.log("---")
-//                request.open('GET', '/otter-message', true);
-//                request.setRequestHeader('X-Otter-Token', '%1');
-//                request.setRequestHeader('X-Otter-Type', 'save-password');
-//                request.setRequestHeader('X-Otter-Data', btoa(JSON.stringify({ url: window.location.href, fields: fields })));
-//                request.send(null);
+
             }
         });
     }
