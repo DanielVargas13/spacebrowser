@@ -1,0 +1,14 @@
+* TODO Password manager
+** TODO Password Encryption / decryption
+*** TODO gnupgme initialization
+*** TODO listing of available keys
+*** TODO uploading of chosen public key to db
+*** TODO adding public key from db to gnupg keyring if not there already
+*** TODO encryption given selected public keys
+*** TODO decryption with matching private key
+** TODO UI elements
+*** TODO add query on startup to configure encryption key if not set-up
+*** TODO change "save password" popup style to match rest of application
+*** TODO detect when password can be filled in on a page and suggest it
+** TODO DB backend
+*** TODO add necessary functions to save / load login data from db
