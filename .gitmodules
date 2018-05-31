@@ -1,0 +1,3 @@
+[submodule "gnupgpp"]
+	path = gnupgpp
+	url = git@github.com:tuvok/gnupgpp.git
