@@ -1,7 +1,5 @@
 #include <PasswordManager.h>
 
-#include <gpgme.h>
-
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonObject>
@@ -19,8 +17,6 @@ PasswordManager::PasswordManager()
     QFile file2(":/qtwebchannel/qwebchannel.js");
     file2.open(QIODevice::ReadOnly);
     qWebChannel= file2.readAll();
-
-    gpgme_check_version(NULL);
 }
 
 PasswordManager::~PasswordManager()
@@ -128,4 +124,9 @@ QString PasswordManager::encrypt(QString text)
 {
     return text;
     //FIXME: add public key encryption
+}
+
+bool PasswordManager::isEncryptionReady()
+{
+    return false;
 }

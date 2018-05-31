@@ -16,6 +16,9 @@ public:
     PasswordManager();
     virtual ~PasswordManager();
 
+
+    bool isEncryptionReady();
+
 signals:
     void shouldBeSaved(QVariant url, QVariant login);
     void shouldBeUpdated(QVariant url, QVariant login);

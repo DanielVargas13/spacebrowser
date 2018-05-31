@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.0.2)
 
 PROJECT(browser)
 
@@ -24,10 +24,6 @@ FIND_PACKAGE(Qt5 COMPONENTS Core Widgets Quick WebEngine WebChannel WebSockets R
 #endif(Boost_FOUND)
 #INCLUDE_DIRECTORIES("~/mysql_connector/include")
 #LINK_DIRECTORIES("~/mysql_connector/lib")
-
-
-FIND_PACKAGE(Gpgme)
-INCLUDE_DIRECTORIES(${GPGME_INCLUDES})
 
 
 INCLUDE_DIRECTORIES(.)
@@ -56,11 +52,12 @@ SET(SOURCES
 
 #  )
 
-ADD_EXECUTABLE(${PROJECT_NAME} ${SOURCES} )
+ADD_SUBDIRECTORY(gnupgpp)
+
+ADD_EXECUTABLE(${PROJECT_NAME} ${SOURCES})
 
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} Qt5::Core Qt5::Quick Qt5::Widgets
-    Qt5::WebEngine Qt5::WebSockets pqxx pthread ${Boost_LIBRARIES}
-    ${GPGME_VANILLA_LIBRARIES}
+    Qt5::WebEngine Qt5::WebSockets gnupgpp pqxx pthread ${Boost_LIBRARIES}
     )
 
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)

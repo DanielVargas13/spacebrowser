@@ -19,6 +19,8 @@
 
 #include <memory>
 
+#include <iostream>
+
 void setupProfileDownloadHandler(BasicDownloader& bd, QQuickWebEngineProfile* profile)
 {
     QObject::connect(profile,
@@ -91,6 +93,11 @@ void readSettings(std::shared_ptr<QQuickView> view)
         view->setGeometry(settings.value(conf::MainWindow::geometry).toRect());
 }
 
+void configureEncryption()
+{
+
+}
+
 int main(int argc, char *argv[])
 {
     /// Create and setup QApplication
@@ -127,6 +134,8 @@ int main(int argc, char *argv[])
     PasswordManager passMan;
     QObject::connect(view->rootObject(), SIGNAL(loadSucceeded(QVariant)),
             &passMan, SLOT(loadSucceeded(QVariant)));
+    if (!passMan.isEncryptionReady())
+        configureEncryption();
 
     QWebChannel webChannel;
     QWebSocketServer webSocketServer(QStringLiteral("SpaceBrowserSocket"),
@@ -191,6 +200,7 @@ int main(int argc, char *argv[])
     QObject::connect(scriptBlockingView, SIGNAL(removeGlobal(QString)),
             &cf, SLOT(removeGlobal(QString)));
 
+    std::cout << "Finished init, executing app\n";
     int status = app.exec();
 
     writeSettings(view);

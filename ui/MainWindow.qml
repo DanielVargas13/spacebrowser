@@ -2,13 +2,8 @@ import QtQuick 2.7
 import QtQuick.Controls 2.2
 import QtWebEngine 1.5
 
-//import org.qt.qwebengineview 1.0
-//import QtQuick.Controls 1.4 as OldControls
-//import QtQuick.Dialogs 1.2 // file dialog
-
 import "."
 
-//import org.qt.qtextedit 1.0
 
 Rectangle
 {
