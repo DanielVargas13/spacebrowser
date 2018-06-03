@@ -31,6 +31,23 @@ void PasswordManager::loadSucceeded(QVariant view)
 
     s = QMetaObject::invokeMethod(qvariant_cast<QObject *>(view),
             "runJavaScript", Q_ARG(QString, qWebChannel));
+
+    auto ctx = gpg.createContext();
+    auto keys = ctx.listSecretKeys();
+    std::cout << "No. of keys: " << keys.size() << std::endl;
+
+    for (auto& key: keys)
+    {
+        std::cout << "FPK: " << key.getFingerprintOfPK() << std::endl;
+        for (auto& uid: key.getUids())
+        {
+            std::cout << "UID: " << uid.getUid() << std::endl;
+            std::cout << "NAME: " << uid.getName() << std::endl;
+            std::cout << "EMAIL: " << uid.getEmail() << std::endl;
+            std::cout << "CMT: " << uid.getComment() << std::endl;
+            std::cout << "ADDR: " << uid.getAddress() << std::endl;
+        }
+    }
 }
 
 void PasswordManager::saveAccepted(QString url, bool accepted)

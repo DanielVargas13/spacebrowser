@@ -2,6 +2,7 @@
 #define PASSWORDMANAGER_H_
 
 #include <db/Passwords.h>
+#include <gnupgpp/GnupgPP.h>
 
 #include <QObject>
 #include <QString>
@@ -29,6 +30,7 @@ public slots:
     bool savePassword(QVariant fields);
 
 private:
+    gnupgpp::GnupgPP gpg;
     Passwords pwds;
     std::map<QString, struct Passwords::entry_t> tempStore;
     QString formExtractor;

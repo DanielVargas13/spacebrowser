@@ -27,6 +27,7 @@ FIND_PACKAGE(Qt5 COMPONENTS Core Widgets Quick WebEngine WebChannel WebSockets R
 
 
 INCLUDE_DIRECTORIES(.)
+INCLUDE_DIRECTORIES(./gnupgpp)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
