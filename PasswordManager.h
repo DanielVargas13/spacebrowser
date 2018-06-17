@@ -6,6 +6,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QStringList>
 #include <QVariant>
 
 #include <map>
@@ -18,7 +19,8 @@ public:
     virtual ~PasswordManager();
 
 
-    bool isEncryptionReady();
+    bool isEncryptionReady() const;
+    QStringList keysList() const;
 
 signals:
     void shouldBeSaved(QVariant url, QVariant login);

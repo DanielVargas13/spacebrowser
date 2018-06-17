@@ -5,7 +5,6 @@
 #include <QJsonObject>
 #include <QMetaObject>
 #include <QString>
-
 #include <iostream>
 
 PasswordManager::PasswordManager()
@@ -31,23 +30,6 @@ void PasswordManager::loadSucceeded(QVariant view)
 
     s = QMetaObject::invokeMethod(qvariant_cast<QObject *>(view),
             "runJavaScript", Q_ARG(QString, qWebChannel));
-
-    auto ctx = gpg.createContext();
-    auto keys = ctx.listSecretKeys();
-    std::cout << "No. of keys: " << keys.size() << std::endl;
-
-    for (auto& key: keys)
-    {
-        std::cout << "FPK: " << key.getFingerprintOfPK() << std::endl;
-        for (auto& uid: key.getUids())
-        {
-            std::cout << "UID: " << uid.getUid() << std::endl;
-            std::cout << "NAME: " << uid.getName() << std::endl;
-            std::cout << "EMAIL: " << uid.getEmail() << std::endl;
-            std::cout << "CMT: " << uid.getComment() << std::endl;
-            std::cout << "ADDR: " << uid.getAddress() << std::endl;
-        }
-    }
 }
 
 void PasswordManager::saveAccepted(QString url, bool accepted)
@@ -143,7 +125,50 @@ QString PasswordManager::encrypt(QString text)
     //FIXME: add public key encryption
 }
 
-bool PasswordManager::isEncryptionReady()
+bool PasswordManager::isEncryptionReady() const
 {
     return false;
+}
+
+QStringList PasswordManager::keysList() const
+{
+    QStringList result;
+    
+    auto ctx = gpg.createContext();
+
+    auto keys = ctx.listSecretKeys();
+    std::cout << "No. of keys: " << keys.size() << std::endl;
+
+    for (auto& key: keys)
+    {
+        if (key.isRevoked()  || key.isExpired() ||
+            key.isDisabled() || key.isInvalid())
+            continue;
+        
+        std::cout << "NEXT_KEY --------------------\n";
+        std::cout << "FPK: " << key.getFingerprintOfPK() << std::endl;
+        std::cout << "UIDS: ----\n";
+        for (auto& uid: key.getUids())
+        {
+            std::cout << "UID: " << uid.getUid() << std::endl;
+            std::cout << "NAME: " << uid.getName() << std::endl;
+            std::cout << "EMAIL: " << uid.getEmail() << std::endl;
+            std::cout << "CMT: " << uid.getComment() << std::endl;
+        }
+        std::cout << "SKEYS: ---\n";
+        for (auto& sk: key.getSubkeys())
+        {
+            if (sk.isRevoked()  || sk.isExpired() ||
+                sk.isDisabled() || sk.isInvalid())
+                continue;            
+
+            std::cout << "KEYID: " << sk.getKeyId() << std::endl;
+            std::cout << "FPK: " << sk.getFingerprint() << std::endl;
+            std::cout << "CARDNO: " << sk.getCardNumber() << std::endl;
+            std::cout << "CURVE: " << sk.getCurve() << std::endl;
+            std::cout << "GRIP: " << sk.getKeygrip() << std::endl;
+        }
+    }
+
+    return result;
 }

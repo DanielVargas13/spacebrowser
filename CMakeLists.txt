@@ -15,6 +15,8 @@ set(CMAKE_CXX_STANDARD 14)
 
 FIND_PACKAGE(Qt5 COMPONENTS Core Widgets Quick WebEngine WebChannel WebSockets REQUIRED)
 
+ADD_DEFINITIONS(-Wall)
+
 #ADD_DEFINITIONS(-DBOOST_ALL_DYN_LINK=1)
 #SET(BOOST_ROOT "~/boost/")
 #find_package(Boost 1.55.0 REQUIRED system thread log)

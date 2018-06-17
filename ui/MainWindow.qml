@@ -317,12 +317,12 @@ Rectangle
         savePasswordDialog.login = login
         savePasswordDialog.open()
     }
-    
+
     Dialog
     {
         id: savePasswordDialog
         title: update ? "Update password?" : "Save password?"
-        standardButtons: Dialog.Save | Dialog.Discard
+        standardButtons: Dialog.Save | Dialog.Cancel
 
         property string url
         property string login
@@ -338,6 +338,29 @@ Rectangle
                         ("Do you want to save password for site \"" +
                                 savePasswordDialog.url + "\" for user \"" +
                                 savePasswordDialog.login + "\"?");
+        }
+    }
+
+    function configureEncryption(model)
+    {
+        encryptionKeyConfigDiaogCB.model = model;
+        encryptionKeyConfigDiaog.open();
+    }
+    
+    Dialog
+    {
+        id: encryptionKeyConfigDiaog
+        title: "Configure encryption key"
+        standardButtons: Dialog.Save | Dialog.Cancel
+
+        x: parent.width / 2
+        y: parent.height / 2
+
+//        onAccepted: console.log("accepted")
+//        onRejected: console.log("rejected")
+        
+        ComboBox {
+            id: encryptionKeyConfigDiaogCB
         }
     }
 

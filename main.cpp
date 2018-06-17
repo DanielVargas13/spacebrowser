@@ -14,6 +14,8 @@
 #include <QtWebEngine>
 #include <QQuickWebEngineProfile>
 #include <QShortcut>
+#include <QString>
+#include <QStringList>
 #include <QTextEdit>
 #include <QtWebSockets/QWebSocketServer>
 
@@ -93,11 +95,6 @@ void readSettings(std::shared_ptr<QQuickView> view)
         view->setGeometry(settings.value(conf::MainWindow::geometry).toRect());
 }
 
-void configureEncryption()
-{
-
-}
-
 int main(int argc, char *argv[])
 {
     /// Create and setup QApplication
@@ -135,7 +132,12 @@ int main(int argc, char *argv[])
     QObject::connect(view->rootObject(), SIGNAL(loadSucceeded(QVariant)),
             &passMan, SLOT(loadSucceeded(QVariant)));
     if (!passMan.isEncryptionReady())
-        configureEncryption();
+    {
+        QStringList model = passMan.keysList();
+        QMetaObject::invokeMethod(view->rootObject(), "configureEncryption",
+                                  Qt::ConnectionType::QueuedConnection,
+                                  Q_ARG(QVariant, model));
+    }
 
     QWebChannel webChannel;
     QWebSocketServer webSocketServer(QStringLiteral("SpaceBrowserSocket"),

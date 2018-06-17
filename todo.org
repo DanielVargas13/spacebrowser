@@ -1,6 +1,6 @@
 * TODO Password manager
 ** TODO Password Encryption / decryption
-*** TODO gnupgme initialization
+*** DONE gnupgme initialization
 *** TODO listing of available keys
 *** TODO uploading of chosen public key to db
 *** TODO adding public key from db to gnupg keyring if not there already
