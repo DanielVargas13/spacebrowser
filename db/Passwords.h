@@ -3,6 +3,9 @@
 
 #include <QString>
 
+namespace db
+{
+
 class Passwords
 {
 public:
@@ -29,5 +32,7 @@ public:
 
     void saveOrUpdate(entry_t pwd);
 };
+
+} /* namespace db */
 
 #endif /* DB_PASSWORDS_H_ */

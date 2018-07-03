@@ -130,7 +130,16 @@ int main(int argc, char *argv[])
     ///
     PasswordManager passMan;
     QObject::connect(view->rootObject(), SIGNAL(loadSucceeded(QVariant)),
-            &passMan, SLOT(loadSucceeded(QVariant)));
+                     &passMan, SLOT(loadSucceeded(QVariant)));
+
+    QObject* encKeyConfDialog = view->rootObject()->
+        findChild<QObject*>("encryptionKeyConfigDialog");
+    if (!encKeyConfDialog)
+        throw std::runtime_error("No encryptionKeyConfigDialog object found");
+
+    QObject::connect(encKeyConfDialog, SIGNAL(keySelected(QString)),
+                     &passMan, SLOT(keySelected(QString)));
+  
     if (!passMan.isEncryptionReady())
     {
         QStringList model = passMan.keysList();

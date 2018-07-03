@@ -41,6 +41,7 @@ SET(SOURCES
   db/Config.cpp
   db/ScriptBlock.cpp
   db/Passwords.cpp
+  db/Keys.cpp
   ext/websockettransport.cpp
   misc/DebugHelpers.cpp
   ViewHandler.cpp

@@ -343,24 +343,32 @@ Rectangle
 
     function configureEncryption(model)
     {
-        encryptionKeyConfigDiaogCB.model = model;
-        encryptionKeyConfigDiaog.open();
+        encryptionKeyConfigDialogCB.model = model;
+        encryptionKeyConfigDialog.open();
     }
     
     Dialog
     {
-        id: encryptionKeyConfigDiaog
+        id: encryptionKeyConfigDialog
+        objectName: "encryptionKeyConfigDialog"
         title: "Configure encryption key"
         standardButtons: Dialog.Save | Dialog.Cancel
 
-        x: parent.width / 2
-        y: parent.height / 2
+        signal keySelected(string id)
 
-//        onAccepted: console.log("accepted")
-//        onRejected: console.log("rejected")
+        width: parent.width / 2
+        height: parent.height / 2
+
+        x: parent.width / 2 - width / 2
+        y: parent.height / 2 - height / 2
+
+        onAccepted: keySelected(encryptionKeyConfigDialogCB.currentText)
+        //onRejected:
         
         ComboBox {
-            id: encryptionKeyConfigDiaogCB
+            id: encryptionKeyConfigDialogCB
+
+            width: encryptionKeyConfigDialog.width * 0.9
         }
     }
 

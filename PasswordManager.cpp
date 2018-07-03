@@ -23,6 +23,17 @@ PasswordManager::~PasswordManager()
 
 }
 
+void PasswordManager::keySelected(QString id)
+{
+    QStringList parts = id.split(' ');
+
+    if (parts.size() < 1)
+        std::cout << "PasswordManager::keySelected(id='" << id.toStdString() <<
+            "'): invalid id format";
+
+    keys.addKey(parts[0].toStdString(), true);
+}
+
 void PasswordManager::loadSucceeded(QVariant view)
 {
     bool s = QMetaObject::invokeMethod(qvariant_cast<QObject *>(view),
@@ -53,8 +64,8 @@ void PasswordManager::saveAccepted(QString url, bool accepted)
 
     switch (pwds.isSaved(entry))
     {
-    case Passwords::SaveState::Outdated:
-    case Passwords::SaveState::Absent:
+    case db::Passwords::SaveState::Outdated:
+    case db::Passwords::SaveState::Absent:
     {
         pwds.saveOrUpdate(entry);
     } break;
@@ -69,7 +80,7 @@ bool PasswordManager::savePassword(QVariant fields_qv)
 {
     QJsonArray f = fields_qv.toJsonArray();
 
-    Passwords::entry_t fields;
+    db::Passwords::entry_t fields;
 
     for (const auto& field: f)
     {
@@ -102,11 +113,11 @@ bool PasswordManager::savePassword(QVariant fields_qv)
 
     switch (pwds.isSaved(fields))
     {
-    case Passwords::SaveState::Outdated:
+    case db::Passwords::SaveState::Outdated:
     {
         emit shouldBeUpdated(fields.host + "/" +fields.path, fields.login);
     } break;
-    case Passwords::SaveState::Absent:
+    case db::Passwords::SaveState::Absent:
     {
         emit shouldBeSaved(fields.host + "/" +fields.path, fields.login);
     } break;
@@ -125,9 +136,22 @@ QString PasswordManager::encrypt(QString text)
     //FIXME: add public key encryption
 }
 
-bool PasswordManager::isEncryptionReady() const
+bool PasswordManager::isEncryptionReady()
 {
-    return false;
+    std::string keyFp = keys.getDefaultKey();
+    if (keyFp.empty())
+        return false;
+
+    gnupgpp::GpgContext ctx = gpg.createContext();
+    std::shared_ptr<gnupgpp::GpgKey> key = ctx.getKey(keyFp);
+    if (!key)
+        return false;
+
+    std::shared_ptr<gnupgpp::GpgKey> sKey = ctx.getKey(keyFp, true);
+    if (!sKey)
+        return false;
+
+    return true;
 }
 
 QStringList PasswordManager::keysList() const
@@ -137,7 +161,6 @@ QStringList PasswordManager::keysList() const
     auto ctx = gpg.createContext();
 
     auto keys = ctx.listSecretKeys();
-    std::cout << "No. of keys: " << keys.size() << std::endl;
 
     for (auto& key: keys)
     {
@@ -145,29 +168,27 @@ QStringList PasswordManager::keysList() const
             key.isDisabled() || key.isInvalid())
             continue;
         
-        std::cout << "NEXT_KEY --------------------\n";
-        std::cout << "FPK: " << key.getFingerprintOfPK() << std::endl;
-        std::cout << "UIDS: ----\n";
+        QString entry;
+        entry += QString(key.getFingerprintOfPK().c_str());
+
         for (auto& uid: key.getUids())
-        {
-            std::cout << "UID: " << uid.getUid() << std::endl;
-            std::cout << "NAME: " << uid.getName() << std::endl;
-            std::cout << "EMAIL: " << uid.getEmail() << std::endl;
-            std::cout << "CMT: " << uid.getComment() << std::endl;
-        }
-        std::cout << "SKEYS: ---\n";
+            entry += " " + QString(uid.getUid().c_str());
+
+
         for (auto& sk: key.getSubkeys())
         {
             if (sk.isRevoked()  || sk.isExpired() ||
                 sk.isDisabled() || sk.isInvalid())
                 continue;            
 
-            std::cout << "KEYID: " << sk.getKeyId() << std::endl;
-            std::cout << "FPK: " << sk.getFingerprint() << std::endl;
-            std::cout << "CARDNO: " << sk.getCardNumber() << std::endl;
-            std::cout << "CURVE: " << sk.getCurve() << std::endl;
-            std::cout << "GRIP: " << sk.getKeygrip() << std::endl;
+            auto cno = sk.getCardNumber();
+            if (!cno.empty())
+            {
+                entry += " Card No:" + QString(cno.c_str());
+                break;
+            }
         }
+        result.push_back(entry);
     }
 
     return result;

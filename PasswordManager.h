@@ -1,6 +1,7 @@
 #ifndef PASSWORDMANAGER_H_
 #define PASSWORDMANAGER_H_
 
+#include <db/Keys.h>
 #include <db/Passwords.h>
 #include <gnupgpp/GnupgPP.h>
 
@@ -19,7 +20,7 @@ public:
     virtual ~PasswordManager();
 
 
-    bool isEncryptionReady() const;
+    bool isEncryptionReady();
     QStringList keysList() const;
 
 signals:
@@ -27,14 +28,16 @@ signals:
     void shouldBeUpdated(QVariant url, QVariant login);
 
 public slots:
+    void keySelected(QString id);
     void loadSucceeded(QVariant view);
     void saveAccepted(QString url, bool accepted);
     bool savePassword(QVariant fields);
 
 private:
     gnupgpp::GnupgPP gpg;
-    Passwords pwds;
-    std::map<QString, struct Passwords::entry_t> tempStore;
+    db::Passwords pwds;
+    db::Keys keys;
+    std::map<QString, struct db::Passwords::entry_t> tempStore;
     QString formExtractor;
     QString qWebChannel;
 
