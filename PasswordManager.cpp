@@ -132,8 +132,27 @@ bool PasswordManager::savePassword(QVariant fields_qv)
 
 QString PasswordManager::encrypt(QString text)
 {
-    return text;
-    //FIXME: add public key encryption
+    try
+    {
+        gnupgpp::GpgContext ctx = gpg.createContext();
+        ctx.setArmor(true);
+
+        std::string keyFp = keys.getDefaultKey();
+        if (keyFp.empty())
+            return QString();
+
+        std::shared_ptr<gnupgpp::GpgKey> key = ctx.getKey(keyFp);
+
+        return QString(ctx.encrypt(text.toStdString(), key).c_str());
+
+    }
+    catch (std::exception& e)
+    {
+        std::cout << "PasswordManager::encrypt(): caught exception: " << e.what()
+                  << std::endl;
+    }
+
+    return QString();
 }
 
 bool PasswordManager::isEncryptionReady()
@@ -157,7 +176,7 @@ bool PasswordManager::isEncryptionReady()
 QStringList PasswordManager::keysList() const
 {
     QStringList result;
-    
+
     auto ctx = gpg.createContext();
 
     auto keys = ctx.listSecretKeys();
@@ -167,7 +186,7 @@ QStringList PasswordManager::keysList() const
         if (key.isRevoked()  || key.isExpired() ||
             key.isDisabled() || key.isInvalid())
             continue;
-        
+
         QString entry;
         entry += QString(key.getFingerprintOfPK().c_str());
 
@@ -179,7 +198,7 @@ QStringList PasswordManager::keysList() const
         {
             if (sk.isRevoked()  || sk.isExpired() ||
                 sk.isDisabled() || sk.isInvalid())
-                continue;            
+                continue;
 
             auto cno = sk.getCardNumber();
             if (!cno.empty())
