@@ -1,7 +1,11 @@
 #ifndef DB_PASSWORDS_H_
 #define DB_PASSWORDS_H_
 
+#include <pqxx/pqxx>
+
 #include <QString>
+
+#include <string>
 
 namespace db
 {
@@ -16,6 +20,7 @@ public:
         QString path;
         QString login;
         QString password;
+        QString fingerprint;
     };
 
     enum class SaveState
@@ -31,6 +36,10 @@ public:
     SaveState isSaved(entry_t pwd);
 
     void saveOrUpdate(entry_t pwd);
+
+private:
+    static std::string tableName;
+    pqxx::connection conn;
 };
 
 } /* namespace db */

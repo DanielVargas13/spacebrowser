@@ -19,10 +19,9 @@ Keys::Keys()
     sql::Helpers::createSchemaIfNotExists(conn, sql::schemaName);
 
     sql::Helpers::createTableIfNotExists(conn, sql::schemaName, tableName.c_str(),
-            "fingerprint varchar, def boolean DEFAULT false, "
-            "CONSTRAINT keys_pkey PRIMARY KEY (fingerprint)");
+            "fingerprint varchar PRIMARY KEY, def boolean DEFAULT false");
 }
-    
+
 Keys::~Keys()
 {
 
@@ -33,9 +32,9 @@ void Keys::addKey(std::string keyFingerprint, bool def)
     pqxx::nontransaction ntx(conn);
 
     pqxx::result r = ntx.exec(sql::insert.arg(sql::schemaName)
-            .arg(tableName.c_str()).arg(keyFingerprint.c_str()).arg(def).toStdString());
+        .arg(tableName.c_str()).arg(keyFingerprint.c_str()).arg(def).toStdString());
 }
-    
+
 std::string Keys::getDefaultKey()
 {
     pqxx::nontransaction ntx(conn);

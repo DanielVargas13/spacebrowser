@@ -91,8 +91,10 @@ bool PasswordManager::savePassword(QVariant fields_qv)
         if (obj["type"] == "text" || obj["type"] == "email")
             fields.login = obj["value"].toString();
         else if (obj["type"] == "password" && !obj["value"].toString().isEmpty())
+        {
             fields.password = encrypt(obj["value"].toString());
-        else if (obj["type"] == "host")
+            fields.fingerprint = keys.getDefaultKey().c_str();
+        } else if (obj["type"] == "host")
             fields.host = obj["value"].toString();
         else if (obj["type"] == "path")
             fields.path = obj["value"].toString();

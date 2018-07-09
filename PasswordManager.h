@@ -35,8 +35,8 @@ public slots:
 
 private:
     gnupgpp::GnupgPP gpg;
-    db::Passwords pwds;
     db::Keys keys;
+    db::Passwords pwds;
     std::map<QString, struct db::Passwords::entry_t> tempStore;
     QString formExtractor;
     QString qWebChannel;
