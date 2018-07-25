@@ -28,10 +28,12 @@ signals:
     void shouldBeUpdated(QVariant url, QVariant login);
 
 public slots:
+    void fillPassword(QVariant view);
     void keySelected(QString id);
     void loadSucceeded(QVariant view);
     void saveAccepted(QString url, bool accepted);
     bool savePassword(QVariant fields);
+    QVariant getCredentials(QVariant host, QVariant path) noexcept;
 
 private:
     gnupgpp::GnupgPP gpg;
@@ -39,6 +41,7 @@ private:
     db::Passwords pwds;
     std::map<QString, struct db::Passwords::entry_t> tempStore;
     QString formExtractor;
+    QString formFiller;
     QString qWebChannel;
 
     QString encrypt(QString text);

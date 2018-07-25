@@ -5,6 +5,7 @@
 #include <QJsonObject>
 #include <QMetaObject>
 #include <QString>
+#include <QUrl>
 #include <iostream>
 
 PasswordManager::PasswordManager()
@@ -16,10 +17,23 @@ PasswordManager::PasswordManager()
     QFile file2(":/qtwebchannel/qwebchannel.js");
     file2.open(QIODevice::ReadOnly);
     qWebChannel= file2.readAll();
+
+    QFile file3(":/js/formFiller.js");
+    file3.open(QIODevice::ReadOnly);
+    formFiller = file3.readAll();
 }
 
 PasswordManager::~PasswordManager()
 {
+
+}
+
+void PasswordManager::fillPassword(QVariant view)
+{
+    QObject* v = qvariant_cast<QObject *>(view);
+
+    bool s = QMetaObject::invokeMethod(v, "runJavaScript",
+            Q_ARG(QString, formFiller));
 
 }
 
@@ -36,11 +50,27 @@ void PasswordManager::keySelected(QString id)
 
 void PasswordManager::loadSucceeded(QVariant view)
 {
-    bool s = QMetaObject::invokeMethod(qvariant_cast<QObject *>(view),
-            "runJavaScript", Q_ARG(QString, formExtractor));
+    QObject* v = qvariant_cast<QObject *>(view);
 
-    s = QMetaObject::invokeMethod(qvariant_cast<QObject *>(view),
-            "runJavaScript", Q_ARG(QString, qWebChannel));
+    bool s = QMetaObject::invokeMethod(v, "runJavaScript",
+            Q_ARG(QString, formExtractor));
+
+    QUrl url = v->property("url").toUrl();
+    QString host = url.host();
+    QString path = url.path();
+    if (path.startsWith('/'))
+        path = path.remove(0, 1);
+
+    if (int passCount = pwds.countSavedCredentials(host, path) > 0)
+    {
+        QMetaObject::invokeMethod(v, "passAvailable", Q_ARG(QVariant, QVariant(passCount)));
+        //FIXME: display button now
+//        s = QMetaObject::invokeMethod(v, "runJavaScript",
+//                Q_ARG(QString, formFiller));
+    }
+
+    s = QMetaObject::invokeMethod(v, "runJavaScript",
+            Q_ARG(QString, qWebChannel));
 }
 
 void PasswordManager::saveAccepted(QString url, bool accepted)
@@ -213,4 +243,48 @@ QStringList PasswordManager::keysList() const
     }
 
     return result;
+}
+
+QVariant PasswordManager::getCredentials(QVariant host, QVariant path) noexcept
+{
+    if (!host.isValid())
+        return QVariant();
+
+    QString h = host.toString();
+    QString p;
+
+    path.isValid() ? p = path.toString() : p = "";
+
+    auto creds = pwds.getCredentials(h, p);
+
+    switch (creds.size())
+    {
+    case 0:
+    {
+        std::cout << "PasswordManager::getCredentials(): no credentials found\n";
+        return QJsonObject();
+    }
+    case 1:
+    {
+        auto ctx = gpg.createContext();
+        try
+        {
+            QString pass = ctx.decrypt(creds[0].password.toStdString()).c_str();
+            QJsonObject c { {"login", creds[0].login}, {"pass", pass} };
+            return c;
+
+        }
+        catch (std::exception& e)
+        {
+            std::cout << "PasswordManager::getCredentials(): failed: " <<
+                e.what() << std::endl;
+        }
+    } break;
+    default:
+    {
+        // FIXME: display choice menu
+    }
+    }
+
+    return QJsonObject();
 }

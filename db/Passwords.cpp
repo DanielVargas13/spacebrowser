@@ -43,13 +43,12 @@ Passwords::SaveState Passwords::isSaved(entry_t pwd)
 
     pqxx::result r = ntx.exec(sql::select.arg("COUNT(password)").arg(sql::schemaName)
         .arg(tableName.c_str()).arg("WHERE host=\'%5\' AND path=\'%6\' "
-            "AND login=\'%7\'").toStdString());
+            "AND login=\'%7\'").arg(pwd.host).arg(pwd.path).arg(pwd.login)
+            .toStdString());
 
     if (r.size() != 1)
         throw std::runtime_error("Passwords::isSaved(): db returned " +
             std::to_string(r.size()) + " entries.\n");
-
-    std::cout << "COUNT: " << r[0][0].as<int>() << std::endl;
 
     int count = r[0][0].as<int>();
     switch(count)
@@ -63,6 +62,26 @@ Passwords::SaveState Passwords::isSaved(entry_t pwd)
     }
 }
 
+bool Passwords::hasSavedCredentials(QString host, QString path)
+{
+    return countSavedCredentials(host, path) > 0;
+}
+
+int Passwords::countSavedCredentials(QString host, QString path)
+{
+    pqxx::nontransaction ntx(conn);
+
+    pqxx::result r = ntx.exec(sql::select.arg("COUNT(password)").arg(sql::schemaName)
+            .arg(tableName.c_str()).arg("WHERE host=\'%5\' AND path=\'%6\'")
+            .arg(host).arg(path).toStdString());
+
+    if (r.size() != 1)
+        throw std::runtime_error("Passwords::hasSavedCredentials(): db returned " +
+            std::to_string(r.size()) + " entries.\n");
+
+    return r[0][0].as<int>();
+}
+
 void Passwords::saveOrUpdate(entry_t pwd)
 {
     pqxx::nontransaction ntx(conn);
@@ -70,6 +89,47 @@ void Passwords::saveOrUpdate(entry_t pwd)
     pqxx::result r = ntx.exec(sql::insert.arg(sql::schemaName)
         .arg(tableName.c_str()).arg(pwd.host).arg(pwd.path).arg(pwd.login)
         .arg(pwd.password).arg(pwd.fingerprint).toStdString());
+}
+
+std::vector<Passwords::entry_t> Passwords::getCredentials(QString host, QString path)
+{
+    pqxx::nontransaction ntx(conn);
+
+    // For whatever reason path sometimes is size 1 with \0 as the only character
+    path.remove(QChar('\0'));
+    path = path.trimmed();
+
+    std::vector<entry_t> result;
+
+    try
+    {
+        pqxx::result r = ntx.exec(sql::select.arg("login, password, key_fp")
+                .arg(sql::schemaName).arg(tableName.c_str())
+                .arg("WHERE host=\'%5\' AND path=\'%6\'")
+                .arg(host).arg(path).toStdString());
+
+        if (r.size() < 1)
+            return result;
+
+        for (unsigned int i = 0; i < r.size(); ++i)
+        {
+            entry_t e;
+            e.host = host;
+            e.path = path;
+            e.login = r[i][0].as<std::string>().c_str();
+            e.password = r[i][1].as<std::string>().c_str();
+            e.fingerprint = r[i][2].as<std::string>().c_str();
+
+            result.push_back(e);
+        }
+    }
+    catch (std::exception& e)
+    {
+        std::cout << "Passwords::getCredentials(): exception thrown: " << e.what()
+                  << std::endl;
+    }
+
+    return result;
 }
 
 } /* namespace db */

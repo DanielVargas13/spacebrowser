@@ -6,6 +6,7 @@
 #include <QString>
 
 #include <string>
+#include <vector>
 
 namespace db
 {
@@ -34,6 +35,9 @@ public:
     virtual ~Passwords();
 
     SaveState isSaved(entry_t pwd);
+    bool hasSavedCredentials(QString host, QString path);
+    int countSavedCredentials(QString host, QString path);
+    std::vector<entry_t> getCredentials(QString host, QString path);
 
     void saveOrUpdate(entry_t pwd);
 

@@ -11,6 +11,7 @@ WebEngineView
     property var targetUrl // FIXME: these two are needed to handle lazy loading of webpages
     property var targetTitle // it would be cleaner to handle this on qt level
     property var targetIcon
+    property int passCount: 0
 
     anchors.fill: parent
 
@@ -49,4 +50,8 @@ WebEngineView
             url = targetUrl
     }
 
+    function passAvailable(passCount) {
+        console.log("HAS PASS COUNT: " + passCount)
+        root.passCount = passCount
+    }
 }

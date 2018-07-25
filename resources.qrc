@@ -1,6 +1,7 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
     <file>ui/AddressBar.qml</file>
+    <file>ui/BasicButton.qml</file>
     <file>ui/ContextMenuEntry.qml</file>
     <file>ui/CloseIcon.qml</file>
     <file>ui/DownloadHistoryListEntry.qml</file>
@@ -20,6 +21,7 @@
     <file>ui/WebViewContainer.qml</file>
     <file>ui/icons/close.svg</file>
     <file>ui/icons/download2.svg</file>
+    <file>ui/icons/lock.svg</file>
     <file>js/formExtractor.js</file>
     <file>js/formFiller.js</file>
 </qresource>

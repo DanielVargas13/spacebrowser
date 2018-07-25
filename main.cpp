@@ -139,7 +139,17 @@ int main(int argc, char *argv[])
 
     QObject::connect(encKeyConfDialog, SIGNAL(keySelected(QString)),
                      &passMan, SLOT(keySelected(QString)));
-  
+
+    QQuickItem* passwordManagerButton = qobject_cast<QQuickItem*>(
+            view->rootObject()->findChild<QObject*>("passwordManagerButton"));
+    if (!passwordManagerButton)
+        throw std::runtime_error("No passwordManagerButton object found");
+
+    QObject::connect(passwordManagerButton, SIGNAL(passwordFillRequest(QVariant)),
+                     &passMan, SLOT(fillPassword(QVariant)));
+
+
+
     if (!passMan.isEncryptionReady())
     {
         QStringList model = passMan.keysList();
@@ -147,6 +157,14 @@ int main(int argc, char *argv[])
                                   Qt::ConnectionType::QueuedConnection,
                                   Q_ARG(QVariant, model));
     }
+
+
+
+
+
+
+
+
 
     QWebChannel webChannel;
     QWebSocketServer webSocketServer(QStringLiteral("SpaceBrowserSocket"),
