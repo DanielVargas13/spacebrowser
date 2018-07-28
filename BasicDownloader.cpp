@@ -27,8 +27,7 @@ void BasicDownloader::downloadRequested(QQuickWebEngineDownloadItem* download)
     {
         /// Save meta information about download item
         ///
-        unsigned int id = itemsMetadata.size();
-        std::cout << "ID: " << id << std::endl;
+        int id = d->property("id").toInt();
         std::cout << "DID: " << d->property("id").toInt() << std::endl;
         DownloadMetadata dm;
         dm.received = d->property("receivedBytes").toLongLong();
@@ -37,7 +36,9 @@ void BasicDownloader::downloadRequested(QQuickWebEngineDownloadItem* download)
         dm.finished = d->property("isFinished").toBool();
         dm.paused = d->property("isPaused").toBool();
         dm.dItem = d;
-        itemsMetadata[id] = dm; // FIXME: can't load from db, id's will be reset on application restart
+        std::cout << "Inserting ditem at: " << id << std::endl;
+        itemsMetadata[id] = dm;
+        // FIXME: can't load from db, id's will be reset on application restart
 
         /// Set-up signal handlers, emit historyUpdated signal and accept download
         ///
@@ -73,11 +74,14 @@ void BasicDownloader::downloadFinished(QQuickWebEngineDownloadItem* download)
     /// If download was started, mark as finished and emit signal to update model
     ///
     int id = d->property("id").toInt();
-    DownloadMetadata& md = itemsMetadata.at(id-1);
 
-    md.finished = true;
+    if (itemsMetadata.count(id))
+    {
+        DownloadMetadata& md = itemsMetadata.at(id);
+        md.finished = true;
 
-    emit downloadFinished(id);
+        emit downloadFinished(id);
+    }
 }
 
 bool BasicDownloader::downloadRequestedDialog(QObject* dItem)
@@ -107,7 +111,8 @@ void BasicDownloader::updateProgress()
     /// Update received bytes and recalculate progress
     ///
     int id = source->property("id").toInt();
-    DownloadMetadata& md = itemsMetadata.at(id-1);
+    std::cout << "Trying to update progress at: " << id << std::endl;
+    DownloadMetadata& md = itemsMetadata.at(id);
     md.received = source->property("receivedBytes").toLongLong();
 
     emit progressUpdated(getProgress());
@@ -122,7 +127,7 @@ void BasicDownloader::updateTotalSize()
     /// Update total bytes and recalculate progress
     ///
     int id = source->property("id").toInt(); // FIXME: map this to id
-    DownloadMetadata& md = itemsMetadata.at(id-1);
+    DownloadMetadata& md = itemsMetadata.at(id);
     md.total = source->property("totalBytes").toLongLong();
 
     emit progressUpdated(getProgress());
