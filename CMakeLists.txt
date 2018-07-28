@@ -13,7 +13,7 @@ set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 
 set(CMAKE_CXX_STANDARD 14)
 
-FIND_PACKAGE(Qt5 COMPONENTS Core Widgets Quick WebEngine WebChannel WebSockets REQUIRED)
+FIND_PACKAGE(Qt5 COMPONENTS Core Widgets Quick WebEngine WebChannel REQUIRED)
 
 ADD_DEFINITIONS(-Wall)
 
@@ -42,7 +42,6 @@ SET(SOURCES
   db/ScriptBlock.cpp
   db/Passwords.cpp
   db/Keys.cpp
-  ext/websockettransport.cpp
   misc/DebugHelpers.cpp
   ViewHandler.cpp
   ContentFilter.cpp
@@ -61,10 +60,9 @@ ADD_SUBDIRECTORY(gnupgpp)
 ADD_EXECUTABLE(${PROJECT_NAME} ${SOURCES})
 
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} Qt5::Core Qt5::Quick Qt5::Widgets
-    Qt5::WebEngine Qt5::WebSockets gnupgpp pqxx pthread ${Boost_LIBRARIES}
+    Qt5::WebEngine gnupgpp pqxx pthread ${Boost_LIBRARIES}
     )
 
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)
 
 include(CPack)
-

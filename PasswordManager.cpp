@@ -6,6 +6,7 @@
 #include <QMetaObject>
 #include <QString>
 #include <QUrl>
+#include <QVariantMap>
 #include <iostream>
 
 PasswordManager::PasswordManager()
@@ -52,21 +53,26 @@ void PasswordManager::loadSucceeded(QVariant view)
 {
     QObject* v = qvariant_cast<QObject *>(view);
 
+    QVariantMap objects;
+    objects.insert("pwManager", QVariant(QMetaType::QObjectStar, this));
+
+
+    QObject* wc = qvariant_cast<QObject *>(v->property("webChannel"));
+
+    QMetaObject::invokeMethod(wc, "registerObject",
+            Q_ARG(QString, "pwManager"), Q_ARG(QObject*, this));
+
     bool s = QMetaObject::invokeMethod(v, "runJavaScript",
             Q_ARG(QString, formExtractor));
 
     QUrl url = v->property("url").toUrl();
     QString host = url.host();
     QString path = url.path();
-    if (path.startsWith('/'))
-        path = path.remove(0, 1);
 
     if (int passCount = pwds.countSavedCredentials(host, path) > 0)
     {
-        QMetaObject::invokeMethod(v, "passAvailable", Q_ARG(QVariant, QVariant(passCount)));
-        //FIXME: display button now
-//        s = QMetaObject::invokeMethod(v, "runJavaScript",
-//                Q_ARG(QString, formFiller));
+        QMetaObject::invokeMethod(v, "passAvailable",
+                Q_ARG(QVariant, QVariant(passCount)));
     }
 
     s = QMetaObject::invokeMethod(v, "runJavaScript",
@@ -75,8 +81,6 @@ void PasswordManager::loadSucceeded(QVariant view)
 
 void PasswordManager::saveAccepted(QString url, bool accepted)
 {
-    std::cout << "SAVE ACCEPTED WITH: " << accepted << std::endl;
-
     if (!accepted)
     {
         if (tempStore.count(url))
@@ -136,22 +140,22 @@ bool PasswordManager::savePassword(QVariant fields_qv)
         std::cout << "PasswordManager::savePassword(): login: " << fields.login.toStdString() << std::endl;
         std::cout << "PasswordManager::savePassword(): pass_len: " << fields.password.length() << std::endl;
         std::cout << "PasswordManager::savePassword(): url: " << fields.host.toStdString()
-                << "/" << fields.path.toStdString() << std::endl;
+                << fields.path.toStdString() << std::endl;
 
         return false;
     }
 
-    tempStore[fields.host + "/" +fields.path] = fields;
+    tempStore[fields.host + fields.path] = fields;
 
     switch (pwds.isSaved(fields))
     {
     case db::Passwords::SaveState::Outdated:
     {
-        emit shouldBeUpdated(fields.host + "/" +fields.path, fields.login);
+        emit shouldBeUpdated(fields.host + fields.path, fields.login);
     } break;
     case db::Passwords::SaveState::Absent:
     {
-        emit shouldBeSaved(fields.host + "/" +fields.path, fields.login);
+        emit shouldBeSaved(fields.host + fields.path, fields.login);
     } break;
     default:
     {
@@ -261,7 +265,8 @@ QVariant PasswordManager::getCredentials(QVariant host, QVariant path) noexcept
     {
     case 0:
     {
-        std::cout << "PasswordManager::getCredentials(): no credentials found\n";
+        std::cout << "PasswordManager::getCredentials(host='" << h.toStdString()
+                  << "' path='" << p.toStdString() << "'): no credentials found\n";
         return QJsonObject();
     }
     case 1:

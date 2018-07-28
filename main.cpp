@@ -4,20 +4,17 @@
 #include <PrintHandler.h>
 #include <PasswordManager.h>
 #include <conf/conf.h>
-#include <ext/websockettransport.h>
 
 #include <QApplication>
 #include <QObject>
 #include <QQuickItem>
 #include <QQuickView>
-//#include <QWebEngineView>
 #include <QtWebEngine>
 #include <QQuickWebEngineProfile>
 #include <QShortcut>
 #include <QString>
 #include <QStringList>
 #include <QTextEdit>
-#include <QtWebSockets/QWebSocketServer>
 
 #include <memory>
 
@@ -160,36 +157,12 @@ int main(int argc, char *argv[])
 
 
 
-
-
-
-
-
-
-    QWebChannel webChannel;
-    QWebSocketServer webSocketServer(QStringLiteral("SpaceBrowserSocket"),
-            QWebSocketServer::NonSecureMode); // FIXME: try to switch to secure mode
-    if (!webSocketServer.listen(QHostAddress::LocalHost, 61581)) {
-        throw std::runtime_error("Failed to open QWebSocket");
-    }
-    QObject::connect(&webSocketServer, &QWebSocketServer::newConnection,
-            [&webSocketServer, &webChannel]()
-    {
-        webChannel.connectTo(new WebSocketTransport(webSocketServer.nextPendingConnection()));
-        // FIXME: technically this doesn't leak, as webChannel holds pointers,
-        //        but it will probably not get freed either
-    });
-
-    webChannel.registerObject(QStringLiteral("pwManager"), &passMan);
-
     QObject::connect(&passMan, SIGNAL(shouldBeSaved(QVariant, QVariant)),
             view->rootObject(), SLOT(shouldBeSaved(QVariant, QVariant)));
     QObject::connect(&passMan, SIGNAL(shouldBeUpdated(QVariant, QVariant)),
                 view->rootObject(), SLOT(shouldBeUpdated(QVariant, QVariant)));
     QObject::connect(view->rootObject(), SIGNAL(savePasswordAccepted(QString, bool)),
             &passMan, SLOT(saveAccepted(QString, bool)));
-
-
 
     // FIXME: refactor below to use slots/signals instead of calling vh directly
     QQuickItem* webViewContainer = qobject_cast<QQuickItem*>(

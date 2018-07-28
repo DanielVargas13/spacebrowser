@@ -5,7 +5,7 @@
          if (window.pwManager)
          {
              window.pwManager.getCredentials(
-                 window.location.host, window.location.path,
+                 window.location.host, window.location.pathname,
                  function(retVal) {
                      loginInput.value = retVal.login
                      passInput.value = retVal.pass
@@ -40,27 +40,17 @@
          }
 
          if (login && pass)
-         {// FIXME: make sure this gets closed when leaving page
-
+         {
              if (!window.pwManager) {
-             var socket = new WebSocket("ws://localhost:61581")
-             socket.onclose = function()
-             {
-                 console.error("formFiller: filler web channel closed");
-             };
-             socket.onerror = function(error)
-             {
-                 console.error("formFiler: filler web channel error: " + error);
-             };
-             socket.onopen = function()
-             {
-                 console.log("formFiller: filler socket opened")
-                 window.channel = new QWebChannel(socket, function(channel)
-                 {
-                     window.pwManager = channel.objects.pwManager
-                     fillPassword(loginInput, passInput);
-                 });
+                 window.channel = new QWebChannel(
+                     qt.webChannelTransport,
+                     function(channel) {
+                         window.pwManager = channel.objects.pwManager
+                         fillPassword(loginInput, passInput)
+                     });
              }
+             else {
+                 fillPassword(loginInput, passInput);
              }
          }
      }

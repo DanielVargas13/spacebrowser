@@ -207,7 +207,7 @@ Rectangle
     WebEngineView
     {
         id: devToolsView
-        visible: false
+        visible: true
         height: 300
 	inspectedView: webViewContainer.currentView
 

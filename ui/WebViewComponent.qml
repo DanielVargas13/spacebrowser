@@ -1,5 +1,6 @@
 import QtQuick 2.7
 import QtWebEngine 1.5
+import QtWebChannel 1.0
 
 WebEngineView
 {
@@ -12,6 +13,10 @@ WebEngineView
     property var targetTitle // it would be cleaner to handle this on qt level
     property var targetIcon
     property int passCount: 0
+
+    webChannel: WebChannel {
+        id: webChan
+    }
 
     anchors.fill: parent
 

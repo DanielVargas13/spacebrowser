@@ -95,10 +95,6 @@ std::vector<Passwords::entry_t> Passwords::getCredentials(QString host, QString 
 {
     pqxx::nontransaction ntx(conn);
 
-    // For whatever reason path sometimes is size 1 with \0 as the only character
-    path.remove(QChar('\0'));
-    path = path.trimmed();
-
     std::vector<entry_t> result;
 
     try

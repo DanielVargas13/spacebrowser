@@ -23,28 +23,22 @@
 
             if (hasPassword)
             {
+                console.log("has password")
                 fields.push({ name: 'host', value: window.location.host, type: 'host'});
-                fields.push({ name: 'path', value: window.location.path, type: 'path'});
-                var socket = new WebSocket("ws://localhost:61581")
-                socket.onclose = function()
+                fields.push({ name: 'path', value: window.location.pathname, type: 'path'});
+
+                if (!window.pwManager)
                 {
-                    console.error("formExtractor: extractor web channel closed");
-                };
-                socket.onerror = function(error)
+                    window.channel = new QWebChannel(
+                        qt.webChannelTransport,
+                        function(channel) {
+                            window.pwManager = channel.objects.pwManager
+                            window.pwManager.savePassword(fields, function(retVal) {});
+                        });
+                }
+                else
                 {
-                    console.error("formExtractor: extractor web channel error: "
-                                  + error);
-                };
-                socket.onopen = function()
-                {
-                    window.channel = new QWebChannel(socket, function(channel)
-                    {
-                        channel.objects.pwManager.savePassword(
-                            fields, function(returnValue)
-                            {
-                                //console.log("savePassword returned")
-                            });
-                    });
+                    window.pwManager.savePassword(fields, function(retVal) {});
                 }
             }
         });
