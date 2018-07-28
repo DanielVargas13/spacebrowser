@@ -1,17 +1,23 @@
 import QtQuick 2.7
 import QtWebEngine 1.5
+import QtWebChannel 1.0
 
 WebEngineView
 {
     id: root
-    
+
     property int myViewId
     property var viewContainer
-    
+
     property var targetUrl // FIXME: these two are needed to handle lazy loading of webpages
     property var targetTitle // it would be cleaner to handle this on qt level
     property var targetIcon
-    
+    property int passCount: 0
+
+    webChannel: WebChannel {
+        id: webChan
+    }
+
     anchors.fill: parent
 
     onTitleChanged: {
@@ -49,4 +55,8 @@ WebEngineView
             url = targetUrl
     }
 
+    function passAvailable(passCount) {
+        console.log("HAS PASS COUNT: " + passCount)
+        root.passCount = passCount
+    }
 }

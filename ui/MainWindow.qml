@@ -1,14 +1,9 @@
 import QtQuick 2.7
 import QtQuick.Controls 2.2
-import QtWebEngine 1.5
-
-//import org.qt.qwebengineview 1.0
-//import QtQuick.Controls 1.4 as OldControls
-//import QtQuick.Dialogs 1.2 // file dialog
+import QtWebEngine 1.7
 
 import "."
 
-//import org.qt.qtextedit 1.0
 
 Rectangle
 {
@@ -18,6 +13,8 @@ Rectangle
     property bool isFullscreen: false
 
     signal printRequest(var webView)
+    signal loadSucceeded(var webView)
+    signal savePasswordAccepted(string url, bool accepted)
 
     visible: true
     color: Style.background
@@ -29,13 +26,15 @@ Rectangle
     AddressBar
     {
         id: addressBar
-        
+
         height: Style.addressBar.height
         background: Style.addressBar.style
 
         anchors.left: parent.left
         anchors.leftMargin: Style.margin
-        anchors.right: downloadHistoryButton.visible ? downloadHistoryButton.left : parent.right
+        anchors.right: passwordManagerButton.visible ?
+            passwordManagerButton.left : downloadHistoryButton.visible ?
+            downloadHistoryButton.left : parent.right
         anchors.rightMargin: Style.margin
 
         placeholderText: "https://"
@@ -59,25 +58,40 @@ Rectangle
             webViewContainer.setFocus()
         }
     }
-    
-    Rectangle // FIXME: export as basic button
+
+    // FIXME: put those buttons in some (invisible) container
+    BasicButton
+    {
+        id: passwordManagerButton
+        objectName: "passwordManagerButton"
+
+        signal passwordFillRequest(var webView)
+
+        anchors.right: downloadHistoryButton.visible ?
+            downloadHistoryButton.left : parent.right
+        anchors.rightMargin: Style.margin
+
+        source: "qrc:/ui/icons/lock.svg"
+        visible: webViewContainer.currentView ?
+            webViewContainer.currentView.passCount > 0 : false
+
+        MouseArea
+        {
+            anchors.fill: passwordManagerButton
+            onClicked: passwordManagerButton.passwordFillRequest(webViewContainer.currentView)
+        }
+    }
+
+    BasicButton
     {
         id: downloadHistoryButton
         objectName: "downloadHistoryButton"
 
-        height: Style.button.size
-        width: Style.button.size
-
-        color: Style.button.background
-        radius: Style.button.radius
-        border.color: Style.button.border.color
-        border.width: Style.button.border.width
-
         anchors.right: parent.right
         anchors.rightMargin: Style.margin
 
-        visible: false
-        
+        source: "qrc:/ui/icons/download2.svg"
+
         MouseArea
         {
             anchors.fill: downloadHistoryButton
@@ -86,20 +100,12 @@ Rectangle
                 downloadHistoryView.visible = !downloadHistoryView.visible
             }
         }
-
-        Image
-        {
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.horizontalCenter: parent.horizontalCenter
-            source: "qrc:/ui/icons/download2.svg"
-            sourceSize: Qt.size(Style.button.icon.width, Style.button.icon.height)
-        }
     }
 
     TabSelectorPanel
     {
         id: tabSelectorPanel
-        
+
         anchors.top: addressBar.bottom
         anchors.topMargin: Style.margin
         anchors.right: parent.right
@@ -118,13 +124,13 @@ Rectangle
         anchors.topMargin: Style.margin
         anchors.left: parent.left
         anchors.right: tabSelectorPanel.left
-        anchors.bottom: parent.bottom
+        anchors.bottom: devToolsView.visible ? devToolsView.top : parent.bottom
 
         onVisibleChanged:
         {
             tabSelectorPanel.visible = visible
         }
-        
+
         function createNewView(newViewId, _indent, insertAfter)
         {
             var obj = {title:"Empty", icon:"", viewId:newViewId, indent:_indent}
@@ -144,7 +150,7 @@ Rectangle
             if (updateModel)
                 viewHandler.titleChanged(viewId, title)
         }
-        
+
         function updateIcon(viewId, icon, updateModel)
         {
             tabSelectorPanel.updateIcon(viewId, icon)
@@ -173,6 +179,12 @@ Rectangle
             {
                 // FIXME: Possibly show some notification
             }
+
+            onLoadingChanged: {
+                if (loadRequest.status == WebEngineLoadRequest.LoadSucceededStatus) {
+                    mainWindow.loadSucceeded(this)
+                }
+            }
         }
     }
 
@@ -191,6 +203,20 @@ Rectangle
             webViewContainer.currentView.findText(text)
         }
     }
+
+    WebEngineView
+    {
+        id: devToolsView
+        visible: true
+        height: 300
+	inspectedView: webViewContainer.currentView
+
+        anchors.topMargin: Style.margin
+        anchors.left: parent.left
+        anchors.right: tabSelectorPanel.left
+        anchors.bottom: parent.bottom
+    }
+
 
     Shortcut {
         sequence: "Ctrl+Tab"
@@ -270,7 +296,7 @@ Rectangle
         id: scriptBlockingView
         objectName: "scriptBlockingView"
         visible: false
-        
+
         anchors.top: addressBar.bottom
         anchors.topMargin: Style.margin
         anchors.left: parent.left
@@ -295,9 +321,77 @@ Rectangle
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         anchors.bottomMargin: Style.margin
-        
+
         onVisibleChanged: {
             webViewContainer.visible = !visible
+        }
+    }
+
+    function shouldBeSaved(url, login)
+    {
+        savePasswordDialog.url = url
+        savePasswordDialog.login = login
+        savePasswordDialog.open()
+    }
+
+    function shouldBeUpdated(url, login)
+    {
+        savePasswordDialog.url = url
+        savePasswordDialog.login = login
+        savePasswordDialog.open()
+    }
+
+    Dialog
+    {
+        id: savePasswordDialog
+        title: update ? "Update password?" : "Save password?"
+        standardButtons: Dialog.Save | Dialog.Cancel
+
+        property string url
+        property string login
+        property bool update: false
+
+        onAccepted: mainWindow.savePasswordAccepted(url, true)
+        onRejected: mainWindow.savePasswordAccepted(url, false)
+
+        Label {
+            text: update ? ("Do you want to update password for site \"" +
+                    savePasswordDialog.url + "\" for user \"" +
+                    savePasswordDialog.login + "\"?") :
+                        ("Do you want to save password for site \"" +
+                                savePasswordDialog.url + "\" for user \"" +
+                                savePasswordDialog.login + "\"?");
+        }
+    }
+
+    function configureEncryption(model)
+    {
+        encryptionKeyConfigDialogCB.model = model;
+        encryptionKeyConfigDialog.open();
+    }
+
+    Dialog
+    {
+        id: encryptionKeyConfigDialog
+        objectName: "encryptionKeyConfigDialog"
+        title: "Configure encryption key"
+        standardButtons: Dialog.Save | Dialog.Cancel
+
+        signal keySelected(string id)
+
+        width: parent.width / 2
+        height: parent.height / 2
+
+        x: parent.width / 2 - width / 2
+        y: parent.height / 2 - height / 2
+
+        onAccepted: keySelected(encryptionKeyConfigDialogCB.currentText)
+        //onRejected:
+
+        ComboBox {
+            id: encryptionKeyConfigDialogCB
+
+            width: encryptionKeyConfigDialog.width * 0.9
         }
     }
 

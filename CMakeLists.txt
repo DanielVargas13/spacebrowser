@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.0.2)
 
 PROJECT(browser)
 
@@ -12,13 +12,12 @@ set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Krzysztof Borowczyk")
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 
 set(CMAKE_CXX_STANDARD 14)
-#SET(C14_ON "-std=c++14")
-#SET(CMAKE_CXX_FLAGS ${C14_ON})
 
-ADD_DEFINITIONS(-DBOOST_ALL_DYN_LINK=1)
+FIND_PACKAGE(Qt5 COMPONENTS Core Widgets Quick WebEngine WebChannel REQUIRED)
 
-FIND_PACKAGE(Qt5 COMPONENTS Core Widgets Quick WebEngine REQUIRED)
+ADD_DEFINITIONS(-Wall)
 
+#ADD_DEFINITIONS(-DBOOST_ALL_DYN_LINK=1)
 #SET(BOOST_ROOT "~/boost/")
 #find_package(Boost 1.55.0 REQUIRED system thread log)
 #if (Boost_FOUND)
@@ -28,7 +27,9 @@ FIND_PACKAGE(Qt5 COMPONENTS Core Widgets Quick WebEngine REQUIRED)
 #INCLUDE_DIRECTORIES("~/mysql_connector/include")
 #LINK_DIRECTORIES("~/mysql_connector/lib")
 
+
 INCLUDE_DIRECTORIES(.)
+INCLUDE_DIRECTORIES(./gnupgpp)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -39,11 +40,14 @@ SET(SOURCES
   db/Sql.cpp
   db/Config.cpp
   db/ScriptBlock.cpp
+  db/Passwords.cpp
+  db/Keys.cpp
   misc/DebugHelpers.cpp
   ViewHandler.cpp
   ContentFilter.cpp
   BasicDownloader.cpp
   PrintHandler.cpp
+  PasswordManager.cpp
   resources.qrc
   )
 
@@ -51,11 +55,14 @@ SET(SOURCES
 
 #  )
 
-ADD_EXECUTABLE(${PROJECT_NAME} ${SOURCES} )
+ADD_SUBDIRECTORY(gnupgpp)
 
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} Qt5::Core Qt5::Quick Qt5::Widgets Qt5::WebEngine pqxx pthread ${Boost_LIBRARIES})
+ADD_EXECUTABLE(${PROJECT_NAME} ${SOURCES})
+
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} Qt5::Core Qt5::Quick Qt5::Widgets
+    Qt5::WebEngine gnupgpp pqxx pthread ${Boost_LIBRARIES}
+    )
 
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)
 
 include(CPack)
-

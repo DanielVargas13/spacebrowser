@@ -2,19 +2,23 @@
 #include <ContentFilter.h>
 #include <ViewHandler.h>
 #include <PrintHandler.h>
+#include <PasswordManager.h>
 #include <conf/conf.h>
 
 #include <QApplication>
 #include <QObject>
 #include <QQuickItem>
 #include <QQuickView>
-//#include <QWebEngineView>
 #include <QtWebEngine>
 #include <QQuickWebEngineProfile>
 #include <QShortcut>
+#include <QString>
+#include <QStringList>
 #include <QTextEdit>
 
 #include <memory>
+
+#include <iostream>
 
 void setupProfileDownloadHandler(BasicDownloader& bd, QQuickWebEngineProfile* profile)
 {
@@ -119,6 +123,47 @@ int main(int argc, char *argv[])
     QObject::connect(view->rootObject(), SIGNAL(printRequest(QVariant)),
             &ph, SLOT(printRequested(QVariant)));
 
+    /// Setup password manager
+    ///
+    PasswordManager passMan;
+    QObject::connect(view->rootObject(), SIGNAL(loadSucceeded(QVariant)),
+                     &passMan, SLOT(loadSucceeded(QVariant)));
+
+    QObject* encKeyConfDialog = view->rootObject()->
+        findChild<QObject*>("encryptionKeyConfigDialog");
+    if (!encKeyConfDialog)
+        throw std::runtime_error("No encryptionKeyConfigDialog object found");
+
+    QObject::connect(encKeyConfDialog, SIGNAL(keySelected(QString)),
+                     &passMan, SLOT(keySelected(QString)));
+
+    QQuickItem* passwordManagerButton = qobject_cast<QQuickItem*>(
+            view->rootObject()->findChild<QObject*>("passwordManagerButton"));
+    if (!passwordManagerButton)
+        throw std::runtime_error("No passwordManagerButton object found");
+
+    QObject::connect(passwordManagerButton, SIGNAL(passwordFillRequest(QVariant)),
+                     &passMan, SLOT(fillPassword(QVariant)));
+
+
+
+    if (!passMan.isEncryptionReady())
+    {
+        QStringList model = passMan.keysList();
+        QMetaObject::invokeMethod(view->rootObject(), "configureEncryption",
+                                  Qt::ConnectionType::QueuedConnection,
+                                  Q_ARG(QVariant, model));
+    }
+
+
+
+    QObject::connect(&passMan, SIGNAL(shouldBeSaved(QVariant, QVariant)),
+            view->rootObject(), SLOT(shouldBeSaved(QVariant, QVariant)));
+    QObject::connect(&passMan, SIGNAL(shouldBeUpdated(QVariant, QVariant)),
+                view->rootObject(), SLOT(shouldBeUpdated(QVariant, QVariant)));
+    QObject::connect(view->rootObject(), SIGNAL(savePasswordAccepted(QString, bool)),
+            &passMan, SLOT(saveAccepted(QString, bool)));
+
     // FIXME: refactor below to use slots/signals instead of calling vh directly
     QQuickItem* webViewContainer = qobject_cast<QQuickItem*>(
             view->rootObject()->findChild<QObject*>("webViewContainer"));
@@ -157,6 +202,7 @@ int main(int argc, char *argv[])
     QObject::connect(scriptBlockingView, SIGNAL(removeGlobal(QString)),
             &cf, SLOT(removeGlobal(QString)));
 
+    std::cout << "Finished init, executing app\n";
     int status = app.exec();
 
     writeSettings(view);
