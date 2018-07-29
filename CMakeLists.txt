@@ -13,7 +13,7 @@ set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 
 set(CMAKE_CXX_STANDARD 14)
 
-FIND_PACKAGE(Qt5 COMPONENTS Core Widgets Quick WebEngine WebChannel REQUIRED)
+FIND_PACKAGE(Qt5 COMPONENTS Core Quick QuickControls2 WebEngine WebChannel Widgets REQUIRED)
 
 ADD_DEFINITIONS(-Wall)
 
@@ -59,9 +59,9 @@ ADD_SUBDIRECTORY(gnupgpp)
 
 ADD_EXECUTABLE(${PROJECT_NAME} ${SOURCES})
 
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} Qt5::Core Qt5::Quick Qt5::Widgets
-    Qt5::WebEngine gnupgpp pqxx pthread ${Boost_LIBRARIES}
-    )
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} Qt5::Core Qt5::Quick Qt5::QuickControls2
+  Qt5::WebEngine Qt5::Widgets gnupgpp pqxx pthread ${Boost_LIBRARIES}
+  )
 
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)
 

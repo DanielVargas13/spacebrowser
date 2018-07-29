@@ -1,5 +1,6 @@
 <!DOCTYPE RCC><RCC version="1.0">
-<qresource>
+  <qresource>
+    <file alias="qtquickcontrols2.conf">ui/qtquickcontrols2.conf</file>
     <file>ui/AddressBar.qml</file>
     <file>ui/BasicButton.qml</file>
     <file>ui/ContextMenuEntry.qml</file>
@@ -24,5 +25,10 @@
     <file>ui/icons/lock.svg</file>
     <file>js/formExtractor.js</file>
     <file>js/formFiller.js</file>
-</qresource>
+  </qresource>
+  <qresource prefix="Space">
+    <file alias="Menu.qml">ui/Space/Menu.qml</file>
+    <file alias="MenuItem.qml">ui/Space/MenuItem.qml</file>
+    <file alias="MenuSeparator.qml">ui/Space/MenuSeparator.qml</file>
+  </qresource>
 </RCC>
