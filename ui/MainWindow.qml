@@ -207,7 +207,7 @@ Rectangle
     WebEngineView
     {
         id: devToolsView
-        visible: true
+        visible: false
         height: 300
 	inspectedView: webViewContainer.currentView
 
@@ -288,6 +288,12 @@ Rectangle
         sequence: "Ctrl+s"
         onActivated: {
             webViewContainer.currentView.triggerWebAction(WebEngineView.SavePage)
+        }
+    }
+    Shortcut {
+        sequence: "Ctrl+d"
+        onActivated: {
+            devToolsView.visible = !devToolsView.visible
         }
     }
 
