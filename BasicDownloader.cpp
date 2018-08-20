@@ -162,7 +162,7 @@ bool BasicDownloader::hasHistory() const
 
 void BasicDownloader::openUrl(QString url)
 {
-    QDesktopServices::openUrl(url);
+    QDesktopServices::openUrl(QUrl::fromLocalFile(url));
 }
 
 void BasicDownloader::pause(int id)

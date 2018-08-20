@@ -88,7 +88,7 @@ Item
             hoverEnabled: true
             
             onClicked: {
-                root.openUrl(pathText.text)
+                root.openUrl(root.path)
             }
         }
     }
