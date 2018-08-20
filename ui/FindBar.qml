@@ -6,9 +6,11 @@ Rectangle
 {
     id: root
 
-    signal searchRequested(string text)
+    signal searchRequested(string text, bool backward, bool caseSensitive)
     
     property bool stateVisible: false
+    property bool caseSensitive: false
+    
     opacity: 0.0
     visible: opacity > 0.01
     
@@ -47,9 +49,67 @@ Rectangle
         selectByMouse: true
         
         onAccepted: {
-            searchRequested(searchText.text)
+            searchRequested(searchText.text, false, caseSensitive)
         }
     }
+
+    BasicButton
+    {
+        id: searchForward
+
+        anchors.left: searchText.right
+        anchors.leftMargin: Style.margin
+        anchors.verticalCenter: parent.verticalCenter
+        visible: true
+
+        source: "qrc:/ui/icons/searchDown.svg"
+
+        MouseArea
+        {
+            anchors.fill: searchForward
+            onClicked: searchRequested(searchText.text, false, caseSensitive)
+        }
+    }
+
+    BasicButton
+    {
+        id: searchBackward
+
+        anchors.left: searchForward.right
+        anchors.leftMargin: Style.margin
+        anchors.verticalCenter: parent.verticalCenter
+        visible: true
+
+        source: "qrc:/ui/icons/searchUp.svg"
+
+        MouseArea
+        {
+            anchors.fill: searchBackward
+            onClicked: searchRequested(searchText.text, true, caseSensitive)
+        }
+    }
+
+    BasicButton
+    {
+        id: caseSensitivity
+
+        anchors.left: searchBackward.right
+        anchors.leftMargin: Style.margin
+        anchors.verticalCenter: parent.verticalCenter
+        visible: true
+        stateful: true
+        pushed: caseSensitive
+
+        source: "qrc:/ui/icons/caseInsensitive.svg"
+        pushedSource: "qrc:/ui/icons/caseSensitive.svg"
+
+        MouseArea
+        {
+            anchors.fill: caseSensitivity
+            onClicked: caseSensitive = !caseSensitive
+        }
+    }
+
 
     CloseIcon
     {
@@ -72,5 +132,17 @@ Rectangle
     ]
     transitions: Transition {
         NumberAnimation { property: "opacity"; duration: 250}
+    }
+
+    function switchVisibleState()
+    {
+        if (root.stateVisible) {
+            searchRequested("", false, false)
+        }
+        else {
+            searchText.selectAll()
+        }
+            
+        root.stateVisible = !root.stateVisible
     }
 }

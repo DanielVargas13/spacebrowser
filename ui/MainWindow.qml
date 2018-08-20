@@ -200,7 +200,11 @@ Rectangle
         anchors.bottomMargin: Style.margin * 2
 
         onSearchRequested: {
-            webViewContainer.currentView.findText(text)
+            var flags = backward ? WebEngineView.FindBackward : 0
+            if (caseSensitive)
+                flags = flags | WebEngineView.FindCaseSensitively
+            
+            webViewContainer.currentView.findText(text, flags)
         }
     }
 
@@ -275,7 +279,7 @@ Rectangle
     Shortcut {
         sequence: "Ctrl+f"
         onActivated: {
-            findBar.stateVisible = !findBar.stateVisible
+            findBar.switchVisibleState()
         }
     }
     Shortcut {

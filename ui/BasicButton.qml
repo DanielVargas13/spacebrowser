@@ -5,6 +5,9 @@ Rectangle
     id: root
 
     property string source
+    property string pushedSource
+    property bool stateful: false
+    property bool pushed: false
 
     height: Style.button.size
     width: Style.button.size
@@ -19,7 +22,7 @@ Rectangle
     {
         anchors.verticalCenter: root.verticalCenter
         anchors.horizontalCenter: root.horizontalCenter
-        source: root.source
+        source: (root.stateful && root.pushed) ? root.pushedSource : root.source
         sourceSize: Qt.size(Style.button.icon.width, Style.button.icon.height)
     }
 }
