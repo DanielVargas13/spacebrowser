@@ -40,6 +40,13 @@ public:
 public slots:
 
     /**
+     * Initializes ViewHandler. This function should be called after at least one
+     * database connection is established. Can be called multiple times, e.g. when
+     * new database connection is established, or some connection was lost.
+     */
+    bool init();
+
+    /**
      * Create new QML WebEngineView object
      * @param parent optional id of parent tab
      * @return id of the newly created tab

@@ -25,6 +25,13 @@ ViewHandler::~ViewHandler()
 
 }
 
+bool ViewHandler::init()
+{
+    // FIXME: here initialize db::Tabs, and other db:: in the future
+
+    return true;
+}
+
 void ViewHandler::viewSelected(int viewId)
 {
     std::cout << "SELECTING: " << viewId << std::endl;

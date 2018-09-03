@@ -3,9 +3,12 @@
 #include <ViewHandler.h>
 #include <PrintHandler.h>
 #include <PasswordManager.h>
+#include <db/Backend.h>
 #include <conf/conf.h>
 
 #include <QApplication>
+#include <QJsonArray>
+#include <QJsonObject>
 #include <QObject>
 #include <QQuickItem>
 #include <QQuickView>
@@ -14,6 +17,7 @@
 #include <QShortcut>
 #include <QString>
 #include <QStringList>
+#include <QSqlDatabase>
 #include <QTextEdit>
 
 #include <memory>
@@ -92,6 +96,40 @@ void readSettings(std::shared_ptr<QQuickView> view)
         view->setGeometry(settings.value(conf::MainWindow::geometry).toRect());
 }
 
+void configureDbConnection(QObject* root)
+{
+    QJsonArray dbData;
+    QStringList connList;
+
+    QSettings settings;
+    unsigned int dbCount = settings.beginReadArray(conf::Databases::dbArray);
+    for (unsigned int i = 0; i < dbCount; ++i)
+    {
+        QVariant connName = settings.value(conf::Databases::array::connName);
+        QVariant driverType = settings.value(conf::Databases::array::driverType);
+        QVariant hostname = settings.value(conf::Databases::array::hostname);
+        QVariant dbName = settings.value(conf::Databases::array::dbName);
+        QVariant username = settings.value(conf::Databases::array::username);
+//FIXME: move this to Backend
+        QJsonObject obj;
+        obj.insert(conf::Databases::array::connName, connName.toString());
+        obj.insert(conf::Databases::array::driverType, driverType.toString());
+        obj.insert(conf::Databases::array::hostname, hostname.toString());
+        obj.insert(conf::Databases::array::dbName, dbName.toString());
+        obj.insert(conf::Databases::array::username, username.toString());
+
+        dbData.append(obj);
+        connList.push_back(connName.toString());
+    }
+    settings.endArray();
+
+    QMetaObject::invokeMethod(root, "configureDbConnection",
+                              Qt::ConnectionType::QueuedConnection,
+                              Q_ARG(QVariant, QVariant(connList)),
+                              Q_ARG(QVariant, QVariant(dbData)),
+                              Q_ARG(QVariant, QVariant(QSqlDatabase::drivers())));
+}
+
 int main(int argc, char *argv[])
 {
     /// Create and setup QApplication
@@ -155,14 +193,16 @@ int main(int argc, char *argv[])
                                   Q_ARG(QVariant, model));
     }
 
-
-
     QObject::connect(&passMan, SIGNAL(shouldBeSaved(QVariant, QVariant)),
             view->rootObject(), SLOT(shouldBeSaved(QVariant, QVariant)));
     QObject::connect(&passMan, SIGNAL(shouldBeUpdated(QVariant, QVariant)),
                 view->rootObject(), SLOT(shouldBeUpdated(QVariant, QVariant)));
     QObject::connect(view->rootObject(), SIGNAL(savePasswordAccepted(QString, bool)),
             &passMan, SLOT(saveAccepted(QString, bool)));
+
+
+    /// Setup View Handler
+    ///
 
     // FIXME: refactor below to use slots/signals instead of calling vh directly
     QQuickItem* webViewContainer = qobject_cast<QQuickItem*>(
@@ -182,9 +222,6 @@ int main(int argc, char *argv[])
     view->engine()->rootContext()->setContextProperty("viewHandler", &vh);
     vh.loadTabs();
 
-    BasicDownloader bd;
-    setupProfileDownloadHandler(bd, profile);
-    setupDownloaderSignals(bd, view, profile);
 
     if (tabSelector)
     {
@@ -201,6 +238,37 @@ int main(int argc, char *argv[])
             &cf, SLOT(removeLocal(QString, QString)));
     QObject::connect(scriptBlockingView, SIGNAL(removeGlobal(QString)),
             &cf, SLOT(removeGlobal(QString)));
+
+
+    /// Setup Downloader
+    ///
+    BasicDownloader bd;
+    setupProfileDownloadHandler(bd, profile);
+    setupDownloaderSignals(bd, view, profile);
+
+
+    /// Initialize databases
+    ///
+    QSettings settings;
+    unsigned int dbCount = settings.beginReadArray(conf::Databases::dbArray);
+    settings.endArray();
+
+    QObject* confDbConnDialog = view->rootObject()->
+        findChild<QObject*>("configureDbConnectionDialog");
+    if (!confDbConnDialog)
+        throw std::runtime_error("No configureDbConnectionDialog object found");
+
+    db::Backend dbBackend;
+    QObject::connect(confDbConnDialog, SIGNAL(dbConfigured(QVariant)),
+                     &dbBackend, SLOT(dbConfigured(QVariant)));
+
+    if (!dbCount || !dbBackend.connectDatabases())
+    {
+        std::cout << "main(): no db configured or connectDatabases() failed\n";
+
+        configureDbConnection(view->rootObject());
+    }
+
 
     std::cout << "Finished init, executing app\n";
     int status = app.exec();
