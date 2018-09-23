@@ -8,11 +8,11 @@
                  window.location.host, window.location.pathname,
                  function(retVal) {
                      loginInput.value = retVal.login
-                     if (angular) {
+                     if (typeof angular !== 'undefined') {
                          angular.element(loginInput).triggerHandler('input')
                      }
                      passInput.value = retVal.pass
-                     if (angular) {
+                     if (typeof angular !== 'undefined') {
                          e = angular.element(passInput).triggerHandler('input')
                      }
                  });
