@@ -8,7 +8,13 @@
                  window.location.host, window.location.pathname,
                  function(retVal) {
                      loginInput.value = retVal.login
+                     if (typeof angular !== 'undefined') {
+                         angular.element(loginInput).triggerHandler('input')
+                     }
                      passInput.value = retVal.pass
+                     if (typeof angular !== 'undefined') {
+                         e = angular.element(passInput).triggerHandler('input')
+                     }
                  });
          } else {
              console.log("formFiller: Couldn't find pwManager");
