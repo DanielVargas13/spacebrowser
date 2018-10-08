@@ -5,6 +5,7 @@
     <file>ui/BasicButton.qml</file>
     <file>ui/ContextMenuEntry.qml</file>
     <file>ui/CloseIcon.qml</file>
+    <file>ui/DbConnectionDialog.qml</file>
     <file>ui/DownloadHistoryListEntry.qml</file>
     <file>ui/DownloadHistoryView.qml</file>
     <file>ui/FindBar.qml</file>

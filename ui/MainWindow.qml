@@ -1,6 +1,5 @@
 import QtQuick 2.7
 import QtQuick.Controls 2.2
-import QtQuick.Layouts 1.11
 import QtWebEngine 1.7
 
 import "."
@@ -387,6 +386,8 @@ Rectangle
         objectName: "encryptionKeyConfigDialog"
         title: "Configure encryption key"
         standardButtons: Dialog.Save | Dialog.Cancel
+        closePolicy: Popup.CloseOnEscape
+        modal: true
 
         signal keySelected(string id)
 
@@ -397,7 +398,6 @@ Rectangle
         y: parent.height / 2 - height / 2
 
         onAccepted: keySelected(encryptionKeyConfigDialogCB.currentText)
-        //onRejected:
 
         ComboBox {
             id: encryptionKeyConfigDialogCB
@@ -406,118 +406,15 @@ Rectangle
         }
     }
 
-    function configureDbConnection(connList, dbData, drivers)
-    {
-        configureDbConnectionDialog.connList = connList
-        configureDbConnectionDialog.dbData = dbData
-        configureDbConnectionDialog.drivers = drivers
-        configureDbConnectionDialog.open()
-    }
-
-    Dialog
+    DbConnectionDialog
     {
         id: configureDbConnectionDialog
         objectName: "configureDbConnectionDialog"
-        title: "Configure database connection"
-        standardButtons: Dialog.Save | Dialog.Cancel
-
-        property var connList
-        property var dbData
-        property var drivers
-
-        signal dbConfigured(var connData)
 
         width: parent.width / 4
 
         x: parent.width / 2 - width / 2
         y: parent.height / 2 - height / 2
-
-        onAccepted: {
-            dbConfigured(
-                {
-                    connName: connNameCombo.currentText,
-                    driverType: driverTypeCombo.currentText,
-                    hostname: hostnameField.text,
-                    dbName: dbNameField.text,
-                    username: usernameField.text,
-                    password: passwordField.text
-                })
-        }
-
-        Item {
-            width: configureDbConnectionDialog.width * 0.9
-            implicitHeight: contentLayout.implicitHeight
-            anchors.horizontalCenter: parent.horizontalCenter
-
-            GridLayout {
-                id: contentLayout
-                columns: 2
-                anchors.fill: parent
-
-                Label {
-                    text: "Connection name: "
-                }
-                ComboBox {
-                    id: connNameCombo
-                    editable: true
-                    Layout.fillWidth: true
-                    model: configureDbConnectionDialog.connList
-
-                    onAccepted: {
-                        if (connNameCombo.editText != connNameCombo.currentText)
-                        {
-                            connNameCombo.model.push(connNameCombo.editText)
-                            connNameCombo.model[connNameCombo.model.length] = connNameCombo.editText
-                            console.log(JSON.stringify(connNameCombo.model))
-                            console.log(connNameCombo.model.length)
-                        }
-                    }
-                }
-
-                Label {
-                    text: "Database driver: "
-                }
-                ComboBox {
-                    id: driverTypeCombo
-                    Layout.fillWidth: true
-                    model: configureDbConnectionDialog.drivers
-                }
-
-                Label {
-                    text: "Hostname:"
-                }
-                TextField {
-                    id: hostnameField
-                    Layout.fillWidth: true
-                }
-
-                Label {
-                    text: "Database name:"
-                }
-                TextField {
-                    id: dbNameField
-                    Layout.fillWidth: true
-                }
-
-                Label {
-                    text: "Username:"
-                }
-                TextField {
-                    id: usernameField
-                    Layout.fillWidth: true
-                }
-
-                Label {
-                    text: "Password:"
-                }
-                TextField {
-                    id: passwordField
-                    Layout.fillWidth: true
-                    echoMode: TextInput.Password
-                }
-
-            }
-        }
 
     }
 

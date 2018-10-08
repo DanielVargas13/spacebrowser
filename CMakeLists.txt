@@ -11,7 +11,7 @@ set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Krzysztof Borowczyk")
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 FIND_PACKAGE(Qt5 COMPONENTS Core Quick QuickControls2 Sql WebEngine WebChannel Widgets REQUIRED)
@@ -38,6 +38,8 @@ set(CMAKE_AUTORCC ON)
 SET(SOURCES
   main.cpp
   db/Tabs.cpp
+  db/Tabs2.cpp
+  db/DbClient.cpp
   db/Sql.cpp
   db/Config.cpp
   db/ScriptBlock.cpp

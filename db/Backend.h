@@ -31,7 +31,8 @@ public:
     ~Backend();
 
 public slots:
-
+    void configureDbConnection(QObject* dialog, bool encReady);
+    void reconfigureDbConnection(QObject* dialog, QString err);
     void dbConfigured(QVariant connData);
     bool connectDatabases();
 
@@ -42,9 +43,6 @@ private:
     void writeAllConnectionEntries(QSettings& settings,
         const std::vector<struct connData_t>& connData);
     std::vector<struct connData_t> readAllConnectionEntries(QSettings& settings);
-
-
-
 };
 
 

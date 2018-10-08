@@ -6,6 +6,8 @@
 #include <db/Backend.h>
 #include <conf/conf.h>
 
+#include <db/Tabs2.h>
+
 #include <QApplication>
 #include <QJsonArray>
 #include <QJsonObject>
@@ -94,40 +96,6 @@ void readSettings(std::shared_ptr<QQuickView> view)
 
     if (settings.contains(conf::MainWindow::geometry))
         view->setGeometry(settings.value(conf::MainWindow::geometry).toRect());
-}
-
-void configureDbConnection(QObject* root)
-{
-    QJsonArray dbData;
-    QStringList connList;
-
-    QSettings settings;
-    unsigned int dbCount = settings.beginReadArray(conf::Databases::dbArray);
-    for (unsigned int i = 0; i < dbCount; ++i)
-    {
-        QVariant connName = settings.value(conf::Databases::array::connName);
-        QVariant driverType = settings.value(conf::Databases::array::driverType);
-        QVariant hostname = settings.value(conf::Databases::array::hostname);
-        QVariant dbName = settings.value(conf::Databases::array::dbName);
-        QVariant username = settings.value(conf::Databases::array::username);
-//FIXME: move this to Backend
-        QJsonObject obj;
-        obj.insert(conf::Databases::array::connName, connName.toString());
-        obj.insert(conf::Databases::array::driverType, driverType.toString());
-        obj.insert(conf::Databases::array::hostname, hostname.toString());
-        obj.insert(conf::Databases::array::dbName, dbName.toString());
-        obj.insert(conf::Databases::array::username, username.toString());
-
-        dbData.append(obj);
-        connList.push_back(connName.toString());
-    }
-    settings.endArray();
-
-    QMetaObject::invokeMethod(root, "configureDbConnection",
-                              Qt::ConnectionType::QueuedConnection,
-                              Q_ARG(QVariant, QVariant(connList)),
-                              Q_ARG(QVariant, QVariant(dbData)),
-                              Q_ARG(QVariant, QVariant(QSqlDatabase::drivers())));
 }
 
 int main(int argc, char *argv[])
@@ -262,13 +230,16 @@ int main(int argc, char *argv[])
     QObject::connect(confDbConnDialog, SIGNAL(dbConfigured(QVariant)),
                      &dbBackend, SLOT(dbConfigured(QVariant)));
 
+    // FIXME: call connectDatabases async and configure if connect failed
     if (!dbCount || !dbBackend.connectDatabases())
     {
         std::cout << "main(): no db configured or connectDatabases() failed\n";
 
-        configureDbConnection(view->rootObject());
+        dbBackend.configureDbConnection(confDbConnDialog, passMan.isEncryptionReady());
     }
 
+    db::Tabs2 t2;
+    t2.initDatabase("localPS");
 
     std::cout << "Finished init, executing app\n";
     int status = app.exec();
