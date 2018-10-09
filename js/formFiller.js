@@ -2,19 +2,20 @@
  {
      function fillPassword(loginInput, passInput)
      {
-         if (window.pwManager)
+         if (typeof window.pwManager !== 'undefined')
          {
              window.pwManager.getCredentials(
                  window.location.host, window.location.pathname,
                  function(retVal) {
                      loginInput.value = retVal.login
-                     if (typeof angular !== 'undefined') {
-                         angular.element(loginInput).triggerHandler('input')
-                     }
+                     loginInput.dispatchEvent(new Event("input", { bubbles: true}));
+
                      passInput.value = retVal.pass
+                     passInput.dispatchEvent(new Event("input", { bubbles: true}));
+                     /*
                      if (typeof angular !== 'undefined') {
                          e = angular.element(passInput).triggerHandler('input')
-                     }
+                     }*/
                  });
          } else {
              console.log("formFiller: Couldn't find pwManager");
@@ -47,7 +48,7 @@
 
          if (login && pass)
          {
-             if (!window.pwManager) {
+             if (typeof window.pwManager == 'undefined' ) {
                  window.channel = new QWebChannel(
                      qt.webChannelTransport,
                      function(channel) {

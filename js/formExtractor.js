@@ -27,7 +27,7 @@
                 fields.push({ name: 'host', value: window.location.host, type: 'host'});
                 fields.push({ name: 'path', value: window.location.pathname, type: 'path'});
 
-                if (!window.pwManager)
+                if (typeof window.pwManager == 'undefined')
                 {
                     window.channel = new QWebChannel(
                         qt.webChannelTransport,
