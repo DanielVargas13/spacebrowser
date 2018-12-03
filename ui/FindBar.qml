@@ -55,7 +55,7 @@ Rectangle
 
     BasicButton
     {
-        id: searchForward
+        id: searchForwardBtn
 
         anchors.left: searchText.right
         anchors.leftMargin: Style.margin
@@ -66,16 +66,16 @@ Rectangle
 
         MouseArea
         {
-            anchors.fill: searchForward
-            onClicked: searchRequested(searchText.text, false, caseSensitive)
+            anchors.fill: searchForwardBtn
+            onClicked: root.searchForward()
         }
     }
 
     BasicButton
     {
-        id: searchBackward
+        id: searchBackwardBtn
 
-        anchors.left: searchForward.right
+        anchors.left: searchForwardBtn.right
         anchors.leftMargin: Style.margin
         anchors.verticalCenter: parent.verticalCenter
         visible: true
@@ -84,8 +84,8 @@ Rectangle
 
         MouseArea
         {
-            anchors.fill: searchBackward
-            onClicked: searchRequested(searchText.text, true, caseSensitive)
+            anchors.fill: searchBackwardBtn
+            onClicked: root.searchBackward()
         }
     }
 
@@ -93,7 +93,7 @@ Rectangle
     {
         id: caseSensitivity
 
-        anchors.left: searchBackward.right
+        anchors.left: searchBackwardBtn.right
         anchors.leftMargin: Style.margin
         anchors.verticalCenter: parent.verticalCenter
         visible: true
@@ -144,5 +144,15 @@ Rectangle
         }
             
         root.stateVisible = !root.stateVisible
+    }
+
+    function searchBackward()
+    {
+        searchRequested(searchText.text, true, caseSensitive)
+    }
+
+    function searchForward()
+    {
+        searchRequested(searchText.text, false, caseSensitive)
     }
 }

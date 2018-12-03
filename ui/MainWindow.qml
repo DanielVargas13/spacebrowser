@@ -283,7 +283,7 @@ Rectangle
         }
     }
     Shortcut {
-        sequence: "Ctrl+p"
+        sequence: "Ctrl+o"
         onActivated: {
             mainWindow.printRequest(webViewContainer.currentView)
         }
@@ -300,6 +300,23 @@ Rectangle
             devToolsView.visible = !devToolsView.visible
         }
     }
+    Shortcut {
+        sequence: "Ctrl+n"
+        onActivated: {
+            if (findBar.visible) {
+                findBar.searchForward()
+            }
+        }
+    }
+    Shortcut {
+        sequence: "Ctrl+p"
+        onActivated: {
+            if (findBar.visible) {
+                findBar.searchBackward()
+            }
+        }
+    }
+
 
     ScriptBlockingView
     {
