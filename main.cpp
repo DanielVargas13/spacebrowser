@@ -11,6 +11,7 @@
 #include <QApplication>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QLoggingCategory>
 #include <QObject>
 #include <QQuickItem>
 #include <QQuickView>
@@ -24,7 +25,8 @@
 
 #include <memory>
 
-#include <iostream>
+Q_DECLARE_LOGGING_CATEGORY(mainLogs)
+Q_LOGGING_CATEGORY(mainLogs, "main")
 
 void setupProfileDownloadHandler(BasicDownloader& bd, QQuickWebEngineProfile* profile)
 {
@@ -100,6 +102,13 @@ void readSettings(std::shared_ptr<QQuickView> view)
 
 int main(int argc, char *argv[])
 {
+    /// Initialize logging
+    ///
+    QString colorsStart = "%{if-debug}\033[34m%{endif}%{if-warning}\033[33m%{endif}"
+        "%{if-critical}\033[31m%{endif}";
+    qSetMessagePattern(colorsStart +
+                       "[%{category}] %{function}[:%{line}]\033[0m: %{message}");
+
     /// Create and setup QApplication
     ///
     QApplication app(argc, argv);
@@ -233,7 +242,7 @@ int main(int argc, char *argv[])
     // FIXME: call connectDatabases async and configure if connect failed
     if (!dbCount || !dbBackend.connectDatabases())
     {
-        std::cout << "main(): no db configured or connectDatabases() failed\n";
+        qCCritical(mainLogs) <<"no db configured or connectDatabases() failed";
 
         dbBackend.configureDbConnection(confDbConnDialog, passMan.isEncryptionReady());
     }
@@ -241,7 +250,7 @@ int main(int argc, char *argv[])
     db::Tabs2 t2;
     t2.initDatabase("localPS");
 
-    std::cout << "Finished init, executing app\n";
+    qCDebug(mainLogs) << "Finished init, executing app";
     int status = app.exec();
 
     writeSettings(view);

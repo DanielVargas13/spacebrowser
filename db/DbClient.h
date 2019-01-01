@@ -1,7 +1,11 @@
 #ifndef DB_DBCLIENT_H_
 #define DB_DBCLIENT_H_
 
+#include <QLoggingCategory>
+#include <QSqlQuery>
 #include <QString>
+
+Q_DECLARE_LOGGING_CATEGORY(dbLogs)
 
 namespace db
 {
@@ -20,13 +24,17 @@ public:
      */
     virtual bool initDatabase(QString dbName);
 
+protected:
+    /**
+     * Log last error raised by query
+     */
+    void logError(const QSqlQuery& query);
 
 private:
     /**
      * Create database schema
      */
     bool createSchemaIfNotExists(QString dbName);
-
 
 protected:
     static const QString schemaName;

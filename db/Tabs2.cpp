@@ -6,8 +6,6 @@
 #include <QStringList>
 #include <QVariant>
 
-#include <iostream>
-
 namespace db
 {
 
@@ -37,18 +35,19 @@ bool Tabs2::initDatabase(QString dbName)
     if (!db.tables().contains(schemaName + "." + tableName))
     {
         QSqlQuery query(db);
-        query.prepare("CREATE TABLE IF NOT EXISTS :schema_name.:table_name"
-            "(id serial, parent integer default 0,"
-            "url varchar default \'\', icon varchar default \'\',"
-            "CONSTRAINT tabs_pkey PRIMARY KEY (id))");
-        query.bindValue(":schema_name", schemaName);
-        query.bindValue(":table_name", tableName);
+        bool result = query.exec("CREATE TABLE IF NOT EXISTS " +
+                                 schemaName + "." + tableName +
+                                 "(id serial, parent integer default 0,"
+                                 "url varchar default \'\',"
+                                 "icon varchar default \'\',"
+                                 "CONSTRAINT tabs_pkey PRIMARY KEY (id))");
 
-        if (!query.exec())
+        if (!result)
         {
-            std::cout << "Tabs2::initDatabase(dbName=" << dbName.toStdString()
-                << "): failed to create table\n";
-            std::cout << query.lastError().text().toStdString() << std::endl;
+            qCCritical(dbLogs, "(dbName=%s): failed to create table",
+                       dbName.toStdString().c_str());
+
+            logError(query);
             return false;
         }
     }
@@ -67,9 +66,9 @@ int32_t Tabs2::createTab(QString dbName)
 
     if (!query.exec())
     {
-        std::cout << "Tabs2::createTab(dbName=" << dbName.toStdString()
-            << "): failed to create tab\n";
-        std::cout << query.lastError().text().toStdString() << std::endl;
+        qCCritical(dbLogs, "(dbName=%s): failed to create tab",
+                   dbName.toStdString().c_str());
+        logError(query);
         return -1;
     }
 
@@ -97,9 +96,9 @@ void Tabs2::closeTab(QString dbName, int tabId)
 
     if (!query.exec())
     {
-        std::cout << "Tabs2::closeTab(dbName=" << dbName.toStdString()
-            << ", tabId=" << tabId << "): failed to remove tab\n";
-        std::cout << query.lastError().text().toStdString() << std::endl;
+        qCCritical(dbLogs, "(dbName=%s, tabId=%i): failed to remove tab",
+                   dbName.toStdString().c_str(), tabId);
+        logError(query);
     }
 }
 
@@ -114,10 +113,9 @@ std::vector<Tabs2::TabInfo> Tabs2::getAllTabs(QString dbName)
 
     if (!query.exec())
     {
-        std::cout << "Tabs2::getAllTabs(dbName=" << dbName.toStdString()
-            << "): failed to fetch tabs\n";
-        std::cout << query.lastError().text().toStdString() << std::endl;
-
+        qCCritical(dbLogs, "(dbName=%s): failed to fetch tabs",
+                   dbName.toStdString().c_str());
+        logError(query);
         throw std::runtime_error("Failed to fetch tabs");
     }
 
@@ -161,10 +159,10 @@ void Tabs2::setParent(QString dbName, int tabId, int parentId)
 
     if (!query.exec())
     {
-        std::cout << "Tabs2::setParent(dbName=" << dbName.toStdString()
-            << ", tabId:" << tabId << ", parentId:" << parentId
-            << "): failed to set parent\n";
-        std::cout << query.lastError().text().toStdString() << std::endl;
+        qCCritical(dbLogs, "(dbName=%s, tabId=%i, parentId=%i): "
+                   "failed to set parent", dbName.toStdString().c_str(),
+                   tabId, parentId);
+        logError(query);
         return;
     }
 }
@@ -182,10 +180,10 @@ void Tabs2::setUrl(QString dbName, int tabId, QString url)
 
     if (!query.exec())
     {
-        std::cout << "Tabs2::setUrl(dbName=" << dbName.toStdString()
-            << ", tabId:" << tabId << ", url:" << url.toStdString()
-            << "): failed to set url\n";
-        std::cout << query.lastError().text().toStdString() << std::endl;
+        qCCritical(dbLogs, "(dbName=%s, tabId=%i, url=%s): "
+                   "failed to set url", dbName.toStdString().c_str(),
+                   tabId, url.toStdString().c_str());
+        logError(query);
         return;
     }
 }
@@ -203,10 +201,10 @@ void Tabs2::setTitle(QString dbName, int tabId, QString title)
 
     if (!query.exec())
     {
-        std::cout << "Tabs2::setParent(dbName=" << dbName.toStdString()
-            << ", tabId:" << tabId << ", title:" << title.toStdString()
-            << "): failed to set parent\n";
-        std::cout << query.lastError().text().toStdString() << std::endl;
+        qCCritical(dbLogs, "(dbName=%s, tabId=%i, title=%s): "
+                   "failed to set title", dbName.toStdString().c_str(),
+                   tabId, title.toStdString().c_str());
+        logError(query);
         return;
     }
 }
@@ -224,10 +222,10 @@ void Tabs2::setIcon(QString dbName, int tabId, QString icon)
 
     if (!query.exec())
     {
-        std::cout << "Tabs2::setParent(dbName=" << dbName.toStdString()
-            << ", tabId:" << tabId << ", icon:" << icon.toStdString()
-            << "): failed to set parent\n";
-        std::cout << query.lastError().text().toStdString() << std::endl;
+        qCCritical(dbLogs, "(dbName=%s, tabId=%i, icon=%s): "
+                   "failed to set icon", dbName.toStdString().c_str(),
+                   tabId, icon.toStdString().c_str());
+        logError(query);
         return;
     }
 }

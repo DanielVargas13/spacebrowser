@@ -1,6 +1,7 @@
 #include <db/Backend.h>
 
 #include <conf/conf.h>
+#include <db/DbClient.h>
 
 #include <QJSEngine>
 #include <QJSValue>
@@ -13,7 +14,6 @@
 #include <QVariantMap>
 
 #include <algorithm>
-#include <iostream>
 
 namespace db
 {
@@ -110,7 +110,7 @@ void Backend::dbConfigured(QVariant connData)
         // FIXME: encrypt
         // refactor PasswordManager, extract encryption to
         // EncryptionManager or sth.
-        std::cout << "Encryption requested\n";
+        qCDebug(dbLogs) << "Encryption requested";
     }
     else
         newEntry.password = password;
@@ -165,9 +165,12 @@ bool Backend::connectDatabases()
         else
             db.setPassword(cd.password);
 
-        std::cout << "Connecting to " << cd.connName.toStdString() << std::endl;
-        result |= db.open();
-        std::cout << db.lastError().text().toStdString() << std::endl;
+        qCDebug(dbLogs) << "Connecting to"
+                        << cd.connName.toStdString().c_str();
+        if (db.open())
+            result = true;
+        else
+            qCCritical(dbLogs) << db.lastError().text().toStdString().c_str();
     }
     settings.endArray();
 

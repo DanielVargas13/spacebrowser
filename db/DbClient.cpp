@@ -6,12 +6,12 @@
 #include <QString>
 #include <QVariant>
 
-#include <iostream>
+Q_LOGGING_CATEGORY(dbLogs, "db")
 
 namespace db
 {
 
-const QString DbClient::schemaName("spaceBrowser2");
+const QString DbClient::schemaName("spacebrowser2");
 
 bool DbClient::initDatabase(QString dbName)
 {
@@ -19,8 +19,8 @@ bool DbClient::initDatabase(QString dbName)
     ///
     if (!createSchemaIfNotExists(dbName))
     {
-        std::cout << "DbClient::initDatabase(dbName=" << dbName.toStdString()
-                  << "): failed to create schema\n";
+        qCCritical(dbLogs, "(dbname=%s): failed to create schema",
+                   dbName.toStdString().c_str());
     }
 
     return true;
@@ -32,15 +32,25 @@ bool DbClient::createSchemaIfNotExists(QString dbName)
 
     QSqlQuery query(QSqlDatabase::database(dbName));
 
-    query.prepare("CREATE SCHEMA IF NOT EXISTS :schema_name");
-    query.bindValue(":schema_name", schemaName);
-
-    bool result = query.exec();
+    bool result = query.exec("CREATE SCHEMA IF NOT EXISTS " + schemaName);
 
     if (!result)
-        std::cout << query.lastError().text().toStdString() << std::endl;
+    {
+        QString msg = QString("(dbname=%1): failed to create schema").arg(dbName);
+        qCCritical(dbLogs) << msg.toStdString().c_str();
+        logError(query);
+    }
 
     return result;
+}
+
+void DbClient::logError(const QSqlQuery& query)
+{
+    QString msg = "error text: " + query.lastError().text();
+    qCCritical(dbLogs) << msg.toStdString().c_str();
+
+    msg = "query text: " + query.executedQuery();
+    qCCritical(dbLogs) << msg.toStdString().c_str();
 }
 
 }

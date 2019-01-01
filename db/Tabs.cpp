@@ -129,5 +129,3 @@ void Tabs::setIcon(int viewId, std::string icon)
 
 
 } /* namespace db */
-
-
