@@ -115,6 +115,21 @@ Rectangle
         onNewTabCreated: addressBar.focus = true
     }
 
+    TabSelectorPanel
+    {
+        id: tabSelectorPanel2
+
+        visible: false;
+
+        anchors.top: addressBar.bottom
+        anchors.topMargin: Style.margin
+        anchors.right: parent.right
+        anchors.bottom: mainWindow.bottom
+        width: Style.tabSelector.width
+
+        onNewTabCreated: addressBar.focus = true
+    }
+
     WebViewContainer
     {
         id: webViewContainer
@@ -259,7 +274,8 @@ Rectangle
     Shortcut { // test shorcut
         sequence: "Ctrl+g"
         onActivated: {
-            console.log("abc");
+            tabSelectorPanel.visible = !tabSelectorPanel.visible
+            tabSelectorPanel2.visible = !tabSelectorPanel2.visible
         }
     }
     Shortcut {

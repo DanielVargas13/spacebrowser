@@ -5,11 +5,13 @@
 #include <db/Config.h>
 #include <db/ScriptBlock.h>
 #include <ContentFilter.h>
+#include <TreeModel.h>
 
 #include <QObject>
 #include <QQuickItem>
 #include <QQuickView>
 
+#include <map>
 #include <mutex>
 #include <vector>
 
@@ -143,6 +145,8 @@ private:
     ContentFilter& cf;                   /// Reference to content filtering class
     std::shared_ptr<QQuickView> qView;   /// Smart pointer to main window object
 
+    TreeModel tabsModel;                 /// Model for holding tab related data
+
     /// Structure for holding WebViewContainer QML object and
     /// accompanying tab meta information
     ///
@@ -153,8 +157,8 @@ private:
         std::vector<int> children;   /// vector of child tab ids
     };
 
-    mutable std::recursive_mutex viewsMutex;
-    std::map<int, viewContainer> views;   /// Structure representing tab tree
+    [[deprecated]] mutable std::recursive_mutex viewsMutex;
+    [[deprecated]] std::map<int, viewContainer> views;   /// Structure representing tab tree
 
     /**
      * Count ancestors of current tab starting with parent

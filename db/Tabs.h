@@ -3,7 +3,9 @@
 
 #include <pqxx/pqxx>
 
+#include <map>
 #include <string>
+#include <vector>
 
 namespace db
 {
@@ -44,6 +46,7 @@ public:
      * @return vector of TabInfo structures describing opened tabs
      */
     std::vector<TabInfo> getAllTabs();
+    std::map<int, TabInfo> getAllTabsMap();
 
     /**
      * Set parent for tab

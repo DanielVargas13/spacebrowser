@@ -89,6 +89,32 @@ std::vector<Tabs::TabInfo> Tabs::getAllTabs()
     return tabs;
 }
 
+std::map<int, Tabs::TabInfo> Tabs::getAllTabsMap()
+{
+    pqxx::nontransaction ntx(conn);
+    // FIXME: ORDER BY id will not work when hierarchy modifications will be possible
+    //        a new column describing actual order is necessary
+    pqxx::result r = ntx.exec(sql::select.arg("id,parent,url,title,icon").arg(sql::schemaName).
+            arg(Tabs::tableName.c_str()).arg("ORDER BY id").toStdString());
+
+    std::map<int, TabInfo> tabs;
+
+    for (pqxx::result::size_type i = 0; i < r.size(); ++i)
+    {
+        TabInfo tab;
+        tab.id = r[i][0].as<int>();
+        tab.parent = r[i][1].as<int>();
+        tab.url = r[i][2].as<std::string>();
+        tab.title = r[i][3].as<std::string>();
+        tab.icon = r[i][4].as<std::string>();
+
+        tabs[tab.id] = tab;
+    }
+
+    return tabs;
+}
+
+
 void Tabs::setParent(int viewId, int parentId)
 {
     pqxx::nontransaction ntx(conn);

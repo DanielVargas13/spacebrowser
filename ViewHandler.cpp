@@ -14,7 +14,8 @@
 ViewHandler::ViewHandler(QQuickItem* _webViewContainer, QQuickItem* _tabSelector,
         QQuickItem* _scriptBlockingView, ContentFilter& _cf, std::shared_ptr<QQuickView> _qView)
     : webViewContainer(_webViewContainer), tabSelector(_tabSelector),
-      scriptBlockingView(_scriptBlockingView), cf(_cf), qView(_qView)
+      scriptBlockingView(_scriptBlockingView), cf(_cf), qView(_qView),
+      tabsModel(0)
 {
     //connect(webViewContainer, SIGNAL(viewSelected(int)), this, SLOT(viewSelected(int)));
     //connect(webViewContainer, SIGNAL(historyUpdated(int)), this, SLOT(historyUpdated(int)));
@@ -313,7 +314,7 @@ void ViewHandler::selectTab(int viewId)
 void ViewHandler::loadTabs()
 {
     std::vector<db::Tabs::TabInfo> tabs = tabsDb.getAllTabs();
-
+    std::map<int, db::Tabs::TabInfo> tabsMap = tabsDb.getAllTabsMap();
     /// Open new empty tab if no tabs were retrieved from database
     ///
     if (tabs.empty())
@@ -321,6 +322,17 @@ void ViewHandler::loadTabs()
         viewSelected(createTab());
         return;
     }
+
+
+
+    // Fill model and assign to tab container
+    for (const auto& tab: tabsMap)
+    {
+
+
+
+    }
+
 
     {
         std::lock_guard<std::recursive_mutex> lock(viewsMutex);

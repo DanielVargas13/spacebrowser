@@ -4,7 +4,7 @@ import QtQuick 2.7
 QtObject
 {
     id: general
-    
+
     property color background: "#444444"
     property color lightBackground: "#777777"
     property color border: "#222222"
@@ -22,7 +22,7 @@ QtObject
     property QtObject addressBar: QtObject
     {
         property int height: 25
-        
+
         property Item style: Rectangle
         {
             color: lightBackground
@@ -37,7 +37,7 @@ QtObject
         property int size: 25
         property int radius: 4
         property color background: lightBackground
-        
+
         property QtObject border: QtObject
         {
             property color color: general.border
@@ -96,6 +96,11 @@ QtObject
                 property int width: 1
                 property color color: "#888888"
             }
+            property QtObject target: QtObject
+            {
+                property int width: 3
+                property color color: "#222222"
+            }
         }
     }
 
@@ -108,10 +113,10 @@ QtObject
     property QtObject contextMenu: QtObject
     {
         property int width: 200
-        
+
         property color borderColor: general.border
         property int borderWidth: 2
-        
+
         property Rectangle background: Rectangle
         {
             color: general.lightBackground
@@ -120,7 +125,7 @@ QtObject
             implicitWidth: general.contextMenu.width
             implicitHeight: general.contextMenu.entry.height
         }
-        
+
         property QtObject entry: QtObject
         {
             property int height: 25
@@ -188,7 +193,7 @@ QtObject
             property color color: downloadProgressComponent.color
         }
     }
-    
+
     property QtObject downloadHistoryView: QtObject
     {
         property color openFileHighlight: "#92c954"

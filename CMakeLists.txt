@@ -52,6 +52,7 @@ SET(SOURCES
   BasicDownloader.cpp
   PrintHandler.cpp
   PasswordManager.cpp
+  TreeModel.cpp
   resources.qrc
   )
 
