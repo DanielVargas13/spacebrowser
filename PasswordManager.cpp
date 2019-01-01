@@ -128,7 +128,8 @@ bool PasswordManager::savePassword(QVariant fields_qv)
         {
             fields.password = encrypt(obj["value"].toString());
             fields.fingerprint = keys.getDefaultKey().c_str();
-        } else if (obj["type"] == "host")
+        }
+        else if (obj["type"] == "host")
             fields.host = obj["value"].toString();
         else if (obj["type"] == "path")
             fields.path = obj["value"].toString();
