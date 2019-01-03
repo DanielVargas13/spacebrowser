@@ -24,6 +24,7 @@ public:
         std::string url;
         std::string title;
         std::string icon; // FIXME: add zoom level
+        std::vector<int> children;
     };
 
     Tabs();

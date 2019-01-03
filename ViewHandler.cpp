@@ -1,5 +1,6 @@
 #include <ViewHandler.h>
 
+#include <Tab.h>
 #include <misc/DebugHelpers.h>
 
 #include <QAbstractListModel>
@@ -323,15 +324,59 @@ void ViewHandler::loadTabs()
         return;
     }
 
+//    Tab t;
+
+    // move this to tab.h:
+    QHash<int, QByteArray> roles;
+    roles[0] = "url";
+    roles[1] = "title";
+    roles[2] = "icon";
+    roles[3] = "viewId";
+    tabsModel2.setItemRoleNames(roles);
+
+/*
+//  model needs to return:
+QHash<int, QByteArray> AnimalModel::roleNames() const {
+    QHash<int, QByteArray> roles;
+    roles[TypeRole] = "type";
+    roles[SizeRole] = "size";
+    return roles;
+}
+*/
+
+
+    QStandardItem *parentItem = tabsModel2.invisibleRootItem();
+/*    for (int i = 0; i < 4; ++i) {
+        QStandardItem *item = new QStandardItem(QString("item %0").arg(i));
+        parentItem->appendRow(item);
+        parentItem = item;
+    }
+*/
+    QStandardItem *item = new Tab();
+    parentItem->appendRow(item);
+    item = new Tab();
+    parentItem->appendRow(item);
+
+    QQuickItem* visualModel = qobject_cast<QQuickItem*>(
+        qView->rootObject()->findChild<QObject*>("tabSelectorPanel"));
+
+    if (!visualModel)
+        throw std::runtime_error("No visualModel object found");
+
+
+    QVariant qv = QVariant::fromValue<QObject*>(&tabsModel2);
+    QMetaObject::invokeMethod(visualModel, "setModel",
+                              Qt::ConnectionType::QueuedConnection,
+                              Q_ARG(QVariant, qv));
 
 
     // Fill model and assign to tab container
-    for (const auto& tab: tabsMap)
-    {
+//    for (const auto& tab: tabsMap)
+//    {
+//fill tabsModel
+//        tabsModel2.
 
-
-
-    }
+//    }
 
 
     {

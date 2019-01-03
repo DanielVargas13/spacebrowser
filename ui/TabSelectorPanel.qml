@@ -10,7 +10,7 @@ ScrollView
     clip: true
 
     signal newTabCreated()
-    
+
     Item
     {
         id: tabSelectorItem
@@ -27,7 +27,7 @@ ScrollView
             anchors.top: parent.top
             anchors.right: parent.right
         }
-        
+
         NewTabButton
         {
             id: newTabButton
@@ -37,23 +37,28 @@ ScrollView
             anchors.left: parent.left
             anchors.leftMargin: Style.margin
             anchors.rightMargin: Style.margin
-            
+
             onNewTabCreated: root.newTabCreated()
         }
     }
-    
+
     function createNewTab(obj, insertAfter)
     {
         tabSelector.createNewTab(obj, insertAfter)
     }
-    
+
     function updateTitle(viewId, title)
     {
         tabSelector.updateTitle(viewId, title)
     }
-    
+
     function updateIcon(viewId, icon)
     {
         tabSelector.updateIcon(viewId, icon)
+    }
+
+    function setModel(model)
+    {
+        tabSelector.setModel(model)
     }
 }

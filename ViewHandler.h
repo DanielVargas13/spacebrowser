@@ -10,6 +10,7 @@
 #include <QObject>
 #include <QQuickItem>
 #include <QQuickView>
+#include <QStandardItemModel>
 
 #include <map>
 #include <mutex>
@@ -146,6 +147,7 @@ private:
     std::shared_ptr<QQuickView> qView;   /// Smart pointer to main window object
 
     TreeModel tabsModel;                 /// Model for holding tab related data
+    QStandardItemModel tabsModel2;
 
     /// Structure for holding WebViewContainer QML object and
     /// accompanying tab meta information

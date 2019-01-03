@@ -111,6 +111,13 @@ std::map<int, Tabs::TabInfo> Tabs::getAllTabsMap()
         tabs[tab.id] = tab;
     }
 
+    // FIXME: second pass to fill in children will be removed as soon as
+    //        children info will be stored in db
+    for (pqxx::result::size_type i = 0; i < r.size(); ++i)
+    {
+        tabs[r[i][1].as<int>()].children.push_back(r[i][0].as<int>());
+    }
+
     return tabs;
 }
 

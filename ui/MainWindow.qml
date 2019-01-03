@@ -118,6 +118,7 @@ Rectangle
     TabSelectorPanel
     {
         id: tabSelectorPanel2
+        objectName: "tabSelectorPanel"
 
         visible: false;
 

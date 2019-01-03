@@ -20,6 +20,7 @@ Item
     DelegateModel
     {
         id: visualModel
+        objectName: "visualModel"
         model: tabSelectorModel
 
         delegate: TabSelectorEntry
@@ -40,7 +41,6 @@ Item
                 root.viewSelected(viewId)
             }
         }
-
     }
 
     ListView
@@ -207,4 +207,10 @@ Item
         }
         console.log("<<<<<<")
     }
+
+    function setModel(model)
+    {
+        visualModel.model = model
+    }
+
 }
