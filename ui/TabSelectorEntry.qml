@@ -53,9 +53,9 @@ MouseArea {
     property alias border: content.border
 
     Component.onCompleted: {
-        console.log(root.title)
-        console.log(root.visible)
-        console.log(content.height)
+//        console.log(root.title)
+//        console.log(root.visible)
+//        console.log(content.height)
 /*
         console.log(root.height)
         console.log("parents:")
@@ -69,9 +69,9 @@ MouseArea {
         console.log(root.parent.parent.parent.parent.parent.parent.parent.parent.height)
         */
 
-        var globalCoordinares = root.mapToItem(root.parent.parent.parent.parent.parent.parent.parent.parent, 0, 0)
-        console.log("x: " + globalCoordinares.x + " y: " + globalCoordinares.y)
-        console.log("w: " + root.width + " h: " + root.height)
+//        var globalCoordinares = root.mapToItem(root.parent.parent.parent.parent.parent.parent.parent.parent, 0, 0)
+//        console.log("x: " + globalCoordinares.x + " y: " + globalCoordinares.y)
+//        console.log("w: " + root.width + " h: " + root.height)
     }
 
     Rectangle {
@@ -108,7 +108,7 @@ MouseArea {
         {
             id: tabIcon
             sourceSize: Qt.size(Style.tabSelector.entry.icon.width, Style.tabSelector.entry.icon.height)
-            source: icon
+            source: content.icon
 
             anchors.left: parent.left
             anchors.leftMargin: Style.margin
@@ -125,7 +125,7 @@ MouseArea {
             anchors.rightMargin: Style.margin
 
             elide: Text.ElideRight
-            text: title
+            text: content.title
         }
 
         CloseIcon

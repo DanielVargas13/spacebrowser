@@ -335,7 +335,7 @@ void ViewHandler::loadTabs()
     tabsModel.setItemRoleNames(roles);
 
 
-    QStandardItem *parent = tabsModel.invisibleRootItem();
+
 /*    for (int i = 0; i < 4; ++i) {
         QStandardItem *item = new QStandardItem(QString("item %0").arg(i));
         parentItem->appendRow(item);
@@ -354,18 +354,28 @@ void ViewHandler::loadTabs()
     */
 
     // Fill model and assign to tab container
-//    for (const auto& tab: tabsMap)
 
-//    std::deck toAdd;
-//    toAdd.push_back(tabsMap[0])
-//        while (toAdd.pop())
+    QStandardItem *parent = tabsModel.invisibleRootItem();
+    std::deque<std::pair<int, QStandardItem*>> toAdd;
+//    toAdd.push_back(std::pair<int, QStandardItem*>(0, parent));
+    for (auto child: tabsMap[0].children)
     {
-        Tab *item = new Tab(tab.second);
-//        item->parent =
+        toAdd.push_back(std::pair<int, QStandardItem*>(child, parent));
+    }
 
-        parent->appendRow(item);
+    while (!toAdd.empty())
+    {
+        auto id = toAdd.front();
+        toAdd.pop_front();
 
-        // toAdd.push_back(tabsMap[item->children])
+        Tab *item = new Tab(tabsMap[id.first]);
+
+        id.second->appendRow(item);
+
+        for (auto child: tabsMap[id.first].children)
+        {
+            toAdd.push_back(std::pair<int, QStandardItem*>(child, item));
+        }
     }
 
 

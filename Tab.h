@@ -6,10 +6,12 @@
 
 #include <QStandardItem>
 #include <QString>
+#include <QLoggingCategory>
 #include <QVariant>
 
-#include <iostream>
 #include <vector>
+
+Q_LOGGING_CATEGORY(tabModel, "tabModel")
 
 class Tab : public QStandardItem //public TreeNode
 {
@@ -37,7 +39,9 @@ public:
 
     QVariant data(int column) const override
     {
-        std::cout << ">>>>>> data(): column: " << column << std::endl;
+//        qCDebug(tabModel, ">>>>>> data(column=%i):", column);
+//        qCDebug(tabModel, ">>>>>> icon: %s", icon.toStdString().c_str());
+
         switch (column)
         {
             case 0: return url;
@@ -101,7 +105,7 @@ signals:
 
     int id = 1;
     int indent = 0;
-    Tab* parent; // FIXME: shared and weak pointers
+//    Tab* parent; // FIXME: shared and weak pointers
     std::vector<Tab> children;
 
     QString url;

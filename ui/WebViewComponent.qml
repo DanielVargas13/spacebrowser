@@ -26,7 +26,8 @@ WebEngineView
     }
 
     onIconChanged: {
-        viewContainer.updateIcon(myViewId, icon.toString(), true)
+        var iconUri = icon.toString().replace("image://favicon/", "")
+        viewContainer.updateIcon(myViewId, iconUri, true)
     }
 
     onNewViewRequested: function(request) {
@@ -47,7 +48,7 @@ WebEngineView
     }
 
     onTargetIconChanged: {
-        var iconUri = targetIcon.toString().replace("image://favicon/", "")
+//        var iconUri = targetIcon.toString().replace("image://favicon/", "")
         viewContainer.updateIcon(myViewId, iconUri, false)
     }
 

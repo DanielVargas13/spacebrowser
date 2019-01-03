@@ -1,5 +1,6 @@
 #include <db/DbClient.h>
 
+#include <QLoggingCategory>
 #include <QSqlDatabase>
 #include <QSqlError>
 #include <QSqlQuery>
