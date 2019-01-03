@@ -15,8 +15,7 @@
 ViewHandler::ViewHandler(QQuickItem* _webViewContainer, QQuickItem* _tabSelector,
         QQuickItem* _scriptBlockingView, ContentFilter& _cf, std::shared_ptr<QQuickView> _qView)
     : webViewContainer(_webViewContainer), tabSelector(_tabSelector),
-      scriptBlockingView(_scriptBlockingView), cf(_cf), qView(_qView),
-      tabsModel(0)
+      scriptBlockingView(_scriptBlockingView), cf(_cf), qView(_qView)
 {
     //connect(webViewContainer, SIGNAL(viewSelected(int)), this, SLOT(viewSelected(int)));
     //connect(webViewContainer, SIGNAL(historyUpdated(int)), this, SLOT(historyUpdated(int)));
@@ -332,53 +331,60 @@ void ViewHandler::loadTabs()
     roles[1] = "title";
     roles[2] = "icon";
     roles[3] = "viewId";
-    tabsModel2.setItemRoleNames(roles);
-
-/*
-//  model needs to return:
-QHash<int, QByteArray> AnimalModel::roleNames() const {
-    QHash<int, QByteArray> roles;
-    roles[TypeRole] = "type";
-    roles[SizeRole] = "size";
-    return roles;
-}
-*/
+    roles[4] = "indent";
+    tabsModel.setItemRoleNames(roles);
 
 
-    QStandardItem *parentItem = tabsModel2.invisibleRootItem();
+    QStandardItem *parent = tabsModel.invisibleRootItem();
 /*    for (int i = 0; i < 4; ++i) {
         QStandardItem *item = new QStandardItem(QString("item %0").arg(i));
         parentItem->appendRow(item);
         parentItem = item;
     }
 */
-    QStandardItem *item = new Tab();
+
+    /*Tab *item = new Tab();
+    item->title = ">>> TEST1";
+    item->id = 1;
     parentItem->appendRow(item);
     item = new Tab();
+    item->title = ">>> TEST2";
+    item->id = 2;
     parentItem->appendRow(item);
+    */
+
+    // Fill model and assign to tab container
+//    for (const auto& tab: tabsMap)
+
+//    std::deck toAdd;
+//    toAdd.push_back(tabsMap[0])
+//        while (toAdd.pop())
+    {
+        Tab *item = new Tab(tab.second);
+//        item->parent =
+
+        parent->appendRow(item);
+
+        // toAdd.push_back(tabsMap[item->children])
+    }
+
 
     QQuickItem* visualModel = qobject_cast<QQuickItem*>(
-        qView->rootObject()->findChild<QObject*>("tabSelectorPanel"));
+        qView->rootObject()->findChild<QObject*>("tabSelectorPanel2"));
 
     if (!visualModel)
         throw std::runtime_error("No visualModel object found");
 
 
-    QVariant qv = QVariant::fromValue<QObject*>(&tabsModel2);
+    QVariant qv = QVariant::fromValue<QObject*>(&tabsModel);
     QMetaObject::invokeMethod(visualModel, "setModel",
                               Qt::ConnectionType::QueuedConnection,
                               Q_ARG(QVariant, qv));
 
 
-    // Fill model and assign to tab container
-//    for (const auto& tab: tabsMap)
-//    {
-//fill tabsModel
-//        tabsModel2.
-
-//    }
 
 
+    /// WHAT FOLLOWS WILL BE DEPRECATED WHEN NEW MODEL LOADING IS DONE
     {
         std::lock_guard<std::recursive_mutex> lock(viewsMutex);
 

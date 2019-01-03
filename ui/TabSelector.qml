@@ -10,7 +10,8 @@ Item
     signal closeTab(int viewId)               // connected in c++ code
     signal openScriptBlockingView(int viewId) // connected in c++ code
 
-    height: Style.tabSelector.entry.height * tabSelectorModel.count
+    //height: Style.tabSelector.entry.height * tabSelectorModel.count
+    height: Style.tabSelector.entry.height * visualModel.count
 
     ListModel
     {
@@ -72,6 +73,11 @@ Item
         acceptedButtons: Qt.RightButton // FIXME: add dragging here??
 
         onClicked: {
+            console.log(root.visible)
+            console.log(visualModel)
+            console.log(visualModel.model)
+            console.log(JSON.stringify(visualModel.model))
+
             contextMenu.x = mouseX
             contextMenu.y = mouseY
             contextMenu.open()

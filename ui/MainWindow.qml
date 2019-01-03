@@ -106,6 +106,8 @@ Rectangle
     {
         id: tabSelectorPanel
 
+        visible: false
+
         anchors.top: addressBar.bottom
         anchors.topMargin: Style.margin
         anchors.right: parent.right
@@ -118,9 +120,9 @@ Rectangle
     TabSelectorPanel
     {
         id: tabSelectorPanel2
-        objectName: "tabSelectorPanel"
+        objectName: "tabSelectorPanel2"
 
-        visible: false;
+        visible: true;
 
         anchors.top: addressBar.bottom
         anchors.topMargin: Style.margin

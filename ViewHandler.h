@@ -146,8 +146,7 @@ private:
     ContentFilter& cf;                   /// Reference to content filtering class
     std::shared_ptr<QQuickView> qView;   /// Smart pointer to main window object
 
-    TreeModel tabsModel;                 /// Model for holding tab related data
-    QStandardItemModel tabsModel2;
+    QStandardItemModel tabsModel;        /// Model for holding tab related data
 
     /// Structure for holding WebViewContainer QML object and
     /// accompanying tab meta information

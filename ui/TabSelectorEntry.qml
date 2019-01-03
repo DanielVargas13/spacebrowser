@@ -29,7 +29,7 @@ MouseArea {
         if (mouse.button & Qt.MiddleButton)
         {
             root.close()
-            content.accepted = true
+            mouse.accepted = true
         }
         else if (mouse.button == Qt.LeftButton)
         {
@@ -51,6 +51,28 @@ MouseArea {
     property alias viewId: content.viewId
     property alias color: content.color
     property alias border: content.border
+
+    Component.onCompleted: {
+        console.log(root.title)
+        console.log(root.visible)
+        console.log(content.height)
+/*
+        console.log(root.height)
+        console.log("parents:")
+        console.log(root.parent.height)
+        console.log(root.parent.parent.height)
+        console.log(root.parent.parent.parent.height)
+        console.log(root.parent.parent.parent.parent.height)
+        console.log(root.parent.parent.parent.parent.parent.height)
+        console.log(root.parent.parent.parent.parent.parent.parent.height)
+        console.log(root.parent.parent.parent.parent.parent.parent.parent.height)
+        console.log(root.parent.parent.parent.parent.parent.parent.parent.parent.height)
+        */
+
+        var globalCoordinares = root.mapToItem(root.parent.parent.parent.parent.parent.parent.parent.parent, 0, 0)
+        console.log("x: " + globalCoordinares.x + " y: " + globalCoordinares.y)
+        console.log("w: " + root.width + " h: " + root.height)
+    }
 
     Rectangle {
         id: content

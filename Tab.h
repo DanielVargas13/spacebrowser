@@ -1,9 +1,11 @@
 #ifndef TAB_H_
 #define TAB_H_
 
-#include <TreeNode.h>
+//#include <TreeNode.h>
+#include <db/Tabs.h>
 
 #include <QStandardItem>
+#include <QString>
 #include <QVariant>
 
 #include <iostream>
@@ -17,6 +19,17 @@ public:
     /// It is enough to compare id, it's uniqueness is guaranteed
     /// by the database
     ///
+
+    Tab(const db::Tabs::TabInfo& ti)
+    {
+        // FIXME: move to Tabs2::TabInfo
+        id = ti.id;
+        url = QString(ti.url.c_str());
+        title = QString(ti.title.c_str());
+        icon = QString(ti.icon.c_str());
+
+    }
+
     bool operator== (const Tab &c1)
     {
         return this->id == c1.id;
@@ -31,6 +44,7 @@ public:
             case 1: return title;
             case 2: return icon;
             case 3: return id;
+            case 4: return indent;
         }
         return id;
     }
@@ -82,15 +96,16 @@ public:
 signals:
     void titleChanged();
 
-private:
+//private:
     int columnCnt = 1;
 
     int id = 1;
+    int indent = 0;
     Tab* parent; // FIXME: shared and weak pointers
     std::vector<Tab> children;
 
     QString url;
-    QString title = "test";
+    QString title = "Empty";
     QString icon;
 
     QVariant view;
