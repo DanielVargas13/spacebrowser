@@ -13,6 +13,7 @@ Item
     //height: Style.tabSelector.entry.height * tabSelectorModel.count
     height: Style.tabSelector.entry.height * visualModel.count
 
+    // FIXME: remove this:
     ListModel
     {
         id: tabSelectorModel
@@ -74,9 +75,8 @@ Item
 
         onClicked: {
             console.log(root.visible)
-            console.log(visualModel)
-            console.log(visualModel.model)
-            console.log(JSON.stringify(visualModel.model))
+            console.log(visualModel.count)
+            console.log(visualModel.model.count)
 
             contextMenu.x = mouseX
             contextMenu.y = mouseY

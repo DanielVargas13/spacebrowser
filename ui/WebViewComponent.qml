@@ -48,8 +48,7 @@ WebEngineView
     }
 
     onTargetIconChanged: {
-//        var iconUri = targetIcon.toString().replace("image://favicon/", "")
-        viewContainer.updateIcon(myViewId, iconUri, false)
+        viewContainer.updateIcon(myViewId, targetIcon, false)
     }
 
     onContextMenuRequested: function(request) {

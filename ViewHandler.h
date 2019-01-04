@@ -5,8 +5,9 @@
 #include <db/Config.h>
 #include <db/ScriptBlock.h>
 #include <ContentFilter.h>
-#include <TreeModel.h>
+#include <TreeToListProxyModel.h>
 
+#include <QLoggingCategory>
 #include <QObject>
 #include <QQuickItem>
 #include <QQuickView>
@@ -146,7 +147,9 @@ private:
     ContentFilter& cf;                   /// Reference to content filtering class
     std::shared_ptr<QQuickView> qView;   /// Smart pointer to main window object
 
-    QStandardItemModel tabsModel;        /// Model for holding tab related data
+    QStandardItemModel tabsModel;        /// Tree model for holding tab related data
+    TreeToListProxyModel flatModel;      /// List model for ListView
+                                         /// (no TreeView yet available)
 
     /// Structure for holding WebViewContainer QML object and
     /// accompanying tab meta information

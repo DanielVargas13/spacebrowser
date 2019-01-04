@@ -47,12 +47,13 @@ SET(SOURCES
   db/Keys.cpp
   db/Backend.cpp
   misc/DebugHelpers.cpp
+  Tab.cpp
   ViewHandler.cpp
   ContentFilter.cpp
   BasicDownloader.cpp
   PrintHandler.cpp
   PasswordManager.cpp
-  TreeModel.cpp
+  TreeToListProxyModel.cpp
   resources.qrc
   )
 

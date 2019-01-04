@@ -9,8 +9,11 @@
 #include <QModelIndex>
 //#include <QtWebEngine/5.9.1/QtWebEngine/private/qquickwebenginehistory_p.h>
 
+#include <chrono>
 #include <deque>
 #include <iostream>
+
+Q_LOGGING_CATEGORY(vhLog, "viewHandler")
 
 ViewHandler::ViewHandler(QQuickItem* _webViewContainer, QQuickItem* _tabSelector,
         QQuickItem* _scriptBlockingView, ContentFilter& _cf, std::shared_ptr<QQuickView> _qView)
@@ -314,50 +317,23 @@ void ViewHandler::selectTab(int viewId)
 void ViewHandler::loadTabs()
 {
     std::vector<db::Tabs::TabInfo> tabs = tabsDb.getAllTabs();
+    auto start = std::chrono::system_clock::now();
     std::map<int, db::Tabs::TabInfo> tabsMap = tabsDb.getAllTabsMap();
     /// Open new empty tab if no tabs were retrieved from database
     ///
-    if (tabs.empty())
+    if (tabs.empty() || tabsMap.empty())
     {
         viewSelected(createTab());
         return;
     }
 
-//    Tab t;
-
-    // move this to tab.h:
-    QHash<int, QByteArray> roles;
-    roles[0] = "url";
-    roles[1] = "title";
-    roles[2] = "icon";
-    roles[3] = "viewId";
-    roles[4] = "indent";
-    tabsModel.setItemRoleNames(roles);
-
-
-
-/*    for (int i = 0; i < 4; ++i) {
-        QStandardItem *item = new QStandardItem(QString("item %0").arg(i));
-        parentItem->appendRow(item);
-        parentItem = item;
-    }
-*/
-
-    /*Tab *item = new Tab();
-    item->title = ">>> TEST1";
-    item->id = 1;
-    parentItem->appendRow(item);
-    item = new Tab();
-    item->title = ">>> TEST2";
-    item->id = 2;
-    parentItem->appendRow(item);
-    */
+    tabsModel.setItemRoleNames(Tab::roles);
 
     // Fill model and assign to tab container
-
     QStandardItem *parent = tabsModel.invisibleRootItem();
+
     std::deque<std::pair<int, QStandardItem*>> toAdd;
-//    toAdd.push_back(std::pair<int, QStandardItem*>(0, parent));
+
     for (auto child: tabsMap[0].children)
     {
         toAdd.push_back(std::pair<int, QStandardItem*>(child, parent));
@@ -371,13 +347,13 @@ void ViewHandler::loadTabs()
         Tab *item = new Tab(tabsMap[id.first]);
 
         id.second->appendRow(item);
+        item->updateIndent();
 
         for (auto child: tabsMap[id.first].children)
         {
             toAdd.push_back(std::pair<int, QStandardItem*>(child, item));
         }
     }
-
 
     QQuickItem* visualModel = qobject_cast<QQuickItem*>(
         qView->rootObject()->findChild<QObject*>("tabSelectorPanel2"));
@@ -391,8 +367,7 @@ void ViewHandler::loadTabs()
                               Qt::ConnectionType::QueuedConnection,
                               Q_ARG(QVariant, qv));
 
-
-
+    auto end = std::chrono::system_clock::now();
 
     /// WHAT FOLLOWS WILL BE DEPRECATED WHEN NEW MODEL LOADING IS DONE
     {
@@ -435,6 +410,12 @@ void ViewHandler::loadTabs()
             }
         }
     }
+
+
+    std::chrono::duration<double> total = end-start;
+    qCDebug(vhLog, "Model load time: %lli",
+            std::chrono::duration_cast<std::chrono::nanoseconds>(total));
+
 
     /// Restore currentTab from previous session
     ///
