@@ -39,7 +39,7 @@ public:
 //    int getRowId() const;
 
 //    void setId(int id_);
-//    void setTitle(QString title_);
+    void setTitle(QString title_);
 //    void setIcon(QString icon_);
     void setView(QVariant view_);
 //    void setRowId(int);

@@ -12,6 +12,79 @@ TreeToListProxyModel::TreeToListProxyModel()
 {
     connect(this, &TreeToListProxyModel::sourceModelChanged,
             this, &TreeToListProxyModel::updateMapping);
+
+    // FIXME: probably remove this, doesn't seem to be triggered
+    connect(this, &TreeToListProxyModel::rowsInserted,
+            this, &TreeToListProxyModel::myRowInserted);
+
+//    connect(this, &TreeToListProxyModel::rowsInsertedXX,
+//            this, &TreeToListProxyModel::rowsInserted);
+}
+
+void TreeToListProxyModel::myRowInserted(const QModelIndex &parent, int first, int last)
+{
+    qCCritical(ttlProxy, "my inserted: %i", first);
+}
+
+void TreeToListProxyModel::sourceRowsInserted(const QModelIndex &parent, int first, int last)
+{
+    qCCritical(ttlProxy, "source inserted");
+
+    if (!parent.isValid())
+    {
+        qCDebug(ttlProxy, "!! >> Parent invalid, rows in model: %i",
+                rowCount());
+
+        beginInsertRows(QModelIndex(), rows, rows);
+
+        QModelIndex newRow = sourceModel()->index(first, 0);
+        toSource[rows] = newRow;
+        fromSource[newRow] = rows;
+
+        QVariant d = sourceModel()->data(newRow, 3); // 3 = id (viewId)
+        viewId2ModelId[d.toInt()] = rows;
+        rows++;
+
+        endInsertRows();
+
+    }
+    else
+    {
+        qCDebug(ttlProxy, "!!!! >> Parent valid");
+
+        int parentRow = fromSource.at(parent);
+        qCDebug(ttlProxy, "parentRow: %i", parentRow);
+
+        beginInsertRows(QModelIndex(), parentRow+1, parentRow+1);
+
+        for (int i = rowCount(); i > parentRow; --i)
+        {
+            toSource[i+1] = toSource[i];
+            fromSource[toSource[i]] = i+1;
+            QVariant d = sourceModel()->data(toSource[i], 3);
+            viewId2ModelId[d.toInt()] = i+1;
+        }
+
+        QModelIndex newRow = sourceModel()->index(first, 0, parent);
+        toSource[parentRow+1] = newRow;
+        fromSource[newRow] = parentRow+1;
+
+        QVariant d = sourceModel()->data(newRow, 3); // 3 = id (viewId)
+        qCDebug(ttlProxy, "viewId: %i", d.toInt());
+        viewId2ModelId[d.toInt()] = parentRow+1;
+        rows++;
+
+        endInsertRows();
+    }
+
+
+//    QModelIndex p = mapFromSource(parent);
+
+
+
+
+
+    //sourceModel()->index(first, 0, parent)
 }
 
 QModelIndex TreeToListProxyModel::mapFromSource(
@@ -42,15 +115,12 @@ QModelIndex TreeToListProxyModel::mapToSource(
         return QModelIndex();
     }
 
-    qCDebug(ttlProxy, "valid: %i", proxyIndex.isValid());
-    qCDebug(ttlProxy, "index: %i", proxyIndex.row());
     if (!toSource.count(proxyIndex.row()))
     {
         qCDebug(ttlProxy, "noIndex");
         return QModelIndex();
     }
 
-    qCDebug(ttlProxy, "returning");
     return toSource.at(proxyIndex.row());
 }
 
@@ -59,7 +129,7 @@ QModelIndex TreeToListProxyModel::index(int row, int column,
 {
     if (!hasIndex(row, column, parent))
     {
-        qCDebug(ttlProxy, "! has no index");
+        qCDebug(ttlProxy, "! has no index: row: %i, col:%i", row, column);
         return QModelIndex();
     }
 
@@ -86,13 +156,17 @@ int TreeToListProxyModel::columnCount(const QModelIndex &parent) const
 
 QVariant TreeToListProxyModel::data(const QModelIndex &index, int role) const
 {
-    return sourceModel()->data(toSource.at(index.row()), role);
+//    return sourceModel()->data(toSource.at(index.row()), role);
+    return sourceModel()->data(mapToSource(index), role);
 }
 
 void TreeToListProxyModel::updateMapping()
 {
     if (!sourceModel())
         return;
+
+    connect(sourceModel(), &TreeToListProxyModel::rowsInserted,
+            this, &TreeToListProxyModel::sourceRowsInserted);
 
     auto start = std::chrono::system_clock::now();
 

@@ -154,9 +154,9 @@ Rectangle
 
         function updateTitle(viewId, title, updateModel)
         {
-            tabSelectorPanel.updateTitle(viewId, title)
-            if (updateModel)
-                viewHandler.titleChanged(viewId, title)
+//            tabSelectorPanel.updateTitle(viewId, title)
+//            if (updateModel)
+            viewHandler.titleChanged(viewId, title)
         }
 
         function updateIcon(viewId, icon, updateModel)

@@ -120,14 +120,24 @@ int ViewHandler::createTab(int parent)
         qCCritical(vhLog, "vd.tabData should be nullptr");
     }
 
-    Tab* par = nullptr;
+    QStandardItem* par = nullptr;
+
     if (parent)
+    {
+        qCDebug(vhLog, "createTab: found parent tab");
         par = views2.at(parent).tabData;
+    }
+    else
+        par = tabsModel.invisibleRootItem();
 
     Tab* item = new Tab(viewId);
 
     if (par)
         par->appendRow(item);
+    else
+    {
+        qCCritical(vhLog, "Could not find parent to add tab to");
+    }
 
     item->updateIndent();
     vd.tabData = item;
@@ -138,9 +148,9 @@ int ViewHandler::createTab(int parent)
 
 QVariant ViewHandler::getView(int viewId)
 {
-    std::lock_guard<std::recursive_mutex> lock(viewsMutex);
+    std::lock_guard<std::recursive_mutex> lock(views2Mutex);
 
-    return views.at(viewId).view;
+    return views2.at(viewId).tabData->getView();
 }
 
 /*
@@ -352,6 +362,7 @@ void ViewHandler::urlChanged(int viewId, QUrl url)
 void ViewHandler::titleChanged(int viewId, QString title)
 {
     tabsDb.setTitle(viewId, title.toStdString());
+    views2.at(viewId).tabData->setTitle(title);
 }
 
 void ViewHandler::iconChanged(int viewId, QUrl icon)
@@ -494,6 +505,11 @@ void ViewHandler::loadTabs()
 
         selectTab(viewId);
     }
+}
+
+int ViewHandler::getFlatModelId(int viewId) const
+{
+    return flatModel.getModelId(viewId);
 }
 
 void ViewHandler::nextTab()

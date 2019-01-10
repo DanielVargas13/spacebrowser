@@ -14,16 +14,16 @@ Item
     height: Style.tabSelector.entry.height * visualModel.count
 
     // FIXME: remove this:
-    ListModel
-    {
-        id: tabSelectorModel
-    }
+//    ListModel
+//    {
+//        id: tabSelectorModel
+//    }
 
     DelegateModel
     {
         id: visualModel
         objectName: "visualModel"
-        model: tabSelectorModel
+//        model: tabSelectorModel
 
         delegate: TabSelectorEntry
         {
@@ -52,7 +52,7 @@ Item
 //                    console.log(">> : " + model[p]);
 //                }
 //                console.log(JSON.stringify(model))
-//                console.log(model.title)
+                console.log(model.title)
             }
 
         }
@@ -125,20 +125,19 @@ Item
 //        tabSelectorModel.get(modelId).indent = _indent // FIXME: coredumps sometimes
 //    }
 
-    function updateTitle(viewId, title)
-    {
-        var id = viewId2ModelId(viewId)
-        if (id >= 0)
-            tabSelectorModel.get(id).title = title
-    }
+//    function updateTitle(viewId, title)
+//    {
+//        var id = visualModel.model.getModelId(viewId)
+//        visualModel.model.get(id).title = title
+//    }
 
     function selectView(modelId)
     {
-        console.log(tabSelectorView.currentIndex)
-        console.log("selecting " + modelId);
-        console.log("model size: " + visualModel.model.count)
+//        console.log(tabSelectorView.currentIndex)
+//        console.log("selecting " + modelId);
+//        console.log("model size: " + visualModel.model.count)
         tabSelectorView.currentIndex = modelId
-        console.log(tabSelectorView.currentIndex)
+//        console.log(tabSelectorView.currentIndex)
     }
 
     function updateIcon(viewId, icon)

@@ -7,6 +7,8 @@
 
 class TreeToListProxyModel : public QAbstractProxyModel
 {
+    Q_OBJECT
+
 public:
     TreeToListProxyModel();
 
@@ -23,10 +25,15 @@ public:
     void setRoleNames(const QHash<int, QByteArray> &roleNames);
     QHash<int, QByteArray> roleNames() const override;
 
-    int getModelId(int viewId) const;
+    Q_INVOKABLE int getModelId(int viewId) const;
+
+//signals:
+//    void rowsInsertedXX(const QModelIndex &parent, int first, int last, QPrivateSignal());
 
 private:
     void updateMapping();
+    void myRowInserted(const QModelIndex &parent, int first, int last);
+    void sourceRowsInserted(const QModelIndex &parent, int first, int last);
 
     unsigned int rows = 0;
     std::map<int, QModelIndex> toSource;

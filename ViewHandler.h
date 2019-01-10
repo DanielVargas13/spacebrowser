@@ -135,6 +135,12 @@ public slots:
      */
     void showFullscreen(bool fullscreen = true);
 
+    /**
+     * Find flatModel id of viewId
+     * @param viewId id of tab / view
+     */
+    int getFlatModelId(int viewId) const;
+
     // deprecated, does not work
     void historyUpdated(int _viewId, QQuickWebEngineHistory* navHistory);
 

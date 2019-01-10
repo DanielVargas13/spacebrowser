@@ -80,12 +80,13 @@ void Tab::setId(int id_)
 {
     id = id_;
 }
-
+*/
 void Tab::setTitle(QString title_)
 {
     title = title_;
+    emitDataChanged();
 }
-
+/*
 void Tab::setIcon(QString icon_)
 {
     icon = icon_;

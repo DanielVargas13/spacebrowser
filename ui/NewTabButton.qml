@@ -23,7 +23,7 @@ Rectangle
         onClicked:
         {
             var id = viewHandler.createTab();
-//            viewHandler.selectTab(id)
+            viewHandler.selectTab(id)
             root.newTabCreated()
         }
     }
