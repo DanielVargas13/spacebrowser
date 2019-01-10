@@ -5,6 +5,7 @@
 #include <db/Config.h>
 #include <db/ScriptBlock.h>
 #include <ContentFilter.h>
+#include <Tab.h>
 #include <TreeToListProxyModel.h>
 
 #include <QLoggingCategory>
@@ -164,24 +165,32 @@ private:
     [[deprecated]] mutable std::recursive_mutex viewsMutex;
     [[deprecated]] std::map<int, viewContainer> views;   /// Structure representing tab tree
 
+    struct viewData
+    {
+        Tab* tabData = nullptr;
+    };
+
+    mutable std::recursive_mutex views2Mutex;
+    std::map<int, viewData> views2;    // viewId to QML WebViewContainer mapping
+
     /**
      * Count ancestors of current tab starting with parent
      * @param parent id of parent tab
      * @return 0 if there is no parent (parent==0), number of ancestors otherwise
      */
-    int countAncestors(int parent) const;
+//    int countAncestors(int parent) const;
 
     /**
      * Remove view from parent's children, and add it's children to parent's
      * @param viewId id of tab for which hierarchy structure needs to be fixed
      */
-    void fixHierarchy(int viewId);
+//    void fixHierarchy(int viewId);
 
     /**
      * Update indentation level for all descendants of this tab
      * @param viewId id of tab for which indentation needs to be fixed
      */
-    void fixIndentation(int viewId);
+//    void fixIndentation(int viewId);
 };
 
 #endif /* VIEWHANDLER_H_ */

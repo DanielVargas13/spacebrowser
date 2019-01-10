@@ -105,22 +105,7 @@ Rectangle
     TabSelectorPanel
     {
         id: tabSelectorPanel
-
-        visible: false
-
-        anchors.top: addressBar.bottom
-        anchors.topMargin: Style.margin
-        anchors.right: parent.right
-        anchors.bottom: mainWindow.bottom
-        width: Style.tabSelector.width
-
-        onNewTabCreated: addressBar.focus = true
-    }
-
-    TabSelectorPanel
-    {
-        id: tabSelectorPanel2
-        objectName: "tabSelectorPanel2"
+        objectName: "tabSelectorPanel"
 
         visible: true;
 
@@ -149,17 +134,22 @@ Rectangle
             tabSelectorPanel.visible = visible
         }
 
+        function createViewObject(newViewId)
+        {
+            var view = viewComp.createObject(webViewContainer);
+            view.zoomFactor = 1.2 // FIXME: set in style or configuration
+            view.myViewId = newViewId
+
+            return view;
+        }
+
         function createNewView(newViewId, _indent, insertAfter)
         {
             var obj = {title:"Empty", icon:"", viewId:newViewId, indent:_indent}
 
             tabSelectorPanel.createNewTab(obj, insertAfter)
 
-            var view = viewComp.createObject(webViewContainer);
-            view.zoomFactor = 1.2 // FIXME: set in style or configuration
-            view.myViewId = newViewId
-
-            return view
+            return createViewObject(newViewId)
         }
 
         function updateTitle(viewId, title, updateModel)
@@ -277,8 +267,7 @@ Rectangle
     Shortcut { // test shorcut
         sequence: "Ctrl+g"
         onActivated: {
-            tabSelectorPanel.visible = !tabSelectorPanel.visible
-            tabSelectorPanel2.visible = !tabSelectorPanel2.visible
+
         }
     }
     Shortcut {

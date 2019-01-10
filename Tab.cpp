@@ -9,6 +9,11 @@ QHash<int, QByteArray> Tab::roles = {
     {3, "viewId"},
     {4, "indent"}};
 
+Tab::Tab(int id_)
+{
+    id = id_;
+}
+
 Tab::Tab(const db::Tabs::TabInfo& ti)
 {
     id = ti.id;
@@ -39,9 +44,38 @@ void Tab::updateIndent()
         return;
 
     indent = pp->indent + 1;
-    qCDebug(tabModel, "Tab id %i indent: %i", id, indent);
 }
 
+int Tab::getId() const
+{
+    return id;
+}
+
+QString Tab::getTitle() const
+{
+    return title;
+}
+
+QString Tab::getIcon() const
+{
+    return icon;
+}
+
+QString Tab::getUrl() const
+{
+    return url;
+}
+
+QVariant Tab::getView() const
+{
+    return view;
+}
+
+//int Tab::getRowId() const
+//{
+//    return rowId;
+//}
+/*
 void Tab::setId(int id_)
 {
     id = id_;
@@ -56,3 +90,13 @@ void Tab::setIcon(QString icon_)
 {
     icon = icon_;
 }
+*/
+void Tab::setView(QVariant view_)
+{
+    view = view_;
+}
+
+//void Tab::setRowId(int rowId_)
+//{
+//    rowId = rowId_;
+//}

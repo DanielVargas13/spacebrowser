@@ -16,6 +16,7 @@
 class Tab : public QStandardItem
 {
 public:
+    Tab(int id);
     Tab(const db::Tabs::TabInfo& ti);
 
     bool operator== (const Tab &c1)
@@ -30,9 +31,18 @@ public:
     QVariant data(int column) const override;
     void updateIndent();
 
-    void setId(int id_);
-    void setTitle(QString title_);
-    void setIcon(QString icon_);
+    int getId() const;
+    QString getTitle() const;
+    QString getIcon() const;
+    QString getUrl() const;
+    QVariant getView() const;
+//    int getRowId() const;
+
+//    void setId(int id_);
+//    void setTitle(QString title_);
+//    void setIcon(QString icon_);
+    void setView(QVariant view_);
+//    void setRowId(int);
 
 signals:
     void titleChanged();
@@ -42,8 +52,8 @@ public:
 
 private:
     int columnCnt = 1;
+    int id = -1;
 
-    int id = 1;
     int indent = 0;
     std::vector<Tab> children;
 

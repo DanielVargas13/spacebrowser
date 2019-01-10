@@ -39,9 +39,22 @@ Item
             }
 
             onSelected: {
+                console.log("selected: " + index + " viewId: " + viewId)
                 tabSelectorView.currentIndex = index
                 root.viewSelected(viewId)
             }
+            Component.onCompleted: {
+//                console.log("------------------------------------------_")
+//                console.log(model)
+//                for (var p in model)
+//                {
+//                    console.log(">> " + p)
+//                    console.log(">> : " + model[p]);
+//                }
+//                console.log(JSON.stringify(model))
+//                console.log(model.title)
+            }
+
         }
     }
 
@@ -106,16 +119,11 @@ Item
             tabSelectorModel.append(obj)
     }
 
-    function fixIndentation(viewId, _indent)
-    {
-        var modelId = viewId2ModelId(viewId)
-        //console.log("indent: " + _indent + " viewid: " + viewId + " modelId: " + modelId)
-        //console.log("length: " + tabSelectorModel.count)
-        //console.log("ind: " + tabSelectorModel.get(modelId).indent + " viewId: " + tabSelectorModel.get(modelId).viewId)
-        //tabSelectorModel.set(modelId, {indent: _indent})
-        tabSelectorModel.get(modelId).indent = _indent // FIXME: coredumps sometimes
-        //console.log("~~~ not dumped")
-    }
+//    function fixIndentation(viewId, _indent)
+//    {
+//        var modelId = viewId2ModelId(viewId)
+//        tabSelectorModel.get(modelId).indent = _indent // FIXME: coredumps sometimes
+//    }
 
     function updateTitle(viewId, title)
     {
@@ -124,19 +132,13 @@ Item
             tabSelectorModel.get(id).title = title
     }
 
-    function selectView(viewId)
+    function selectView(modelId)
     {
-        var id = viewId2ModelId(viewId)
-        if (id < 0)
-        {
-            if (tabSelectorModel.count < 1)
-                return -1;
-
-            id = tabSelectorModel.count-1
-        }
-
-        tabSelectorView.currentIndex = id
-        return tabSelectorModel.get(id).viewId
+        console.log(tabSelectorView.currentIndex)
+        console.log("selecting " + modelId);
+        console.log("model size: " + visualModel.model.count)
+        tabSelectorView.currentIndex = modelId
+        console.log(tabSelectorView.currentIndex)
     }
 
     function updateIcon(viewId, icon)
@@ -146,6 +148,7 @@ Item
             tabSelectorModel.get(id).icon = icon
     }
 
+/*
     function removeTabEntry(viewId)
     {
         for (var i=0; i < tabSelectorModel.count; ++i)
@@ -164,14 +167,14 @@ Item
                     j = i - 1
 
                 tabSelectorView.currentIndex = j
-                viewSelected(tabSelectorModel.get(j).viewId)
+                root.viewSelected(tabSelectorModel.get(j).viewId)
             }
 
             //dumpCurrentModel()//logging
             return
         }
     }
-
+*/
     function getNextTab(viewId)
     {
         var id = viewId2ModelId(viewId)

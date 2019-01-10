@@ -16,14 +16,14 @@ Rectangle
         anchors.horizontalCenter: root.horizontalCenter
         anchors.verticalCenter: root.verticalCenter
     }
-    
+
     MouseArea
     {
         anchors.fill: root
         onClicked:
         {
             var id = viewHandler.createTab();
-            viewHandler.selectTab(id)
+//            viewHandler.selectTab(id)
             root.newTabCreated()
         }
     }

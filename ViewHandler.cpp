@@ -11,7 +11,6 @@
 
 #include <chrono>
 #include <deque>
-#include <iostream>
 
 Q_LOGGING_CATEGORY(vhLog, "viewHandler")
 
@@ -20,8 +19,7 @@ ViewHandler::ViewHandler(QQuickItem* _webViewContainer, QQuickItem* _tabSelector
     : webViewContainer(_webViewContainer), tabSelector(_tabSelector),
       scriptBlockingView(_scriptBlockingView), cf(_cf), qView(_qView)
 {
-    //connect(webViewContainer, SIGNAL(viewSelected(int)), this, SLOT(viewSelected(int)));
-    //connect(webViewContainer, SIGNAL(historyUpdated(int)), this, SLOT(historyUpdated(int)));
+
 }
 
 ViewHandler::~ViewHandler()
@@ -38,13 +36,45 @@ bool ViewHandler::init()
 
 void ViewHandler::viewSelected(int viewId)
 {
-    std::cout << "SELECTING: " << viewId << std::endl;
+    qCDebug(vhLog, "Selecting tab: %i", viewId);
 
-    std::lock_guard<std::recursive_mutex> lock(viewsMutex);
-    webViewContainer->setProperty("currentView", views.at(viewId).view);
+    std::lock_guard<std::recursive_mutex> lock(views2Mutex);
+
+    struct viewData& vd = views2[viewId];
+
+    if (vd.tabData && !vd.tabData->getView().isValid())
+    {
+        QVariant newView;
+        QMetaObject::invokeMethod(webViewContainer, "createViewObject",
+            Q_RETURN_ARG(QVariant, newView),
+            Q_ARG(QVariant, viewId));
+
+        QObject* v = qvariant_cast<QObject *>(newView);
+
+        if (vd.tabData)
+        {
+            const Tab* td = vd.tabData;
+            v->setProperty("targetTitle", td->getTitle());
+            v->setProperty("targetIcon", td->getIcon());
+            v->setProperty("targetUrl", td->getUrl());
+        }
+
+        vd.tabData->setView(newView);
+    }
+    else
+    {
+        if (!vd.tabData)
+        {
+            qCWarning(vhLog, "There was no tabData, "
+                "not sure if this should happen");
+            qCWarning(vhLog, "viewId: %i", viewId);
+        }
+    }
+
+    webViewContainer->setProperty("currentView", vd.tabData->getView());
     configDb.setProperty("currentTab", std::to_string(viewId));
 }
-
+/*
 int ViewHandler::countAncestors(int parent) const
 {
     if (parent < 0)
@@ -67,35 +97,43 @@ int ViewHandler::countAncestors(int parent) const
         return indentLevel;
     }
 }
-
+*/
 int ViewHandler::createTab(int parent)
 {
-    std::lock_guard<std::recursive_mutex> lock(viewsMutex);
+    std::lock_guard<std::recursive_mutex> lock(views2Mutex);
 
     /// Call webViewContainer to create new QML Web View object and
     /// create associated entry in tabSelectorModel
     ///
     QVariant newView;
-    int id = tabsDb.createTab();
-    tabsDb.setParent(id, parent);
+    int viewId = tabsDb.createTab();
+    tabsDb.setParent(viewId, parent);
 
-    int indent = countAncestors(parent);
+    QMetaObject::invokeMethod(webViewContainer, "createViewObject",
+        Q_RETURN_ARG(QVariant, newView),
+        Q_ARG(QVariant, viewId));
 
-    QMetaObject::invokeMethod(webViewContainer, "createNewView",
-            Q_RETURN_ARG(QVariant, newView),
-            Q_ARG(QVariant, id),
-            Q_ARG(QVariant, indent),
-            Q_ARG(QVariant, parent));
+    struct viewData& vd = views2[viewId];
 
-    /// Put the view in proper container, and if parent was defined
-    /// update it's children list
-    ///
-    views[id] = viewContainer{newView, parent};
+    if (vd.tabData)
+    {
+        qCCritical(vhLog, "vd.tabData should be nullptr");
+    }
 
+    Tab* par = nullptr;
     if (parent)
-        views.at(parent).children.push_back(id);
+        par = views2.at(parent).tabData;
 
-    return id;
+    Tab* item = new Tab(viewId);
+
+    if (par)
+        par->appendRow(item);
+
+    item->updateIndent();
+    vd.tabData = item;
+    vd.tabData->setView(newView);
+
+    return viewId;
 }
 
 QVariant ViewHandler::getView(int viewId)
@@ -105,6 +143,7 @@ QVariant ViewHandler::getView(int viewId)
     return views.at(viewId).view;
 }
 
+/*
 void ViewHandler::fixHierarchy(int viewId)
 {
     auto& thisView = views.at(viewId);
@@ -127,16 +166,19 @@ void ViewHandler::fixHierarchy(int viewId)
         children.erase(std::remove(children.begin(), children.end(), viewId));
     }
 }
+*/
 
 void ViewHandler::showFullscreen(bool fullscreen)
 {
-    std::cout << "showFullscreen called\n";
+    qCDebug(vhLog, "showFullscreen(fullscreen=%i)", fullscreen);
+
     if (fullscreen)
         qView->showFullScreen();
     else
         qView->showNormal();
 }
 
+/*
 void ViewHandler::fixIndentation(int viewId)
 {
     std::deque<int> toReindent;
@@ -178,45 +220,60 @@ void ViewHandler::fixIndentation(int viewId)
                 Q_ARG(QVariant, indent));
     }
 }
+*/
 
 void ViewHandler::closeTab(int viewId)
 {
-    std::cout << "CLOSE TAB ------------> " << viewId << std::endl;
-    std::lock_guard<std::recursive_mutex> lock(viewsMutex);
+    qCDebug(vhLog, "Closing tab: %i", viewId);
+    std::lock_guard<std::recursive_mutex> lock(views2Mutex);
+
+    if (views2.count(viewId))
+    {
+        qCCritical(vhLog, "Trying to close nonexistent tab: %i", viewId);
+        return;
+    }
 
     /// Remove tab entry from database and from tabSelector component
     ///
     tabsDb.closeTab(viewId);
 
+    struct viewData vd = views2.at(viewId);
+    QStandardItem* item = vd.tabData->parent();
+    item->removeRow(vd.tabData->index().row());
+
+//    item->removeRow(vd.tabData->getRowId());
+
     QVariant novalue;
-    QMetaObject::invokeMethod(tabSelector, "removeTabEntry",
-            Q_RETURN_ARG(QVariant, novalue),
-            Q_ARG(QVariant, viewId));
+//    QMetaObject::invokeMethod(tabSelector, "removeTabEntry",
+//            Q_RETURN_ARG(QVariant, novalue),
+//            Q_ARG(QVariant, viewId));
+
+// remove from model
 
     /// Move tab's children to parent, fix parent entries, fix indentation levels
     ///
-    fixHierarchy(viewId);
-    fixIndentation(viewId);
+//    fixHierarchy(viewId);
+//    fixIndentation(viewId);
 
     /// Destroy QML view object and erase entry from tabs / views structure
     ///
-    auto& thisView = views.at(viewId);
-    QObject* qo = qvariant_cast<QObject *>(thisView.view);
+    //auto& thisView = views.at(viewId);
+    //QObject* qo = qvariant_cast<QObject *>(thisView.view);
     QMetaObject::invokeMethod(webViewContainer, "destroyView",
-            Q_RETURN_ARG(QVariant, novalue),
-            Q_ARG(QVariant, thisView.view));
+        Q_RETURN_ARG(QVariant, novalue),
+        Q_ARG(QVariant, vd.tabData->getView()));
 
-    views.erase(viewId);
+    views2.erase(viewId);
 
     /// Optionally create new empty tab if last tab was closed
     ///
-    if (views.empty())
-        viewSelected(createTab(0));
+    if (views2.empty())
+        viewSelected(createTab());
 }
 
 void ViewHandler::historyUpdated(int _viewId, QQuickWebEngineHistory* navHistory)
 {
-    std::cout << "\n\nhistory: " << _viewId << std::endl;
+//    std::cout << "\n\nhistory: " << _viewId << std::endl;
 
 
 //    QVariant items = navHistory->property("backItems");
@@ -305,13 +362,19 @@ void ViewHandler::iconChanged(int viewId, QUrl icon)
 void ViewHandler::selectTab(int viewId)
 {
     QVariant selected;
+
+    int modelId = flatModel.getModelId(viewId);
+
+    QQuickItem* tabSelector = qobject_cast<QQuickItem*>(
+        qView->rootObject()->findChild<QObject*>("tabSelector"));
+
     QMetaObject::invokeMethod(tabSelector, "selectView",
-            Q_RETURN_ARG(QVariant, selected), Q_ARG(QVariant, viewId));
+            Q_ARG(QVariant, modelId));
 
     if (selected.toInt() < 0)
         return;
 
-    viewSelected(selected.toInt());
+    viewSelected(viewId);
 }
 
 void ViewHandler::loadTabs()
@@ -328,9 +391,10 @@ void ViewHandler::loadTabs()
     }
 
     tabsModel.setItemRoleNames(Tab::roles);
+    flatModel.setRoleNames(Tab::roles);
 
     // Fill model and assign to tab container
-    QStandardItem *parent = tabsModel.invisibleRootItem();
+    QStandardItem* parent = tabsModel.invisibleRootItem();
 
     std::deque<std::pair<int, QStandardItem*>> toAdd;
 
@@ -339,15 +403,16 @@ void ViewHandler::loadTabs()
         toAdd.push_back(std::pair<int, QStandardItem*>(child, parent));
     }
 
+    std::lock_guard<std::recursive_mutex> lock(views2Mutex);
     while (!toAdd.empty())
     {
         auto id = toAdd.front();
         toAdd.pop_front();
 
-        Tab *item = new Tab(tabsMap[id.first]);
-
+        Tab* item = new Tab(tabsMap[id.first]);
         id.second->appendRow(item);
         item->updateIndent();
+        views2[item->getId()].tabData = item;
 
         for (auto child: tabsMap[id.first].children)
         {
@@ -355,14 +420,15 @@ void ViewHandler::loadTabs()
         }
     }
 
+    flatModel.setSourceModel(&tabsModel);
+
     QQuickItem* visualModel = qobject_cast<QQuickItem*>(
-        qView->rootObject()->findChild<QObject*>("tabSelectorPanel2"));
+        qView->rootObject()->findChild<QObject*>("tabSelectorPanel"));
 
     if (!visualModel)
         throw std::runtime_error("No visualModel object found");
 
-
-    QVariant qv = QVariant::fromValue<QObject*>(&tabsModel);
+    QVariant qv = QVariant::fromValue<QObject*>(&flatModel);
     QMetaObject::invokeMethod(visualModel, "setModel",
                               Qt::ConnectionType::QueuedConnection,
                               Q_ARG(QVariant, qv));
@@ -370,6 +436,7 @@ void ViewHandler::loadTabs()
     auto end = std::chrono::system_clock::now();
 
     /// WHAT FOLLOWS WILL BE DEPRECATED WHEN NEW MODEL LOADING IS DONE
+/*
     {
         std::lock_guard<std::recursive_mutex> lock(viewsMutex);
 
@@ -410,10 +477,10 @@ void ViewHandler::loadTabs()
             }
         }
     }
-
+*/
 
     std::chrono::duration<double> total = end-start;
-    qCDebug(vhLog, "Model load time: %lli",
+    qCDebug(vhLog, "Model load time: %lli ns",
             std::chrono::duration_cast<std::chrono::nanoseconds>(total));
 
 
