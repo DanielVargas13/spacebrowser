@@ -28,8 +28,9 @@ void TreeToListProxyModel::myRowInserted(const QModelIndex &parent, int first, i
 
 void TreeToListProxyModel::sourceRowsInserted(const QModelIndex &parent, int first, int last)
 {
-    qCCritical(ttlProxy, "source inserted");
+    qCCritical(ttlProxy, "source inserted: %i", first);
 
+    /// Invalid parent means we add root level entry: add as last
     if (!parent.isValid())
     {
         qCDebug(ttlProxy, "!! >> Parent invalid, rows in model: %i",
@@ -50,22 +51,37 @@ void TreeToListProxyModel::sourceRowsInserted(const QModelIndex &parent, int fir
     }
     else
     {
-        qCDebug(ttlProxy, "!!!! >> Parent valid");
+        qCDebug(ttlProxy, "!!!! >> Parent valid, first: %i", first);
 
-        int parentRow = fromSource.at(parent);
+        QModelIndex newRow = sourceModel()->index(first, 0, parent);
+        QModelIndex prevItem = newRow.siblingAtRow(newRow.row()-1);
+        qCDebug(ttlProxy, "newRow: %i; prevItem: %i", newRow.row(), prevItem.row());
+
+        if (prevItem.isValid())
+            prevItem = findLastItemInBranch(prevItem);
+        qCDebug(ttlProxy, "prevItem: %i", prevItem.row());
+
+        int parentRow;
+        if (prevItem.isValid())
+            parentRow = fromSource.at(prevItem);
+        else
+            parentRow = fromSource.at(parent);
+
         qCDebug(ttlProxy, "parentRow: %i", parentRow);
 
         beginInsertRows(QModelIndex(), parentRow+1, parentRow+1);
 
+        /// First move all following rows by one
         for (int i = rowCount(); i > parentRow; --i)
         {
             toSource[i+1] = toSource[i];
-            fromSource[toSource[i]] = i+1;
+            fromSource[toSource[i+1]] = i+1;
             QVariant d = sourceModel()->data(toSource[i], 3);
             viewId2ModelId[d.toInt()] = i+1;
         }
 
-        QModelIndex newRow = sourceModel()->index(first, 0, parent);
+        /// Add new row
+        qCDebug(ttlProxy, "adding row as: %i", parentRow+1);
         toSource[parentRow+1] = newRow;
         fromSource[newRow] = parentRow+1;
 
@@ -76,15 +92,77 @@ void TreeToListProxyModel::sourceRowsInserted(const QModelIndex &parent, int fir
 
         endInsertRows();
     }
+}
+
+void TreeToListProxyModel::sourceRowsAboutToBeRemoved(
+    const QModelIndex &parent, int first, int last)
+{
+    qCCritical(ttlProxy, "source inserted: %i", first);
+
+    int row = fromSource.at(parent);
+
+    /// Remove row
+    toSource.erase(row);
+    fromSource.erase(parent);
+
+    QModelIndex deletedRow = sourceModel()->index(first, 0, parent);
+    QVariant d = sourceModel()->data(deletedRow, 3); // 3 = id (viewId)
+    qCDebug(ttlProxy, "viewId: %i", d.toInt());
+    viewId2ModelId.erase(d.toInt());
+
+    /// Move all following rows back by one
+    for (int i = row; i < rowCount(); ++i)
+    {
+
+    }
+}
+
+QModelIndex TreeToListProxyModel::findLastItemInBranch(const QModelIndex& idx)
+{
+    if (!idx.isValid())
+        return idx;
+
+    QModelIndex last = idx;
+    QModelIndex cur = idx;
 
 
-//    QModelIndex p = mapFromSource(parent);
+    int rowCount = sourceModel()->rowCount(cur);
+    qCDebug(ttlProxy, "find: rowCount: %i for %i", rowCount, cur.row());
+    // if rowCount > 0
+    while (rowCount > 0)
+    {
+        cur = cur.child(rowCount-1, 0);
+        if (cur.isValid())
+        {
+            last = cur;
+            rowCount = sourceModel()->rowCount(cur);
+            qCDebug(ttlProxy, "cur.isValid(), rowCount: %i", rowCount);
+        }
+        else
+        {
+            qCDebug(ttlProxy, "!cur.isValid()");
+            break;
+        }
+    }
 
+    return last;
+}
 
+void TreeToListProxyModel::sourceDataChanged(
+    const QModelIndex &topLeft,
+    const QModelIndex &bottomRight,
+    const QVector<int> &roles)
+{
+    qCDebug(ttlProxy, "Source data changed");
 
+    if (topLeft != bottomRight)
+    {
+        qCCritical(ttlProxy, "Multiple source data fields changed: "
+                   "this is unexpected and unsupported");
+    }
 
+    emit dataChanged(mapFromSource(topLeft), mapFromSource(bottomRight), roles);
 
-    //sourceModel()->index(first, 0, parent)
 }
 
 QModelIndex TreeToListProxyModel::mapFromSource(
@@ -165,8 +243,14 @@ void TreeToListProxyModel::updateMapping()
     if (!sourceModel())
         return;
 
-    connect(sourceModel(), &TreeToListProxyModel::rowsInserted,
+    connect(sourceModel(), &QAbstractItemModel::rowsInserted,
             this, &TreeToListProxyModel::sourceRowsInserted);
+
+    connect(sourceModel(), &QAbstractItemModel::rowsAboutToBeRemoved,
+            this, &TreeToListProxyModel::sourceRowsAboutToBeRemoved);
+
+    connect(sourceModel(), &QAbstractItemModel::dataChanged,
+            this, &TreeToListProxyModel::sourceDataChanged);
 
     auto start = std::chrono::system_clock::now();
 

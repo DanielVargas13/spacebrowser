@@ -34,6 +34,11 @@ private:
     void updateMapping();
     void myRowInserted(const QModelIndex &parent, int first, int last);
     void sourceRowsInserted(const QModelIndex &parent, int first, int last);
+    void sourceRowsAboutToBeRemoved(const QModelIndex &parent, int first, int last);
+    void sourceDataChanged(const QModelIndex &topLeft,
+                           const QModelIndex &bottomRight,
+                           const QVector<int> &roles = QVector<int>());
+    QModelIndex findLastItemInBranch(const QModelIndex& idx);
 
     unsigned int rows = 0;
     std::map<int, QModelIndex> toSource;

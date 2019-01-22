@@ -43,7 +43,11 @@ void Tab::updateIndent()
         (pp = dynamic_cast<Tab*>(p)) == nullptr)
         return;
 
+    qCDebug(tabModel, "updateIndent, was: %i", indent);
     indent = pp->indent + 1;
+    qCDebug(tabModel, "updateIndent, is: %i", indent);
+    qCDebug(tabModel, "updateIndent, my row: %i", this->index().row());
+
 }
 
 int Tab::getId() const
@@ -83,15 +87,17 @@ void Tab::setId(int id_)
 */
 void Tab::setTitle(QString title_)
 {
+    qCDebug(tabModel, "Title updated");
     title = title_;
     emitDataChanged();
 }
-/*
+
 void Tab::setIcon(QString icon_)
 {
     icon = icon_;
+    emitDataChanged();
 }
-*/
+
 void Tab::setView(QVariant view_)
 {
     view = view_;

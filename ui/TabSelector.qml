@@ -52,7 +52,7 @@ Item
 //                    console.log(">> : " + model[p]);
 //                }
 //                console.log(JSON.stringify(model))
-                console.log(model.title)
+//                console.log(model.title)
             }
 
         }

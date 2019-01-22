@@ -74,30 +74,7 @@ void ViewHandler::viewSelected(int viewId)
     webViewContainer->setProperty("currentView", vd.tabData->getView());
     configDb.setProperty("currentTab", std::to_string(viewId));
 }
-/*
-int ViewHandler::countAncestors(int parent) const
-{
-    if (parent < 0)
-        throw std::runtime_error("ViewHandler::countAncestors(): parent id cannot be negative");
 
-    if (!parent)
-        return 0;
-
-    {
-        std::lock_guard<std::recursive_mutex> lock(viewsMutex);
-
-        int indentLevel = 1;
-
-        while (parent && views.count(parent) && views.at(parent).parent)
-        {
-            ++indentLevel;
-            parent = views.at(parent).parent;
-        }
-
-        return indentLevel;
-    }
-}
-*/
 int ViewHandler::createTab(int parent)
 {
     std::lock_guard<std::recursive_mutex> lock(views2Mutex);
@@ -124,7 +101,7 @@ int ViewHandler::createTab(int parent)
 
     if (parent)
     {
-        qCDebug(vhLog, "createTab: found parent tab");
+        qCDebug(vhLog, "createTab: found parent tab: %i", parent);
         par = views2.at(parent).tabData;
     }
     else
@@ -143,6 +120,8 @@ int ViewHandler::createTab(int parent)
     vd.tabData = item;
     vd.tabData->setView(newView);
 
+    qCDebug(vhLog, "Tab created: %i", viewId);
+
     return viewId;
 }
 
@@ -152,31 +131,6 @@ QVariant ViewHandler::getView(int viewId)
 
     return views2.at(viewId).tabData->getView();
 }
-
-/*
-void ViewHandler::fixHierarchy(int viewId)
-{
-    auto& thisView = views.at(viewId);
-
-    /// Fix parent entries for children of this view
-    ///
-    for (auto& child: thisView.children)
-    {
-        tabsDb.setParent(child, thisView.parent);
-        views.at(child).parent = thisView.parent;
-    }
-
-    /// Move children of this view to the parent's list of children
-    ///
-    if (thisView.parent)
-    {
-        auto& children = views.at(thisView.parent).children;
-        auto pos = std::find(children.begin(), children.end(), viewId);
-        children.insert(pos, thisView.children.begin(), thisView.children.end());
-        children.erase(std::remove(children.begin(), children.end(), viewId));
-    }
-}
-*/
 
 void ViewHandler::showFullscreen(bool fullscreen)
 {
@@ -188,56 +142,12 @@ void ViewHandler::showFullscreen(bool fullscreen)
         qView->showNormal();
 }
 
-/*
-void ViewHandler::fixIndentation(int viewId)
-{
-    std::deque<int> toReindent;
-    QVariant novalue;
-
-    auto& thisView = views.at(viewId);
-
-// FIXME: this can be refactored to include only one while loop
-
-    for (int childId : thisView.children)
-    {
-        views.at(childId).parent = thisView.parent;
-        toReindent.insert(toReindent.end(), views.at(childId).children.begin(),
-                views.at(childId).children.end());
-//        std::cout << "Children of " << childId << " added for reindentation:\n";
-//        std::cout << "Vector: ";
-        misc::DebugHelpers::printIntVector(views.at(childId).children);
-        int indent = countAncestors(views.at(childId).parent);
-        QMetaObject::invokeMethod(tabSelector, "fixIndentation",
-                Q_RETURN_ARG(QVariant, novalue),
-                Q_ARG(QVariant, childId),
-                Q_ARG(QVariant, indent));
-    }
-    //std::cout << "------\n";
-    while (!toReindent.empty())
-    {
-        int childId = toReindent.front();
-        toReindent.pop_front();
-        QVariant novalue1;
-        toReindent.insert(toReindent.end(), views.at(childId).children.begin(),
-                views.at(childId).children.end());
-//        std::cout << "Children of " << childId << " added for reindentation:\n";
-//        std::cout << "Vector: ";
-        misc::DebugHelpers::printIntVector(views.at(childId).children);
-        int indent = countAncestors(views.at(childId).parent);
-        QMetaObject::invokeMethod(tabSelector, "fixIndentation",
-                Q_RETURN_ARG(QVariant, novalue1),
-                Q_ARG(QVariant, childId),
-                Q_ARG(QVariant, indent));
-    }
-}
-*/
-
 void ViewHandler::closeTab(int viewId)
 {
     qCDebug(vhLog, "Closing tab: %i", viewId);
     std::lock_guard<std::recursive_mutex> lock(views2Mutex);
 
-    if (views2.count(viewId))
+    if (views2.count(viewId) == 0)
     {
         qCCritical(vhLog, "Trying to close nonexistent tab: %i", viewId);
         return;
@@ -245,11 +155,35 @@ void ViewHandler::closeTab(int viewId)
 
     /// Remove tab entry from database and from tabSelector component
     ///
-    tabsDb.closeTab(viewId);
+    //tabsDb.closeTab(viewId);
 
     struct viewData vd = views2.at(viewId);
-    QStandardItem* item = vd.tabData->parent();
-    item->removeRow(vd.tabData->index().row());
+    int itemRow = vd.tabData->row();
+
+    if (vd.tabData->hasChildren())
+    {
+        qCDebug(vhLog, "Has children");
+        QStandardItem* parent = vd.tabData->parent();
+
+        bool res = tabsModel.moveRows(
+            vd.tabData->index(), 0, vd.tabData->rowCount(),
+            parent->index(), itemRow);
+// FIXME: moveRows is not implemented :(
+        // implement something deriving from QStandardItemModel first
+        // then try to change to QAbstractItemModel
+        qCDebug(vhLog, "Moving result: %i", res);
+
+        for (int i = 0; i < vd.tabData->rowCount(); ++i)
+        {
+            Tab* ch = dynamic_cast<Tab*>(vd.tabData->child(i));
+            ch->updateIndent();
+        }
+
+//        parent->insertRows(vd.tabData->rowCount(), )
+        // move to parent
+    }
+
+//    parent->removeRow(itemRow);
 
 //    item->removeRow(vd.tabData->getRowId());
 
@@ -356,18 +290,22 @@ void ViewHandler::historyUpdated(int _viewId, QQuickWebEngineHistory* navHistory
 
 void ViewHandler::urlChanged(int viewId, QUrl url)
 {
+    qCDebug(vhLog, "Url changed for viewId: %i", viewId);
     tabsDb.setUrl(viewId, url.toString().toStdString());
 }
 
 void ViewHandler::titleChanged(int viewId, QString title)
 {
+    qCDebug(vhLog, "Title changed for viewId: %i", viewId);
     tabsDb.setTitle(viewId, title.toStdString());
     views2.at(viewId).tabData->setTitle(title);
 }
 
 void ViewHandler::iconChanged(int viewId, QUrl icon)
 {
+    qCDebug(vhLog, "Icon changed for viewId: %i", viewId);
     tabsDb.setIcon(viewId, icon.toString().toStdString());
+    views2.at(viewId).tabData->setIcon(icon.toString());
 }
 
 void ViewHandler::selectTab(int viewId)
@@ -446,49 +384,6 @@ void ViewHandler::loadTabs()
 
     auto end = std::chrono::system_clock::now();
 
-    /// WHAT FOLLOWS WILL BE DEPRECATED WHEN NEW MODEL LOADING IS DONE
-/*
-    {
-        std::lock_guard<std::recursive_mutex> lock(viewsMutex);
-
-        for (const auto& tab: tabs)
-        {
-            /// Call webViewContainer to create new QML Web View object and
-            /// create associated entry in tabSelectorModel
-            ///
-            int indent = countAncestors(tab.parent);
-
-            QVariant newView;
-            QMetaObject::invokeMethod(webViewContainer, "createNewView",
-                    Q_RETURN_ARG(QVariant, newView),
-                    Q_ARG(QVariant, tab.id),
-                    Q_ARG(QVariant, indent),
-                    Q_ARG(QVariant, tab.parent));
-
-            QObject* v = qvariant_cast<QObject *>(newView);
-
-            v->setProperty("targetTitle", tab.title.c_str());
-            v->setProperty("targetIcon", tab.icon.c_str());
-            v->setProperty("targetUrl", tab.url.c_str()); // FIXME: lazy page loading
-
-            /// Put the view in proper container, and if parent was defined
-            /// update it's children list
-            ///
-            views[tab.id] = viewContainer{newView, tab.parent};
-        }
-
-        /// We have to iterate again to fill in the children vector because
-        /// only now we can be sure, that all parents are there to begin with.
-        ///
-        for (const auto& view: views)
-        { // FIXME: this will not preserve order between restarts
-            if (int parent = view.second.parent)
-            {
-                views.at(parent).children.push_back(view.first);
-            }
-        }
-    }
-*/
 
     std::chrono::duration<double> total = end-start;
     qCDebug(vhLog, "Model load time: %lli ns",

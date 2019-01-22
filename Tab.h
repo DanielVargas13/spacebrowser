@@ -40,7 +40,7 @@ public:
 
 //    void setId(int id_);
     void setTitle(QString title_);
-//    void setIcon(QString icon_);
+    void setIcon(QString icon_);
     void setView(QVariant view_);
 //    void setRowId(int);
 
@@ -55,7 +55,7 @@ private:
     int id = -1;
 
     int indent = 0;
-    std::vector<Tab> children;
+//    std::vector<Tab> children;
 
     QString url;
     QString title = "Empty";
