@@ -14,7 +14,7 @@ set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-FIND_PACKAGE(Qt5 COMPONENTS Core Quick QuickControls2 Sql WebEngine WebChannel Widgets REQUIRED)
+FIND_PACKAGE(Qt5 COMPONENTS Core Quick QuickControls2 Sql Test WebEngine WebChannel Widgets REQUIRED)
 
 ADD_DEFINITIONS(-Wall)
 
@@ -72,3 +72,10 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME} Qt5::Core Qt5::Quick Qt5::QuickControls2
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)
 
 include(CPack)
+
+# Tests
+ADD_EXECUTABLE(ViewHandler_test test/ViewHandler.h)
+TARGET_LINK_LIBRARIES(ViewHandler_test Qt5::Core Qt5::Test)
+
+enable_testing()
+ADD_TEST(NAME ViewHandler_test COMMAND ViewHandler_test)
