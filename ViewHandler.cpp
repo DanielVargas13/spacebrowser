@@ -159,12 +159,17 @@ void ViewHandler::closeTab(int viewId)
 
     struct viewData vd = views2.at(viewId);
     int itemRow = vd.tabData->row();
+    QStandardItem* parent = vd.tabData->parent();
+    if (!parent)
+        parent = tabsModel.invisibleRootItem();
 
     if (vd.tabData->hasChildren())
     {
         qCDebug(vhLog, "Has children");
-        QStandardItem* parent = vd.tabData->parent();
 
+        /// Move children tabs to parents' children, inserting them
+        /// at removed tabs' position
+        ///
         bool res = tabsModel.moveRows(
             vd.tabData->index(), 0, vd.tabData->rowCount(),
             parent->index(), itemRow);
@@ -183,36 +188,30 @@ void ViewHandler::closeTab(int viewId)
         // move to parent
     }
 
-//    parent->removeRow(itemRow);
 
-//    item->removeRow(vd.tabData->getRowId());
-
+    /// Remove qml view object and then remove entry from model and map
     QVariant novalue;
-//    QMetaObject::invokeMethod(tabSelector, "removeTabEntry",
-//            Q_RETURN_ARG(QVariant, novalue),
-//            Q_ARG(QVariant, viewId));
-
-// remove from model
-
-    /// Move tab's children to parent, fix parent entries, fix indentation levels
-    ///
-//    fixHierarchy(viewId);
-//    fixIndentation(viewId);
-
-    /// Destroy QML view object and erase entry from tabs / views structure
-    ///
-    //auto& thisView = views.at(viewId);
-    //QObject* qo = qvariant_cast<QObject *>(thisView.view);
     QMetaObject::invokeMethod(webViewContainer, "destroyView",
         Q_RETURN_ARG(QVariant, novalue),
         Q_ARG(QVariant, vd.tabData->getView()));
 
+    parent->removeRow(itemRow);
     views2.erase(viewId);
 
     /// Optionally create new empty tab if last tab was closed
     ///
     if (views2.empty())
         viewSelected(createTab());
+    else
+    {
+        Tab* item;
+        if (itemRow == 0)
+            item = dynamic_cast<Tab*>(parent);
+        else
+            item = dynamic_cast<Tab*>(parent->child(itemRow-1));
+
+        selectTab(item->getId());
+    }
 }
 
 void ViewHandler::historyUpdated(int _viewId, QQuickWebEngineHistory* navHistory)

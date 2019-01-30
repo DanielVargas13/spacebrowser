@@ -97,24 +97,44 @@ void TreeToListProxyModel::sourceRowsInserted(const QModelIndex &parent, int fir
 void TreeToListProxyModel::sourceRowsAboutToBeRemoved(
     const QModelIndex &parent, int first, int last)
 {
-    qCCritical(ttlProxy, "source inserted: %i", first);
+    qCCritical(ttlProxy, "source about to be removed: %i", first);
+    qCCritical(ttlProxy, "sizes: %lu, %lu, %lu", toSource.size(), fromSource.size(),
+               viewId2ModelId.size());
 
-    int row = fromSource.at(parent);
+    QModelIndex tbr = sourceModel()->index(first, 0, parent);
+    int row = fromSource.at(tbr);
 
     /// Remove row
-    toSource.erase(row);
-    fromSource.erase(parent);
+    ///
+    int r1 = toSource.erase(row);
+    int r2 = fromSource.erase(parent);
 
     QModelIndex deletedRow = sourceModel()->index(first, 0, parent);
     QVariant d = sourceModel()->data(deletedRow, 3); // 3 = id (viewId)
     qCDebug(ttlProxy, "viewId: %i", d.toInt());
-    viewId2ModelId.erase(d.toInt());
+    int r3 = viewId2ModelId.erase(d.toInt());
+
+    qCCritical(ttlProxy, "souce removal results: %i, %i, %i", r1, r2, r3);
 
     /// Move all following rows back by one
-    for (int i = row; i < rowCount(); ++i)
+    ///
+    for (int i = row; i < rowCount() - 1; ++i)
     {
-
+        toSource[row] = toSource[row+1];
+        fromSource[toSource[row]] = row;
+        QVariant d = sourceModel()->data(toSource[row], 3);
+        viewId2ModelId[d.toInt()] = row;
     }
+
+    /// Need to remove last row, as it is duplicated now
+    ///
+    toSource.erase(row+1);
+    qCCritical(ttlProxy, "sizes: %lu, %lu, %lu", toSource.size(), fromSource.size(),
+               viewId2ModelId.size());
+
+    beginRemoveRows(QModelIndex(), row, row);
+    rows--;
+    endRemoveRows();
 }
 
 QModelIndex TreeToListProxyModel::findLastItemInBranch(const QModelIndex& idx)
