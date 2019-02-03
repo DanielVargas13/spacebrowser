@@ -182,11 +182,6 @@ int main(int argc, char *argv[])
     ///
 
     // FIXME: refactor below to use slots/signals instead of calling vh directly
-    QQuickItem* webViewContainer = qobject_cast<QQuickItem*>(
-            view->rootObject()->findChild<QObject*>("webViewContainer"));
-    if (!webViewContainer)
-        throw std::runtime_error("No webViewContainer object found");
-
     QQuickItem* scriptBlockingView = qobject_cast<QQuickItem*>(
             view->rootObject()->findChild<QObject*>("scriptBlockingView"));
     if (!scriptBlockingView)
@@ -195,10 +190,9 @@ int main(int argc, char *argv[])
     QQuickItem* tabSelector = qobject_cast<QQuickItem*>(
             view->rootObject()->findChild<QObject*>("tabSelector"));
 
-    ViewHandler vh(webViewContainer, tabSelector, scriptBlockingView, cf, view);
+    ViewHandler vh(&cf, view);
     view->engine()->rootContext()->setContextProperty("viewHandler", &vh);
     vh.loadTabs();
-
 
     if (tabSelector)
     {

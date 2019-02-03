@@ -66,16 +66,20 @@ ADD_SUBDIRECTORY(gnupgpp)
 ADD_EXECUTABLE(${PROJECT_NAME} ${SOURCES})
 
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} Qt5::Core Qt5::Quick Qt5::QuickControls2
-  Qt5::Sql Qt5::WebEngine Qt5::Widgets gnupgpp pqxx pthread ${Boost_LIBRARIES}
+  Qt5::Sql Qt5::WebEngine Qt5::Widgets gnupgpp pqxx pthread
   )
 
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)
 
 include(CPack)
 
-# Tests
-ADD_EXECUTABLE(ViewHandler_test test/ViewHandler.h)
-TARGET_LINK_LIBRARIES(ViewHandler_test Qt5::Core Qt5::Test)
+# Tests TEST_BUILD
+LINK_DIRECTORIES(gtest/lib)
+ADD_EXECUTABLE(ViewHandler_test test/ViewHandler_test.cpp ViewHandler.cpp)
+TARGET_INCLUDE_DIRECTORIES(ViewHandler_test PUBLIC gtest/include)
+#TARGET_LINK_DIRECTORIES(ViewHandler_test PUBLIC gtest/lib)
+TARGET_COMPILE_DEFINITIONS(ViewHandler_test PUBLIC TEST_BUILD)
+TARGET_LINK_LIBRARIES(ViewHandler_test gtest gmock Qt5::Core Qt5::Quick Qt5::Test pthread)
 
 enable_testing()
 ADD_TEST(NAME ViewHandler_test COMMAND ViewHandler_test)

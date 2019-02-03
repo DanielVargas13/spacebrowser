@@ -1,7 +1,11 @@
 #include <ViewHandler.h>
 
+#ifndef TEST_BUILD
 #include <Tab.h>
 #include <misc/DebugHelpers.h>
+#else
+#include <test/ViewHandler_test.h>
+#endif
 
 #include <QAbstractListModel>
 #include <QJSEngine>
@@ -14,12 +18,29 @@
 
 Q_LOGGING_CATEGORY(vhLog, "viewHandler")
 
-ViewHandler::ViewHandler(QQuickItem* _webViewContainer, QQuickItem* _tabSelector,
-        QQuickItem* _scriptBlockingView, ContentFilter& _cf, std::shared_ptr<QQuickView> _qView)
-    : webViewContainer(_webViewContainer), tabSelector(_tabSelector),
-      scriptBlockingView(_scriptBlockingView), cf(_cf), qView(_qView)
+ViewHandler::ViewHandler(ContentFilter* _cf, std::shared_ptr<QQuickView> _qView)
+    : cf(_cf), qView(_qView)
 {
+#ifndef TEST_BUILD
+    webViewContainer = qobject_cast<QQuickItem*>(
+        qView->rootObject()->findChild<QObject*>("webViewContainer"));
+    if (!webViewContainer)
+        throw std::runtime_error("No webViewContainer object found");
 
+    tabSelector = qobject_cast<QQuickItem*>(
+        qView->rootObject()->findChild<QObject*>("tabSelector"));
+    if (!tabSelector)
+        throw std::runtime_error("No tabSelector object found");
+
+    scriptBlockingView = qobject_cast<QQuickItem*>(
+        qView->rootObject()->findChild<QObject*>("scriptBlockingView"));
+    if (!scriptBlockingView)
+        throw std::runtime_error("No scriptBlockingView object found");
+#else
+    webViewContainer = new QQuickItem_mock();
+    tabSelector = new QQuickItem_mock();
+    scriptBlockingView = new QQuickItem_mock();
+#endif
 }
 
 ViewHandler::~ViewHandler()
@@ -50,6 +71,7 @@ void ViewHandler::viewSelected(int viewId)
             Q_ARG(QVariant, viewId));
 
         QObject* v = qvariant_cast<QObject *>(newView);
+
 
         if (vd.tabData)
         {
@@ -313,9 +335,6 @@ void ViewHandler::selectTab(int viewId)
 
     int modelId = flatModel.getModelId(viewId);
 
-    QQuickItem* tabSelector = qobject_cast<QQuickItem*>(
-        qView->rootObject()->findChild<QObject*>("tabSelector"));
-
     QMetaObject::invokeMethod(tabSelector, "selectView",
             Q_ARG(QVariant, modelId));
 
@@ -456,13 +475,13 @@ void ViewHandler::openScriptBlockingView(int viewId)
     /// that were accessed while loading the view
     ///
 
-    QObject* view = qvariant_cast<QObject *>(views.at(viewId).view);
+    QObject* view = qvariant_cast<QObject *>(views2.at(viewId).tabData->getView());
     if (!view)
         throw std::runtime_error("ViewHandler::openScriptBlockingView(): there is no view "
                 "associated with this viewId: " + std::to_string(viewId));
 
     QString url = view->property("url").toUrl().host();
-    std::set<std::string> urls = cf.getUrlsFor(url.toStdString());
+    std::set<std::string> urls = cf->getUrlsFor(url.toStdString());
 
     QJSEngine engine;
 

@@ -1,10 +1,15 @@
 #ifndef VIEWHANDLER_H_
 #define VIEWHANDLER_H_
 
+#ifndef TEST_BUILD
 #include <db/Tabs.h>
 #include <db/Config.h>
 #include <db/ScriptBlock.h>
 #include <ContentFilter.h>
+#else
+#include <test/ViewHandler_test_mock.h>
+#endif
+
 #include <Tab.h>
 #include <TreeToListProxyModel.h>
 
@@ -30,15 +35,11 @@ class ViewHandler : public QObject
 
 public:
     /**
-     * Creates ViewHandler object associated with webViewContainer
-     * @param _webViewContainer pointer to QML instantiated WebViewContainer object
-     * @param _tabSelector pointer to QML instantiated TabSelector object
-     * @param _scriptBlockingView pointer to QML instantiated ScriptBlockingView object
+     * Creates ViewHandler object
      * @param _cf reference to ContentFilter class that provides interface for handling script blocking etc.
      * @param _qView shared pointer to the main window QQuickView object
      */
-    ViewHandler(QQuickItem* _webViewContainer, QQuickItem* _tabSelector,
-            QQuickItem* _scriptBlockingView, ContentFilter& _cf, std::shared_ptr<QQuickView> _qView);
+    ViewHandler(ContentFilter* _cf, std::shared_ptr<QQuickView> _qView);
 
     virtual ~ViewHandler();
 
@@ -145,15 +146,25 @@ public slots:
     void historyUpdated(int _viewId, QQuickWebEngineHistory* navHistory);
 
 private:
+#ifndef TEST_BUILD
     db::Tabs tabsDb;                     /// Tabs database abstraction
     db::Config configDb;                 /// Config database abstraction
     db::ScriptBlock sBlockDb;            /// Script blocker database abstraction
     QQuickItem* webViewContainer;        /// Pointer to WebViewContainer QML object
     QQuickItem* tabSelector;             /// Pointer to TabSelector QML object
     QQuickItem* scriptBlockingView;      /// Pointer to ScriptBlockingView QML object
-    ContentFilter& cf;                   /// Reference to content filtering class
-    std::shared_ptr<QQuickView> qView;   /// Smart pointer to main window object
+    ContentFilter* cf;                   /// Reference to content filtering class
+#else
+    db::Tabs_mock tabsDb;
+    db::Config_mock configDb;
+    db::ScriptBlock_mock sBlockDb;
+    QQuickItem_mock* webViewContainer;
+    QQuickItem_mock* tabSelector;
+    QQuickItem_mock* scriptBlockingView;
+    ContentFilter* cf;
+#endif
 
+    std::shared_ptr<QQuickView> qView;   /// Smart pointer to main window object
     QStandardItemModel tabsModel;        /// Tree model for holding tab related data
     TreeToListProxyModel flatModel;      /// List model for ListView
                                          /// (no TreeView yet available)
@@ -167,9 +178,6 @@ private:
         int parent;             /// id of parent tab or 0 if there is no parent
         std::vector<int> children;   /// vector of child tab ids
     };
-
-    [[deprecated]] mutable std::recursive_mutex viewsMutex;
-    [[deprecated]] std::map<int, viewContainer> views;   /// Structure representing tab tree
 
     struct viewData
     {
