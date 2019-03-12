@@ -56,6 +56,12 @@ private slots:
     }
 
     /// Test adding tabs, then removing them
+    ///
+    /// |        =>      |
+    /// \_0              \_1
+    /// \_1              \_2
+    /// \_2
+    ///
     void addThreeRemoveFirst()
     {
         using namespace testing;
@@ -71,31 +77,35 @@ private slots:
         fillWithThree(vh);
 
         /// Expected call will set second view as current (after closing first)
-        auto v = dynamic_cast<Tab*>(vh.tabsModel.invisibleRootItem()->
+        QVariant v = dynamic_cast<Tab*>(vh.tabsModel.invisibleRootItem()->
                                         child(1))->getView();
-        EXPECT_CALL(*vh.webViewContainer, setProperty(std::string("currentView"),
-                                                      v));
+        EXPECT_CALL(*vh.webViewContainer,
+                    setProperty(std::string("currentView"), v));
         /// And will select second tab (no 1) as current
-        EXPECT_CALL(vh.configDb, setProperty(std::string("currentTab"),
-                                             std::string("1")));
+        EXPECT_CALL(vh.configDb,
+                    setProperty(std::string("currentTab"),
+                                std::string("1")));
 
         vh.closeTab(0);
+
+        /// Check all models have correct row count
         QCOMPARE(vh.tabsModel.rowCount(), 2);
         QCOMPARE(vh.flatModel.rowCount(), 2);
         QCOMPARE(vh.views2.size(), 2);
 
+        /// Check that items have correct ids, and their order was not changed
         QCOMPARE(dynamic_cast<Tab*>(vh.tabsModel.invisibleRootItem()
                                     ->child(0))->getId(), 1);
         QCOMPARE(dynamic_cast<Tab*>(vh.tabsModel.invisibleRootItem()
                                     ->child(1))->getId(), 2);
 
 
-//        QCOMPARE(dynamic_cast<Tab*>(vh.flatModel.index(0, 0))
-//                                    ->getId(), 1);
-//        QCOMPARE(dynamic_cast<Tab*>(vh.flatModel.invisibleRootItem()
-//                                    ->child(1))->getId(), 2);
+        EXPECT_THROW(vh.flatModel.getModelId(0), std::out_of_range);
+        QCOMPARE(vh.flatModel.getModelId(1), 0);
+        QCOMPARE(vh.flatModel.getModelId(2), 1);
 
 
+        // check vh.views2 content
 
     }
 

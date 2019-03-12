@@ -45,7 +45,12 @@ ViewHandler::ViewHandler(ContentFilter* _cf, std::shared_ptr<QQuickView> _qView)
 
 ViewHandler::~ViewHandler()
 {
-
+#ifndef TEST_BUILD
+#else
+    delete webViewContainer;
+    delete tabSelector;
+    delete scriptBlockingView;
+#endif
 }
 
 bool ViewHandler::init()

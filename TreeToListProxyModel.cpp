@@ -120,10 +120,10 @@ void TreeToListProxyModel::sourceRowsAboutToBeRemoved(
     ///
     for (int i = row; i < rowCount() - 1; ++i)
     {
-        toSource[row] = toSource[row+1];
-        fromSource[toSource[row]] = row;
-        QVariant d = sourceModel()->data(toSource[row], 3);
-        viewId2ModelId[d.toInt()] = row;
+        toSource[i] = toSource[i+1];
+        fromSource[toSource[i]] = i;
+        QVariant d = sourceModel()->data(toSource[i], 3);
+        viewId2ModelId[d.toInt()] = i;
     }
 
     /// Need to remove last row, as it is duplicated now

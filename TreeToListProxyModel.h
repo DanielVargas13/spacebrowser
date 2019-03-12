@@ -48,7 +48,7 @@ private:
     unsigned int rows = 0;
     std::map<int, QModelIndex> toSource;
     std::map<QModelIndex, int> fromSource;
-    std::map<int, int> viewId2ModelId;
+    std::map<int, int> viewId2ModelId;  // viewId to id in proxy model
     QHash<int, QByteArray> rNames;
 
 };

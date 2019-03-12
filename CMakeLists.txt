@@ -75,6 +75,8 @@ include(CPack)
 
 # Tests TEST_BUILD
 LINK_DIRECTORIES(gtest/lib)
+LINK_DIRECTORIES(gtest/lib64)
+
 ADD_EXECUTABLE(ViewHandler_test
   test/ViewHandler_test.cpp
   test/ViewHandler_test_mock.h
