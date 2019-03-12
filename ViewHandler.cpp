@@ -235,7 +235,7 @@ void ViewHandler::closeTab(int viewId)
     ///
     if (views2.empty())
         viewSelected(createTab());
-    else
+    else if (std::stoi(configDb.getProperty(std::string("currentTab"))) == viewId)
     {
         Tab* item;
         if (closedItemRow == 0)
@@ -246,7 +246,6 @@ void ViewHandler::closeTab(int viewId)
         }
         else
             item = dynamic_cast<Tab*>(parent->child(closedItemRow-1));
-
 
         selectTab(item->getId());
     }
@@ -347,6 +346,7 @@ void ViewHandler::iconChanged(int viewId, QUrl icon)
 
 void ViewHandler::selectTab(int viewId)
 {
+    qCDebug(vhLog, "selectTab(viewId=%i)", viewId);
     QVariant selected;
 
     int modelId = flatModel.getModelId(viewId);
