@@ -32,9 +32,14 @@ public:
 
 private:
     void updateMapping();
-    void myRowInserted(const QModelIndex &parent, int first, int last);
-    void sourceRowsInserted(const QModelIndex &parent, int first, int last);
+//    void myRowInserted(const QModelIndex &parent, int first, int last);
     void sourceRowsAboutToBeRemoved(const QModelIndex &parent, int first, int last);
+    void sourceRowsInserted(const QModelIndex &parent, int first, int last);
+    void sourceRowsAboutToBeMoved(const QModelIndex &parent,
+                                  int start, int end,
+                                  const QModelIndex &destination, int row);
+    void sourceRowsMoved(const QModelIndex &parent, int start, int end,
+                         const QModelIndex &destination, int row);
     void sourceDataChanged(const QModelIndex &topLeft,
                            const QModelIndex &bottomRight,
                            const QVector<int> &roles = QVector<int>());

@@ -75,7 +75,12 @@ include(CPack)
 
 # Tests TEST_BUILD
 LINK_DIRECTORIES(gtest/lib)
-ADD_EXECUTABLE(ViewHandler_test test/ViewHandler_test.cpp ViewHandler.cpp)
+ADD_EXECUTABLE(ViewHandler_test
+  test/ViewHandler_test.cpp
+  test/ViewHandler_test_mock.h
+  ViewHandler.cpp
+  TreeToListProxyModel.cpp
+  Tab.cpp)
 TARGET_INCLUDE_DIRECTORIES(ViewHandler_test PUBLIC gtest/include)
 #TARGET_LINK_DIRECTORIES(ViewHandler_test PUBLIC gtest/lib)
 TARGET_COMPILE_DEFINITIONS(ViewHandler_test PUBLIC TEST_BUILD)

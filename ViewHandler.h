@@ -7,10 +7,12 @@
 #include <db/ScriptBlock.h>
 #include <ContentFilter.h>
 #else
+class ViewHandler_test;
 #include <test/ViewHandler_test_mock.h>
 #endif
 
 #include <Tab.h>
+#include <TreeModel2.h>
 #include <TreeToListProxyModel.h>
 
 #include <QLoggingCategory>
@@ -155,6 +157,7 @@ private:
     QQuickItem* scriptBlockingView;      /// Pointer to ScriptBlockingView QML object
     ContentFilter* cf;                   /// Reference to content filtering class
 #else
+    friend ViewHandler_test;
     db::Tabs_mock tabsDb;
     db::Config_mock configDb;
     db::ScriptBlock_mock sBlockDb;
@@ -165,7 +168,7 @@ private:
 #endif
 
     std::shared_ptr<QQuickView> qView;   /// Smart pointer to main window object
-    QStandardItemModel tabsModel;        /// Tree model for holding tab related data
+    TreeModel2 tabsModel;                /// Tree model for holding tab related data
     TreeToListProxyModel flatModel;      /// List model for ListView
                                          /// (no TreeView yet available)
 

@@ -179,13 +179,13 @@ void ViewHandler::closeTab(int viewId)
     ///
     //tabsDb.closeTab(viewId);
 
-    struct viewData vd = views2.at(viewId);
-    int itemRow = vd.tabData->row();
-    QStandardItem* parent = vd.tabData->parent();
+    struct viewData toClose = views2.at(viewId);
+    int closedItemRow = toClose.tabData->row();
+    QStandardItem* parent = toClose.tabData->parent();
     if (!parent)
         parent = tabsModel.invisibleRootItem();
 
-    if (vd.tabData->hasChildren())
+    if (toClose.tabData->hasChildren())
     {
         qCDebug(vhLog, "Has children");
 
@@ -193,16 +193,22 @@ void ViewHandler::closeTab(int viewId)
         /// at removed tabs' position
         ///
         bool res = tabsModel.moveRows(
-            vd.tabData->index(), 0, vd.tabData->rowCount(),
-            parent->index(), itemRow);
-// FIXME: moveRows is not implemented :(
-        // implement something deriving from QStandardItemModel first
-        // then try to change to QAbstractItemModel
-        qCDebug(vhLog, "Moving result: %i", res);
+            toClose.tabData->index(), 0, toClose.tabData->rowCount(),
+            parent->index(), closedItemRow+1);
 
-        for (int i = 0; i < vd.tabData->rowCount(); ++i)
+//        tabsModel.beginMoveRows(toClose.tabData->index(),
+//                                0, toClose.tabData->rowCount()-1,
+//                                parent->index(), closedItemRow);
+//        tabsModel.endMoveRows();
+
+//        bool res = tabsModel.moveRow(toClose.tabData->index(), 0,
+//                                     parent->index(), closedItemRow);
+
+        qCCritical(vhLog, "Moving result: %i", res);
+
+        for (int i = 0; i < toClose.tabData->rowCount(); ++i)
         {
-            Tab* ch = dynamic_cast<Tab*>(vd.tabData->child(i));
+            Tab* ch = dynamic_cast<Tab*>(toClose.tabData->child(i));
             ch->updateIndent();
         }
 
@@ -215,9 +221,9 @@ void ViewHandler::closeTab(int viewId)
     QVariant novalue;
     QMetaObject::invokeMethod(webViewContainer, "destroyView",
         Q_RETURN_ARG(QVariant, novalue),
-        Q_ARG(QVariant, vd.tabData->getView()));
+        Q_ARG(QVariant, toClose.tabData->getView()));
 
-    parent->removeRow(itemRow);
+    parent->removeRow(closedItemRow);
     views2.erase(viewId);
 
     /// Optionally create new empty tab if last tab was closed
@@ -227,10 +233,15 @@ void ViewHandler::closeTab(int viewId)
     else
     {
         Tab* item;
-        if (itemRow == 0)
+        if (closedItemRow == 0)
+        {
             item = dynamic_cast<Tab*>(parent);
+            if (!item)
+                item = dynamic_cast<Tab*>(parent->child(0));
+        }
         else
-            item = dynamic_cast<Tab*>(parent->child(itemRow-1));
+            item = dynamic_cast<Tab*>(parent->child(closedItemRow-1));
+
 
         selectTab(item->getId());
     }

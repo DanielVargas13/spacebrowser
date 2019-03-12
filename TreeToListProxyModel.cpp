@@ -14,17 +14,17 @@ TreeToListProxyModel::TreeToListProxyModel()
             this, &TreeToListProxyModel::updateMapping);
 
     // FIXME: probably remove this, doesn't seem to be triggered
-    connect(this, &TreeToListProxyModel::rowsInserted,
-            this, &TreeToListProxyModel::myRowInserted);
+//    connect(this, &TreeToListProxyModel::rowsInserted,
+//            this, &TreeToListProxyModel::myRowInserted);
 
 //    connect(this, &TreeToListProxyModel::rowsInsertedXX,
 //            this, &TreeToListProxyModel::rowsInserted);
 }
 
-void TreeToListProxyModel::myRowInserted(const QModelIndex &parent, int first, int last)
-{
-    qCCritical(ttlProxy, "my inserted: %i", first);
-}
+//void TreeToListProxyModel::myRowInserted(const QModelIndex &parent, int first, int last)
+//{
+//    qCCritical(ttlProxy, "my inserted: %i", first);
+//}
 
 void TreeToListProxyModel::sourceRowsInserted(const QModelIndex &parent, int first, int last)
 {
@@ -107,7 +107,7 @@ void TreeToListProxyModel::sourceRowsAboutToBeRemoved(
     /// Remove row
     ///
     int r1 = toSource.erase(row);
-    int r2 = fromSource.erase(parent);
+    int r2 = fromSource.erase(tbr);
 
     QModelIndex deletedRow = sourceModel()->index(first, 0, parent);
     QVariant d = sourceModel()->data(deletedRow, 3); // 3 = id (viewId)
@@ -254,7 +254,7 @@ int TreeToListProxyModel::columnCount(const QModelIndex &parent) const
 
 QVariant TreeToListProxyModel::data(const QModelIndex &index, int role) const
 {
-//    return sourceModel()->data(toSource.at(index.row()), role);
+
     return sourceModel()->data(mapToSource(index), role);
 }
 
@@ -268,6 +268,12 @@ void TreeToListProxyModel::updateMapping()
 
     connect(sourceModel(), &QAbstractItemModel::rowsAboutToBeRemoved,
             this, &TreeToListProxyModel::sourceRowsAboutToBeRemoved);
+
+    connect(sourceModel(), &QAbstractItemModel::rowsAboutToBeMoved,
+            this, &TreeToListProxyModel::sourceRowsAboutToBeMoved);
+
+    connect(sourceModel(), &QAbstractItemModel::rowsMoved,
+            this, &TreeToListProxyModel::sourceRowsMoved);
 
     connect(sourceModel(), &QAbstractItemModel::dataChanged,
             this, &TreeToListProxyModel::sourceDataChanged);
@@ -283,6 +289,10 @@ void TreeToListProxyModel::updateMapping()
     QModelIndex parent;
     int cnt = model->rowCount();
     int i = 0;
+
+    toSource.clear();
+    fromSource.clear();
+    viewId2ModelId.clear();
 
     while(i < cnt || !entries.empty())
     {
@@ -353,4 +363,76 @@ QHash<int, QByteArray> TreeToListProxyModel::roleNames() const
 int TreeToListProxyModel::getModelId(int viewId) const
 {
     return viewId2ModelId.at(viewId);
+}
+
+void TreeToListProxyModel::sourceRowsAboutToBeMoved(const QModelIndex &parent,
+    int start, int end, const QModelIndex &destination, int row)
+{
+    return;
+//    QModelIndex localDest = mapFromSource(destination.child(row, 0));
+
+    for (int i = start; i <= end; ++i)
+    {
+        int rowMovedFrom = fromSource.at(sourceModel()->index(i, 0, parent));
+
+
+    }
+
+    /*
+    QModelIndex tbr = sourceModel()->index(first, 0, parent);
+    int row = fromSource.at(tbr);
+
+    /// Remove row
+    ///
+    int r1 = toSource.erase(row);
+    int r2 = fromSource.erase(parent);
+
+    QModelIndex deletedRow = sourceModel()->index(first, 0, parent);
+    QVariant d = sourceModel()->data(deletedRow, 3); // 3 = id (viewId)
+    qCDebug(ttlProxy, "viewId: %i", d.toInt());
+    int r3 = viewId2ModelId.erase(d.toInt());
+
+    qCCritical(ttlProxy, "souce removal results: %i, %i, %i", r1, r2, r3);
+
+    /// Move all following rows back by one
+    ///
+    for (int i = row; i < rowCount() - 1; ++i)
+    {
+        toSource[row] = toSource[row+1];
+        fromSource[toSource[row]] = row;
+        QVariant d = sourceModel()->data(toSource[row], 3);
+        viewId2ModelId[d.toInt()] = row;
+    }
+
+    /// Need to remove last row, as it is duplicated now
+    ///
+    toSource.erase(row+1);
+    qCCritical(ttlProxy, "sizes: %lu, %lu, %lu", toSource.size(), fromSource.size(),
+               viewId2ModelId.size());
+
+    beginRemoveRows(QModelIndex(), row, row);
+    rows--;
+    endRemoveRows();
+    */
+}
+
+void TreeToListProxyModel::sourceRowsMoved(const QModelIndex &parent,
+    int start, int end, const QModelIndex &destination, int row)
+{
+
+    qCCritical(ttlProxy, "MOVED: start: %i, end: %i, row: %i", start, end, row);
+
+
+    QModelIndex first = mapFromSource(parent.child(start, 0));
+    QModelIndex last = mapFromSource(parent.child(end, 0));
+    QModelIndex target = mapFromSource(destination.child(row, 0));
+
+    qCCritical(ttlProxy, "MOVING: first: %i, last: %i, target: %i", first.row(),
+        last.row(), target.row());
+
+    beginMoveRows(QModelIndex(), first.row(), last.row(), QModelIndex(), target.row());
+    endMoveRows();
+
+//FIXME: update mappings
+
 }
