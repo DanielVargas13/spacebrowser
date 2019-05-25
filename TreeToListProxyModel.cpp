@@ -6,8 +6,6 @@
 #include <stack>
 #include <tuple>
 
-#include <iostream>
-
 Q_LOGGING_CATEGORY(ttlProxy, "ttlProxyModel")
 
 TreeToListProxyModel::TreeToListProxyModel()
@@ -26,16 +24,44 @@ void TreeToListProxyModel::sourceRowsInserted(const QModelIndex &parent, int fir
 
     /// If no valid parent item given, add at the end of the list
     ///
-    int parentPos = -1;
+    int localFirst;
+    int localLast;
     if (parentItem)
-        parentPos = parentItem->row();
+    {
+        QStandardItem* prevItem;
+
+        if (first >=1)
+        {
+            prevItem = model->itemFromIndex(parent.child(first, 0).siblingAtRow(first-1));
+            prevItem = model->itemFromIndex(findLastItemInBranch(prevItem->index()));
+        }
+        else
+            prevItem = parentItem;
+
+        localFirst = fromSource.at(prevItem) + 1;
+    }
     else
+    {
+        /// Adding top level tab
+        ///
         parentItem = model->invisibleRootItem();
+
+        QStandardItem* prevItem;
+        /// -1 is the newly added item, not in mapping yet, -2 is previous item
+        if (parentItem->rowCount() >= 2)
+        {
+            prevItem = parentItem->child(parentItem->rowCount() - 2);
+            prevItem = model->itemFromIndex(findLastItemInBranch(prevItem->index()));
+            localFirst = fromSource.at(prevItem) + 1;
+        }
+        else
+            localFirst = 0;
+    }
+
+    localLast = localFirst + count - 1;
 
     /// Begin insertion procedure
     ///
-    int localFirst = parentPos + 1 + first;
-    int localLast = parentPos + 1 + last;
     qCDebug(ttlProxy, "Adding rows: first: %i, last: %i", localFirst, localLast);
     beginInsertRows(QModelIndex(), localFirst, localLast);
 
