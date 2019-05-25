@@ -3,20 +3,17 @@
 
 #include <QStandardItemModel>
 
+#include <map>
+
 class TreeModel2 : public QStandardItemModel
 {
+    Q_OBJECT
 public:
-    bool moveRows(const QModelIndex &sourceParent, int sourceRow, int count,
-        const QModelIndex &destinationParent, int destinationChild) override
-    {
+    bool moveRows(const QModelIndex &srcParent, int srcRow, int count,
+                  const QModelIndex &dstParent, int dstChild) override;
 
-        beginMoveRows(sourceParent, sourceRow, sourceRow+count-1,
-            destinationParent, destinationChild);
-        endMoveRows();
-
-        return true;
-    }
-
+signals:
+    void indicesUpdated(std::map<QModelIndex, QModelIndex>);
 };
 
 #endif /* TREEMODEL2_H_ */

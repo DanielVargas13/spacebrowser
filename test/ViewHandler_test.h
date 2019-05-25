@@ -9,7 +9,7 @@
 
 #include <ViewHandler.h>
 
-
+#include <iostream>
 
 class ViewHandler_test: public QObject
 {
@@ -45,7 +45,25 @@ private:
         QCOMPARE(vh.tabsModel.rowCount(), 3);
         QCOMPARE(vh.flatModel.rowCount(), 3);
         QCOMPARE(vh.views2.size(), 3);
-        // add checks for correct ids
+
+        /// Check internals of flatModel
+        QCOMPARE(vh.flatModel.toSource.size(), 3);
+        QCOMPARE(vh.flatModel.fromSource.size(), 3);
+        QCOMPARE(vh.flatModel.viewId2ModelId.size(), 3);
+
+        QCOMPARE(vh.flatModel.toSource[0]->data().toInt(), 1);
+        QCOMPARE(vh.flatModel.toSource[1]->data().toInt(), 2);
+        QCOMPARE(vh.flatModel.toSource[2]->data().toInt(), 3);
+
+        for (unsigned int i = 0; i < vh.flatModel.toSource.size(); ++i)
+        {
+            auto& item = vh.flatModel.toSource[i];
+            QCOMPARE(vh.flatModel.fromSource[item], i);
+        }
+
+        QCOMPARE(vh.flatModel.viewId2ModelId[1], 0);
+        QCOMPARE(vh.flatModel.viewId2ModelId[2], 1);
+        QCOMPARE(vh.flatModel.viewId2ModelId[3], 2);
     }
 
     void fillWithThreePlusChildren(ViewHandler& vh, int parentId)
@@ -158,7 +176,67 @@ private:
         QCOMPARE(vh.views2.at(5).tabData->getId(), 5);
         QCOMPARE(vh.views2.at(6).tabData->getId(), 6);
 
-        // add checks for correct ids
+        /// Check internals of flatModel
+        QCOMPARE(vh.flatModel.toSource.size(), 6);
+        QCOMPARE(vh.flatModel.fromSource.size(), 6);
+        QCOMPARE(vh.flatModel.viewId2ModelId.size(), 6);
+
+        for (unsigned int i = 0; i < vh.flatModel.toSource.size(); ++i)
+        {
+            auto& item = vh.flatModel.toSource[i];
+            QCOMPARE(vh.flatModel.fromSource[item], i);
+        }
+
+        switch(parentId)
+        {
+            case 1: {
+                QCOMPARE(vh.flatModel.toSource[0]->data().toInt(), 1);
+                QCOMPARE(vh.flatModel.toSource[1]->data().toInt(), 4);
+                QCOMPARE(vh.flatModel.toSource[2]->data().toInt(), 5);
+                QCOMPARE(vh.flatModel.toSource[3]->data().toInt(), 6);
+                QCOMPARE(vh.flatModel.toSource[4]->data().toInt(), 2);
+                QCOMPARE(vh.flatModel.toSource[5]->data().toInt(), 3);
+
+                QCOMPARE(vh.flatModel.viewId2ModelId[1], 0);
+                QCOMPARE(vh.flatModel.viewId2ModelId[2], 4);
+                QCOMPARE(vh.flatModel.viewId2ModelId[3], 5);
+                QCOMPARE(vh.flatModel.viewId2ModelId[4], 1);
+                QCOMPARE(vh.flatModel.viewId2ModelId[5], 2);
+                QCOMPARE(vh.flatModel.viewId2ModelId[6], 3);
+            } break;
+
+            case 2: {
+                QCOMPARE(vh.flatModel.toSource[0]->data().toInt(), 1);
+                QCOMPARE(vh.flatModel.toSource[1]->data().toInt(), 2);
+                QCOMPARE(vh.flatModel.toSource[2]->data().toInt(), 4);
+                QCOMPARE(vh.flatModel.toSource[3]->data().toInt(), 5);
+                QCOMPARE(vh.flatModel.toSource[4]->data().toInt(), 6);
+                QCOMPARE(vh.flatModel.toSource[5]->data().toInt(), 3);
+
+                QCOMPARE(vh.flatModel.viewId2ModelId[1], 0);
+                QCOMPARE(vh.flatModel.viewId2ModelId[2], 1);
+                QCOMPARE(vh.flatModel.viewId2ModelId[3], 5);
+                QCOMPARE(vh.flatModel.viewId2ModelId[4], 2);
+                QCOMPARE(vh.flatModel.viewId2ModelId[5], 3);
+                QCOMPARE(vh.flatModel.viewId2ModelId[6], 4);
+            } break;
+
+            case 3: {
+                QCOMPARE(vh.flatModel.toSource[0]->data().toInt(), 1);
+                QCOMPARE(vh.flatModel.toSource[1]->data().toInt(), 2);
+                QCOMPARE(vh.flatModel.toSource[2]->data().toInt(), 3);
+                QCOMPARE(vh.flatModel.toSource[3]->data().toInt(), 4);
+                QCOMPARE(vh.flatModel.toSource[4]->data().toInt(), 5);
+                QCOMPARE(vh.flatModel.toSource[5]->data().toInt(), 6);
+
+                QCOMPARE(vh.flatModel.viewId2ModelId[1], 0);
+                QCOMPARE(vh.flatModel.viewId2ModelId[2], 1);
+                QCOMPARE(vh.flatModel.viewId2ModelId[3], 2);
+                QCOMPARE(vh.flatModel.viewId2ModelId[4], 3);
+                QCOMPARE(vh.flatModel.viewId2ModelId[5], 4);
+                QCOMPARE(vh.flatModel.viewId2ModelId[6], 5);
+            } break;
+        }
     }
 
 
@@ -218,6 +296,24 @@ private slots:
 
         QCOMPARE(vh.views2.at(2).tabData->getId(), 2);
         QCOMPARE(vh.views2.at(3).tabData->getId(), 3);
+
+        /// Check internals of flatModel
+        QCOMPARE(vh.flatModel.toSource.size(), 2);
+        QCOMPARE(vh.flatModel.fromSource.size(), 2);
+        QCOMPARE(vh.flatModel.viewId2ModelId.size(), 2);
+
+        QCOMPARE(vh.flatModel.toSource[0]->data().toInt(), 2);
+        QCOMPARE(vh.flatModel.toSource[1]->data().toInt(), 3);
+
+        for (unsigned int i = 0; i < vh.flatModel.toSource.size(); ++i)
+        {
+            auto& item = vh.flatModel.toSource[i];
+            QCOMPARE(vh.flatModel.fromSource[item], i);
+        }
+
+        QCOMPARE(vh.flatModel.viewId2ModelId[2], 0);
+        QCOMPARE(vh.flatModel.viewId2ModelId[3], 1);
+
     }
 
     /// Test adding tabs, then removing second
@@ -278,6 +374,24 @@ private slots:
 
         QCOMPARE(vh.views2.at(1).tabData->getId(), 1);
         QCOMPARE(vh.views2.at(3).tabData->getId(), 3);
+
+        /// Check internals of flatModel
+        QCOMPARE(vh.flatModel.toSource.size(), 2);
+        QCOMPARE(vh.flatModel.fromSource.size(), 2);
+        QCOMPARE(vh.flatModel.viewId2ModelId.size(), 2);
+
+        QCOMPARE(vh.flatModel.toSource[0]->data().toInt(), 1);
+        QCOMPARE(vh.flatModel.toSource[1]->data().toInt(), 3);
+
+        for (unsigned int i = 0; i < vh.flatModel.toSource.size(); ++i)
+        {
+            auto& item = vh.flatModel.toSource[i];
+            QCOMPARE(vh.flatModel.fromSource[item], i);
+        }
+
+        QCOMPARE(vh.flatModel.viewId2ModelId[1], 0);
+        QCOMPARE(vh.flatModel.viewId2ModelId[3], 1);
+
     }
 
     /// Test adding tabs, then removing third
@@ -327,6 +441,24 @@ private slots:
 
         QCOMPARE(vh.views2.at(1).tabData->getId(), 1);
         QCOMPARE(vh.views2.at(2).tabData->getId(), 2);
+
+        /// Check internals of flatModel
+        QCOMPARE(vh.flatModel.toSource.size(), 2);
+        QCOMPARE(vh.flatModel.fromSource.size(), 2);
+        QCOMPARE(vh.flatModel.viewId2ModelId.size(), 2);
+
+        QCOMPARE(vh.flatModel.toSource[0]->data().toInt(), 1);
+        QCOMPARE(vh.flatModel.toSource[1]->data().toInt(), 2);
+
+        for (unsigned int i = 0; i < vh.flatModel.toSource.size(); ++i)
+        {
+            auto& item = vh.flatModel.toSource[i];
+            QCOMPARE(vh.flatModel.fromSource[item], i);
+        }
+
+        QCOMPARE(vh.flatModel.viewId2ModelId[1], 0);
+        QCOMPARE(vh.flatModel.viewId2ModelId[2], 1);
+
     }
 
     /// Test adding 2-level hierarchy of tabs, then removing one parent
@@ -352,6 +484,57 @@ private slots:
 
         fillWithThreePlusChildren(vh, 1);
 
+        /// getProperty will be called and must return currently selected tab
+        EXPECT_CALL(vh.configDb, getProperty(std::string("currentTab")))
+            .Times(1).WillOnce(Return(std::string("1")));
+
+        /// Expected call will set fourth (new first) view as current
+        /// (after closing first)
+        QVariant v = dynamic_cast<Tab*>(vh.tabsModel.invisibleRootItem()->
+                                        child(0)->child(0))->getView();
+        EXPECT_CALL(*vh.webViewContainer,
+                    setProperty(std::string("currentView"), v));
+
+
+        /// And will select fourth (new first) tab as current
+        EXPECT_CALL(vh.configDb,
+                    setProperty(std::string("currentTab"),
+                                std::string("4")));
+
+        std::cout << "------------------------------------------\n";
+        vh.closeTab(1);
+
+        /// Check all models have correct row count
+        QCOMPARE(vh.tabsModel.rowCount(), 5);
+        for (int i = 0; i < vh.tabsModel.rowCount(); ++i)
+        {
+            QCOMPARE(vh.tabsModel.invisibleRootItem()->child(i)->rowCount(), 0);
+        }
+        QCOMPARE(vh.flatModel.rowCount(), 5);
+        QCOMPARE(vh.flatModel.toSource.size(), 5);
+        QCOMPARE(vh.flatModel.fromSource.size(), 5);
+        QCOMPARE(vh.flatModel.viewId2ModelId.size(), 5);
+        QCOMPARE(vh.views2.size(), 5);
+
+        /// Check all rows are on correct positions
+        QCOMPARE(dynamic_cast<Tab*>(vh.tabsModel.invisibleRootItem()
+                                    ->child(0))->getId(), 4);
+        QCOMPARE(dynamic_cast<Tab*>(vh.tabsModel.invisibleRootItem()
+                                    ->child(1))->getId(), 5);
+        QCOMPARE(dynamic_cast<Tab*>(vh.tabsModel.invisibleRootItem()
+                                    ->child(2))->getId(), 6);
+        QCOMPARE(dynamic_cast<Tab*>(vh.tabsModel.invisibleRootItem()
+                                    ->child(3))->getId(), 2);
+        QCOMPARE(dynamic_cast<Tab*>(vh.tabsModel.invisibleRootItem()
+                                    ->child(4))->getId(), 3);
+
+        EXPECT_THROW(vh.flatModel.getModelId(1), std::out_of_range);
+        QCOMPARE(vh.flatModel.getModelId(2), 3);
+        QCOMPARE(vh.flatModel.getModelId(3), 4);
+        QCOMPARE(vh.flatModel.getModelId(4), 0);
+        QCOMPARE(vh.flatModel.getModelId(5), 1);
+        QCOMPARE(vh.flatModel.getModelId(6), 2);
+
     }
 
     /// Test adding 2-level hierarchy of tabs, then removing one parent
@@ -376,6 +559,44 @@ private slots:
         vh.flatModel.setSourceModel(&vh.tabsModel);
 
         fillWithThreePlusChildren(vh, 2);
+
+        /// getProperty will be called and must return currently selected tab
+        EXPECT_CALL(vh.configDb, getProperty(std::string("currentTab")))
+            .Times(1).WillOnce(Return(std::string("1")));
+
+        std::cout << "------------------------------------------\n";
+        vh.closeTab(2);
+
+        /// Check all models have correct row count
+        QCOMPARE(vh.tabsModel.rowCount(), 5);
+        for (int i = 0; i < vh.tabsModel.rowCount(); ++i)
+        {
+            QCOMPARE(vh.tabsModel.invisibleRootItem()->child(i)->rowCount(), 0);
+        }
+        QCOMPARE(vh.flatModel.rowCount(), 5);
+        QCOMPARE(vh.flatModel.toSource.size(), 5);
+        QCOMPARE(vh.flatModel.fromSource.size(), 5);
+        QCOMPARE(vh.flatModel.viewId2ModelId.size(), 5);
+        QCOMPARE(vh.views2.size(), 5);
+
+        /// Check all rows are on correct positions
+        QCOMPARE(dynamic_cast<Tab*>(vh.tabsModel.invisibleRootItem()
+                                    ->child(0))->getId(), 1);
+        QCOMPARE(dynamic_cast<Tab*>(vh.tabsModel.invisibleRootItem()
+                                    ->child(1))->getId(), 4);
+        QCOMPARE(dynamic_cast<Tab*>(vh.tabsModel.invisibleRootItem()
+                                    ->child(2))->getId(), 5);
+        QCOMPARE(dynamic_cast<Tab*>(vh.tabsModel.invisibleRootItem()
+                                    ->child(3))->getId(), 6);
+        QCOMPARE(dynamic_cast<Tab*>(vh.tabsModel.invisibleRootItem()
+                                    ->child(4))->getId(), 3);
+
+        QCOMPARE(vh.flatModel.getModelId(1), 0);
+        EXPECT_THROW(vh.flatModel.getModelId(2), std::out_of_range);
+        QCOMPARE(vh.flatModel.getModelId(3), 4);
+        QCOMPARE(vh.flatModel.getModelId(4), 1);
+        QCOMPARE(vh.flatModel.getModelId(5), 2);
+        QCOMPARE(vh.flatModel.getModelId(6), 3);
 
     }
 

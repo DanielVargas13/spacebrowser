@@ -54,6 +54,7 @@ SET(SOURCES
   PrintHandler.cpp
   PasswordManager.cpp
   TreeToListProxyModel.cpp
+  TreeModel2.cpp
   resources.qrc
   )
 
@@ -82,6 +83,7 @@ ADD_EXECUTABLE(ViewHandler_test
   test/ViewHandler_test_mock.h
   ViewHandler.cpp
   TreeToListProxyModel.cpp
+  TreeModel2.cpp
   Tab.cpp)
 TARGET_INCLUDE_DIRECTORIES(ViewHandler_test PUBLIC gtest/include)
 #TARGET_LINK_DIRECTORIES(ViewHandler_test PUBLIC gtest/lib)

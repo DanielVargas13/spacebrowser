@@ -1,5 +1,7 @@
 #include <Tab.h>
 
+#include <QLoggingCategory>
+
 Q_LOGGING_CATEGORY(tabModel, "tabModel")
 
 QHash<int, QByteArray> Tab::roles = {
@@ -41,12 +43,16 @@ void Tab::updateIndent()
     Tab* pp;
     if ((p = parent()) == nullptr ||
         (pp = dynamic_cast<Tab*>(p)) == nullptr)
+    {
+        indent = 0;
         return;
+    }
 
     qCDebug(tabModel, "updateIndent, was: %i", indent);
     indent = pp->indent + 1;
     qCDebug(tabModel, "updateIndent, is: %i", indent);
     qCDebug(tabModel, "updateIndent, my row: %i", this->index().row());
+    qCDebug(tabModel, "updateIndent, parent: %i", parent()->row());
 
 }
 

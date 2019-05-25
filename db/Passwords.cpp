@@ -73,7 +73,7 @@ int Passwords::countSavedCredentials(QString host, QString path)
 
     pqxx::result r = ntx.exec(sql::select.arg("COUNT(password)").arg(sql::schemaName)
             .arg(tableName.c_str()).arg("WHERE host=\'%5\' AND path=\'%6\'")
-            .arg(host).arg(path).toStdString());
+            .arg(host).arg(QString(ntx.esc(path.toStdString()).c_str())).toStdString());
 
     if (r.size() != 1)
         throw std::runtime_error("Passwords::hasSavedCredentials(): db returned " +

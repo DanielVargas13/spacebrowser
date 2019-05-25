@@ -5,7 +5,6 @@
 
 #include <QByteArray>
 #include <QHash>
-#include <QLoggingCategory>
 #include <QObject>
 #include <QStandardItem>
 #include <QString>

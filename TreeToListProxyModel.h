@@ -3,7 +3,11 @@
 
 #include <QAbstractProxyModel>
 #include <QIdentityProxyModel>
-#include <QHash>
+#include <QStandardItemModel>
+
+#ifdef TEST_BUILD
+class ViewHandler_test;
+#endif
 
 class TreeToListProxyModel : public QAbstractProxyModel
 {
@@ -27,6 +31,9 @@ public:
 
     Q_INVOKABLE int getModelId(int viewId) const;
 
+
+public slots:
+    void indicesUpdated(std::map<QModelIndex, QModelIndex> indices);
 //signals:
 //    void rowsInsertedXX(const QModelIndex &parent, int first, int last, QPrivateSignal());
 
@@ -44,12 +51,18 @@ private:
                            const QModelIndex &bottomRight,
                            const QVector<int> &roles = QVector<int>());
     QModelIndex findLastItemInBranch(const QModelIndex& idx);
+    void layoutAboutToBeChanged();
+    void layoutChanged();
 
     unsigned int rows = 0;
-    std::map<int, QModelIndex> toSource;
-    std::map<QModelIndex, int> fromSource;
+    std::map<int, QStandardItem*> toSource;
+    std::map<QStandardItem*, int> fromSource;
     std::map<int, int> viewId2ModelId;  // viewId to id in proxy model
     QHash<int, QByteArray> rNames;
+
+#ifdef TEST_BUILD
+    friend ViewHandler_test;
+#endif
 
 };
 
