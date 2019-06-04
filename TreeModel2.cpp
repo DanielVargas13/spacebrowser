@@ -1,5 +1,7 @@
 #include <TreeModel2.h>
 
+#include <Tab.h>
+
 #include <QLoggingCategory>
 
 Q_LOGGING_CATEGORY(treeModel2, "treeModel2")
@@ -32,6 +34,7 @@ bool TreeModel2::moveRows(const QModelIndex &srcParent, int srcRow, int count,
     for (int i = 0; i < count; ++i)
     {
         dstItem->insertRow(dstRow+i, rows[i]);
+        dynamic_cast<Tab*>(rows[i][0])->updateIndent();
     }
 
     qCDebug(treeModel2, "@@@@@@@@@@@@@@@@@@@@@@@@ moveRows end");

@@ -48,12 +48,7 @@ void Tab::updateIndent()
         return;
     }
 
-    qCDebug(tabModel, "updateIndent, was: %i", indent);
     indent = pp->indent + 1;
-    qCDebug(tabModel, "updateIndent, is: %i", indent);
-    qCDebug(tabModel, "updateIndent, my row: %i", this->index().row());
-    qCDebug(tabModel, "updateIndent, parent: %i", parent()->row());
-
 }
 
 int Tab::getId() const
@@ -81,16 +76,6 @@ QVariant Tab::getView() const
     return view;
 }
 
-//int Tab::getRowId() const
-//{
-//    return rowId;
-//}
-/*
-void Tab::setId(int id_)
-{
-    id = id_;
-}
-*/
 void Tab::setTitle(QString title_)
 {
     qCDebug(tabModel, "Title updated");
@@ -108,8 +93,3 @@ void Tab::setView(QVariant view_)
 {
     view = view_;
 }
-
-//void Tab::setRowId(int rowId_)
-//{
-//    rowId = rowId_;
-//}

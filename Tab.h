@@ -35,13 +35,10 @@ public:
     QString getIcon() const;
     QString getUrl() const;
     QVariant getView() const;
-//    int getRowId() const;
 
-//    void setId(int id_);
     void setTitle(QString title_);
     void setIcon(QString icon_);
     void setView(QVariant view_);
-//    void setRowId(int);
 
 signals:
     void titleChanged();
@@ -54,7 +51,6 @@ private:
     int id = -1;
 
     int indent = 0;
-//    std::vector<Tab> children;
 
     QString url;
     QString title = "Empty";

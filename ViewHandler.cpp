@@ -81,8 +81,6 @@ void ViewHandler::viewSelected(int viewId)
         if (vd.tabData)
         {
             const Tab* td = vd.tabData;
-            v->setProperty("targetTitle", td->getTitle());
-            v->setProperty("targetIcon", td->getIcon());
             v->setProperty("targetUrl", td->getUrl());
         }
 
@@ -201,24 +199,7 @@ void ViewHandler::closeTab(int viewId)
             toClose.tabData->index(), 0, toClose.tabData->rowCount(),
             parent->index(), closedItemRow+1);
 
-//        tabsModel.beginMoveRows(toClose.tabData->index(),
-//                                0, toClose.tabData->rowCount()-1,
-//                                parent->index(), closedItemRow);
-//        tabsModel.endMoveRows();
-
-//        bool res = tabsModel.moveRow(toClose.tabData->index(), 0,
-//                                     parent->index(), closedItemRow);
-
-        qCCritical(vhLog, "Moving result: %i", res);
-
-        for (int i = 0; i < toClose.tabData->rowCount(); ++i)
-        {
-            Tab* ch = dynamic_cast<Tab*>(toClose.tabData->child(i));
-            ch->updateIndent();
-        }
-
-//        parent->insertRows(vd.tabData->rowCount(), )
-        // move to parent
+        qCDebug(vhLog, "Moving result: %i", res);
     }
 
 

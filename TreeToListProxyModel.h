@@ -31,28 +31,14 @@ public:
 
     Q_INVOKABLE int getModelId(int viewId) const;
 
-
-public slots:
-    void indicesUpdated(std::map<QModelIndex, QModelIndex> indices);
-//signals:
-//    void rowsInsertedXX(const QModelIndex &parent, int first, int last, QPrivateSignal());
-
 private:
     void updateMapping();
-//    void myRowInserted(const QModelIndex &parent, int first, int last);
     void sourceRowsAboutToBeRemoved(const QModelIndex &parent, int first, int last);
     void sourceRowsInserted(const QModelIndex &parent, int first, int last);
-    void sourceRowsAboutToBeMoved(const QModelIndex &parent,
-                                  int start, int end,
-                                  const QModelIndex &destination, int row);
-    void sourceRowsMoved(const QModelIndex &parent, int start, int end,
-                         const QModelIndex &destination, int row);
     void sourceDataChanged(const QModelIndex &topLeft,
                            const QModelIndex &bottomRight,
                            const QVector<int> &roles = QVector<int>());
     QModelIndex findLastItemInBranch(const QModelIndex& idx);
-    void layoutAboutToBeChanged();
-    void layoutChanged();
 
     unsigned int rows = 0;
     std::map<int, QStandardItem*> toSource;

@@ -11,8 +11,6 @@ WebEngineView
     property var viewContainer
 
     property var targetUrl // FIXME: these two are needed to handle lazy loading of webpages
-    property var targetTitle // it would be cleaner to handle this on qt level
-    property var targetIcon
     property int passCount: 0
 
     webChannel: WebChannel {
@@ -42,14 +40,6 @@ WebEngineView
             viewContainer.updateAddressBar(url)
 
         viewHandler.urlChanged(myViewId, url)
-    }
-
-    onTargetTitleChanged: {
-        viewContainer.updateTitle(myViewId, targetTitle, false)
-    }
-
-    onTargetIconChanged: {
-        viewContainer.updateIcon(myViewId, targetIcon, false)
     }
 
     onContextMenuRequested: function(request) {

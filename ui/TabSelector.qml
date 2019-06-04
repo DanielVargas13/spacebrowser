@@ -10,14 +10,7 @@ Item
     signal closeTab(int viewId)               // connected in c++ code
     signal openScriptBlockingView(int viewId) // connected in c++ code
 
-    //height: Style.tabSelector.entry.height * tabSelectorModel.count
     height: Style.tabSelector.entry.height * visualModel.count
-
-    // FIXME: remove this:
-//    ListModel
-//    {
-//        id: tabSelectorModel
-//    }
 
     DelegateModel
     {
@@ -27,6 +20,8 @@ Item
 
         delegate: TabSelectorEntry
         {
+            id: visualModelDelegate
+            //title: visualModelDelegate.DelegateModel.model.model.getModelId(model.viewId) + " (" + model.viewId + '): ' + model.title
             title: model.title
             icon: model.icon
             viewId: model.viewId
@@ -45,14 +40,21 @@ Item
             }
             Component.onCompleted: {
 //                console.log("------------------------------------------_")
+//                console.log(visualModelDelegate.DelegateModel.model.getModelId(viewId))
+
+//                console.log("+++")
+//                console.log(visualModelDelegate.DelegateModel.model.model.getModelId(viewId))
+//                console.log("+++")
 //                console.log(model)
 //                for (var p in model)
 //                {
 //                    console.log(">> " + p)
 //                    console.log(">> : " + model[p]);
 //                }
+//                console.log("---")
 //                console.log(JSON.stringify(model))
 //                console.log(model.title)
+//                console.log("+++")
             }
 
         }
@@ -100,12 +102,7 @@ Item
 
     function viewId2ModelId(viewId)
     {
-        for (var i=0; i < tabSelectorModel.count; ++i)
-        {
-            if (tabSelectorModel.get(i).viewId == viewId)
-                return i
-        }
-        return -1
+        return visualModel.model.getModelId(viewId)
     }
 
     function createNewTab(obj, insertAfter)
@@ -119,61 +116,12 @@ Item
             tabSelectorModel.append(obj)
     }
 
-//    function fixIndentation(viewId, _indent)
-//    {
-//        var modelId = viewId2ModelId(viewId)
-//        tabSelectorModel.get(modelId).indent = _indent // FIXME: coredumps sometimes
-//    }
-
-//    function updateTitle(viewId, title)
-//    {
-//        var id = visualModel.model.getModelId(viewId)
-//        visualModel.model.get(id).title = title
-//    }
-
     function selectView(modelId)
     {
-//        console.log(tabSelectorView.currentIndex)
-//        console.log("selecting " + modelId);
-//        console.log("model size: " + visualModel.model.count)
         tabSelectorView.currentIndex = modelId
-//        console.log(tabSelectorView.currentIndex)
+
     }
 
-    function updateIcon(viewId, icon)
-    {
-        var id = viewId2ModelId(viewId)
-        if (id >= 0)
-            tabSelectorModel.get(id).icon = icon
-    }
-
-/*
-    function removeTabEntry(viewId)
-    {
-        for (var i=0; i < tabSelectorModel.count; ++i)
-        {
-            if (tabSelectorModel.get(i).viewId != viewId)
-                continue
-
-            tabSelectorModel.remove(i)
-
-            /// if currently visible tab is closed, select next tab before it in the model
-            if (tabSelectorView.currentIndex == i && tabSelectorModel.count > 0)
-            {//FIXME: select first child, then next on the same level, then parent
-                // doing it correctly will probably require proper tree model
-                var j = 0
-                if (i > 0)
-                    j = i - 1
-
-                tabSelectorView.currentIndex = j
-                root.viewSelected(tabSelectorModel.get(j).viewId)
-            }
-
-            //dumpCurrentModel()//logging
-            return
-        }
-    }
-*/
     function getNextTab(viewId)
     {
         var id = viewId2ModelId(viewId)
