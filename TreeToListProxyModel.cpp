@@ -50,7 +50,7 @@ void TreeToListProxyModel::sourceRowsInserted(const QModelIndex &parent, int fir
         /// -1 is the newly added item, not in mapping yet, -2 is previous item
         if (parentItem->rowCount() >= 2)
         {
-            prevItem = parentItem->child(parentItem->rowCount() - 2);
+            prevItem = parentItem->child(first-1);
             prevItem = model->itemFromIndex(findLastItemInBranch(prevItem->index()));
             localFirst = fromSource.at(prevItem) + 1;
         }
