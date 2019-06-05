@@ -225,9 +225,15 @@ QModelIndex TreeToListProxyModel::mapFromSource(
 QModelIndex TreeToListProxyModel::mapToSource(
     const QModelIndex &proxyIndex) const
 {
-    if (!sourceModel() || !proxyIndex.isValid())
+    if (!sourceModel())
     {
-        qCCritical(ttlProxy, "mapToSource: no model or index invalid");
+        qCCritical(ttlProxy, "mapToSource: no model");
+        return QModelIndex();
+    }
+
+    if (!proxyIndex.isValid())
+    {
+        /// This case is triggered by Qt during normal operation
         return QModelIndex();
     }
 
