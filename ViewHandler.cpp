@@ -334,8 +334,18 @@ void ViewHandler::iconChanged(int viewId, QUrl icon)
 void ViewHandler::selectTab(int viewId)
 {
     QVariant selected;
+    int modelId;
+    try
+    {
+        modelId = flatModel.getModelId(viewId);
+    }
+    catch (std::out_of_range& e)
+    {
+        qCCritical(vhLog, "selectTab(viewId=%i): no view in model", viewId);
+        return;
+    }
 
-    int modelId = flatModel.getModelId(viewId);
+    qCDebug(vhLog, "selectTab(viewId=%i, modelId=%i)", viewId, modelId);
 
     QMetaObject::invokeMethod(tabSelector, "selectView",
             Q_ARG(QVariant, modelId));
