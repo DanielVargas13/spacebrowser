@@ -191,15 +191,19 @@ int main(int argc, char *argv[])
             view->rootObject()->findChild<QObject*>("tabSelector"));
 
     ViewHandler vh(&cf, view);
-    view->engine()->rootContext()->setContextProperty("viewHandler", &vh);
-    vh.loadTabs();
 
+    // FIXME: consider removing this contextProperty and communicate via signals instead
+    view->engine()->rootContext()->setContextProperty("viewHandler", &vh);
     if (tabSelector)
     {
         QObject::connect(tabSelector, SIGNAL(viewSelected(int)), &vh, SLOT(viewSelected(int)));
         QObject::connect(tabSelector, SIGNAL(closeTab(int)), &vh, SLOT(closeTab(int)));
         QObject::connect(tabSelector, SIGNAL(openScriptBlockingView(int)), &vh, SLOT(openScriptBlockingView(int)));
     }
+
+    vh.loadTabs();
+    app.processEvents();
+    vh.selectCurrentTab();
 
     QObject::connect(scriptBlockingView, SIGNAL(whitelistLocal(QString, QString)),
             &cf, SLOT(whitelistLocal(QString, QString)));

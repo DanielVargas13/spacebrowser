@@ -38,13 +38,41 @@ ScrollView
             anchors.leftMargin: Style.margin
             anchors.rightMargin: Style.margin
 
-            onNewTabCreated: root.newTabCreated()
+            onNewTabCreated: {
+                root.newTabCreated();
+                root.scrollToCurrent()
+            }
         }
     }
 
     function createNewTab(obj, insertAfter)
     {
         tabSelector.createNewTab(obj, insertAfter)
+        console.log(root.contentItem)
+    }
+
+    function scrollToBottom()
+    {
+        if (tabSelectorItem.height - contentItem.height < 0)
+            contentItem.contentY = 0
+        else
+            contentItem.contentY = tabSelectorItem.height - contentItem.height
+    }
+
+    function scrollToCurrent()
+    {
+        var itemPosition = tabSelector.getCurrentItemPosition().y
+        var bottom = tabSelectorItem.height - contentItem.height
+        var newPosition = itemPosition - (contentItem.height / 2)
+
+        if (newPosition < 0)
+        {
+            contentItem.contentY = 0
+        }
+        else if (newPosition >= bottom)
+            scrollToBottom()
+        else
+            contentItem.contentY = itemPosition - contentItem.height / 2
     }
 
     function setModel(model)

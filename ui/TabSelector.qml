@@ -65,6 +65,7 @@ Item
 
         anchors.fill: parent
         model: visualModel
+//        highlightFollowsCurrentItem: false
     }
 
     Menu {
@@ -118,7 +119,6 @@ Item
     function selectView(modelId)
     {
         tabSelectorView.currentIndex = modelId
-
     }
 
     function dumpCurrentModel()
@@ -134,6 +134,12 @@ Item
     function setModel(model)
     {
         visualModel.model = model
+    }
+
+    function getCurrentItemPosition()
+    {
+        return mapFromItem(tabSelectorView,
+                           tabSelectorView.currentItem.x, tabSelectorView.currentItem.y)
     }
 
 }

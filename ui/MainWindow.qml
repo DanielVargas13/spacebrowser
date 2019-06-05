@@ -143,15 +143,6 @@ Rectangle
             return view;
         }
 
-        function createNewView(newViewId, _indent, insertAfter)
-        {
-            var obj = {title:"Empty", icon:"", viewId:newViewId, indent:_indent}
-
-            tabSelectorPanel.createNewTab(obj, insertAfter)
-
-            return createViewObject(newViewId)
-        }
-
         function updateTitle(viewId, title)
         {
             viewHandler.titleChanged(viewId, title)
@@ -251,6 +242,7 @@ Rectangle
         onActivated: {
             var id = viewHandler.createTab()
             viewHandler.selectTab(id)
+            tabSelectorPanel.scrollToCurrent()
             addressBar.focus = true
         }
     }
@@ -258,6 +250,7 @@ Rectangle
         sequence: "Ctrl+w"
         onActivated: {
             viewHandler.closeTab(webViewContainer.currentView.myViewId)
+            tabSelectorPanel.scrollToCurrent()
         }
     }
     Shortcut { // test shorcut

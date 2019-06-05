@@ -429,9 +429,15 @@ void ViewHandler::loadTabs()
     qCDebug(vhLog, "Model load time: %lli ns",
             std::chrono::duration_cast<std::chrono::nanoseconds>(total));
 
+}
 
-    /// Restore currentTab from previous session
-    ///
+int ViewHandler::getFlatModelId(int viewId) const
+{
+    return flatModel.getModelId(viewId);
+}
+
+void ViewHandler::selectCurrentTab()
+{
     std::string currentTab = configDb.getProperty("currentTab");
 
     if (!currentTab.empty())
@@ -440,11 +446,16 @@ void ViewHandler::loadTabs()
 
         selectTab(viewId);
     }
-}
 
-int ViewHandler::getFlatModelId(int viewId) const
-{
-    return flatModel.getModelId(viewId);
+    QQuickItem* visualModel = qobject_cast<QQuickItem*>(
+        qView->rootObject()->findChild<QObject*>("tabSelectorPanel"));
+
+    if (!visualModel)
+        throw std::runtime_error("No visualModel object found");
+
+    QMetaObject::invokeMethod(visualModel, "scrollToCurrent",
+                              Qt::ConnectionType::QueuedConnection);
+
 }
 
 void ViewHandler::nextTab()

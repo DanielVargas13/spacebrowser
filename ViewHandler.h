@@ -110,6 +110,13 @@ public slots:
     void loadTabs();
 
     /**
+     * Select current tab.
+     * This function needs to be called after Qt events are processed after
+     * calling loadTabs()
+     */
+    void selectCurrentTab();
+
+    /**
      * Switch to next tab
      */
     void nextTab();
