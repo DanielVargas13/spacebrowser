@@ -58,8 +58,14 @@ int32_t Tabs::createTab()
 void Tabs::closeTab(int viewId)
 {
     // FIXME: in the future mark as closed, but remember history of past tabs
-    pqxx::nontransaction ntx(conn);
 
+    int parentId = getParentId(viewId);
+    std::vector<int> children = getListOfChildren(viewId);
+
+    for (auto child: children)
+        setParent(child, parentId);
+
+    pqxx::nontransaction ntx(conn);
     pqxx::result r = ntx.exec(sql::deleteRow.arg(sql::schemaName).arg(Tabs::tableName.c_str())
             .arg("id").arg(viewId).toStdString());
 }
@@ -121,6 +127,36 @@ std::map<int, Tabs::TabInfo> Tabs::getAllTabsMap()
     return tabs;
 }
 
+int Tabs::getParentId(int viewId)
+{
+    pqxx::nontransaction ntx(conn);
+
+    pqxx::result r = ntx.exec(QString("SELECT parent FROM \"spaceBrowser\".tabs WHERE "
+                                      "id = %1").arg(viewId).toStdString());
+    if (r.size() != 1)
+    {
+        std::cout << "CRITICAL: no such view in db: " << viewId << std::endl;
+        return -1;
+    }
+
+    return r[0][0].as<int>();
+}
+
+std::vector<int> Tabs::getListOfChildren(int parentId)
+{
+    pqxx::nontransaction ntx(conn);
+
+    pqxx::result r = ntx.exec(QString("SELECT id FROM \"spaceBrowser\".tabs WHERE "
+                                      "parent = %1").arg(parentId).toStdString());
+
+    std::vector<int> children;
+    for (pqxx::result::size_type i = 0; i < r.size(); ++i)
+    {
+        children.push_back(r[i][0].as<int>());
+    }
+
+    return children;
+}
 
 void Tabs::setParent(int viewId, int parentId)
 {

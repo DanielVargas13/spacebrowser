@@ -50,7 +50,21 @@ public:
     std::map<int, TabInfo> getAllTabsMap();
 
     /**
-     * Set parent for tab
+     * Get parent id for tab
+     * @param viewId id of tab for which parent will be fetched
+     * @return id of parent
+     */
+    int getParentId(int viewId);
+
+    /**
+     * Get all children of tab
+     * @param viewId id of tab for which children will be fetched
+     * @return vector of children's ids
+     */
+    std::vector<int> getListOfChildren(int parentId);
+
+    /**
+     * Set parent id for tab
      * @param viewId id of tab to be updated
      * @param parentId new parent id value
      */
