@@ -362,7 +362,7 @@ void ViewHandler::loadTabs()
     auto start = std::chrono::system_clock::now();
     std::map<int, db::Tabs::TabInfo> tabsMap = tabsDb.getAllTabsMap();
 
-    qCDebug(vhLog, "tabs count: %i, tabsMap count: %i", tabs.size(), tabsMap.size());
+    qCDebug(vhLog, "tabs count: %lu, tabsMap count: %lu", tabs.size(), tabsMap.size());
 
     /// Open new empty tab if no tabs were retrieved from database
     ///
