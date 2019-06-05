@@ -183,6 +183,10 @@ void ViewHandler::closeTab(int viewId)
     //tabsDb.closeTab(viewId);
 
     struct viewData toClose = views2.at(viewId);
+
+    qCDebug(vhLog, "title: %s\nurl: %s", toClose.tabData->getTitle().toStdString().c_str(),
+            toClose.tabData->getUrl().toStdString().c_str());
+
     int closedItemRow = toClose.tabData->row();
     QStandardItem* parent = toClose.tabData->parent();
     if (!parent)
@@ -329,7 +333,6 @@ void ViewHandler::iconChanged(int viewId, QUrl icon)
 
 void ViewHandler::selectTab(int viewId)
 {
-    qCDebug(vhLog, "selectTab(viewId=%i)", viewId);
     QVariant selected;
 
     int modelId = flatModel.getModelId(viewId);
@@ -348,6 +351,9 @@ void ViewHandler::loadTabs()
     std::vector<db::Tabs::TabInfo> tabs = tabsDb.getAllTabs();
     auto start = std::chrono::system_clock::now();
     std::map<int, db::Tabs::TabInfo> tabsMap = tabsDb.getAllTabsMap();
+
+    qCDebug(vhLog, "tabs count: %i, tabsMap count: %i", tabs.size(), tabsMap.size());
+
     /// Open new empty tab if no tabs were retrieved from database
     ///
     if (tabs.empty() || tabsMap.empty())
@@ -359,7 +365,8 @@ void ViewHandler::loadTabs()
     tabsModel.setItemRoleNames(Tab::roles);
     flatModel.setRoleNames(Tab::roles);
 
-    // Fill model and assign to tab container
+    /// Fill model and assign to tab container
+    ///
     QStandardItem* parent = tabsModel.invisibleRootItem();
 
     std::deque<std::pair<int, QStandardItem*>> toAdd;
@@ -388,6 +395,8 @@ void ViewHandler::loadTabs()
         }
     }
 
+    /// Configure models
+    ///
     flatModel.setSourceModel(&tabsModel);
 
     QQuickItem* visualModel = qobject_cast<QQuickItem*>(
@@ -401,6 +410,8 @@ void ViewHandler::loadTabs()
                               Qt::ConnectionType::QueuedConnection,
                               Q_ARG(QVariant, qv));
 
+    /// Log timing
+    ///
     auto end = std::chrono::system_clock::now();
 
 

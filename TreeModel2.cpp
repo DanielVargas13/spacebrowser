@@ -12,8 +12,6 @@ bool TreeModel2::moveRows(const QModelIndex &srcParent, int srcRow, int count,
     QStandardItem* srcItem = itemFromIndex(srcParent);
     QStandardItem* dstItem;
 
-    qCDebug(treeModel2, "@@@@@@@@@@@@@@@@@@@@@@@@ moveRows start");
-
     if (dstParent == invisibleRootItem()->index())
         dstItem = invisibleRootItem();
     else
@@ -25,7 +23,6 @@ bool TreeModel2::moveRows(const QModelIndex &srcParent, int srcRow, int count,
     QList<QList<QStandardItem*>> rows;
     for (int i = 0; i < count; ++i)
     {
-        qCDebug(treeModel2, "Removing row %i", i);
         rows.append(srcItem->takeRow(srcRow));
     }
 
@@ -36,8 +33,6 @@ bool TreeModel2::moveRows(const QModelIndex &srcParent, int srcRow, int count,
         dstItem->insertRow(dstRow+i, rows[i]);
         dynamic_cast<Tab*>(rows[i][0])->updateIndent();
     }
-
-    qCDebug(treeModel2, "@@@@@@@@@@@@@@@@@@@@@@@@ moveRows end");
 
     return true;
 }

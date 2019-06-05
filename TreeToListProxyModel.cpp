@@ -17,7 +17,6 @@ TreeToListProxyModel::TreeToListProxyModel()
 void TreeToListProxyModel::sourceRowsInserted(const QModelIndex &parent, int first, int last)
 {
     int count = last - first + 1;
-    qCCritical(ttlProxy, "source inserted: %i:%i, cnt:%i", first, last, count);
 
     QStandardItemModel* model = dynamic_cast<QStandardItemModel*>(sourceModel());
     QStandardItem* parentItem = model->itemFromIndex(parent);
@@ -38,7 +37,6 @@ void TreeToListProxyModel::sourceRowsInserted(const QModelIndex &parent, int fir
         else
             prevItem = parentItem;
 
-        qCCritical(ttlProxy, "Total row count: %i", parentItem->rowCount());
         localFirst = fromSource.at(prevItem) + 1;
     }
     else
@@ -60,8 +58,6 @@ void TreeToListProxyModel::sourceRowsInserted(const QModelIndex &parent, int fir
     }
 
     localLast = localFirst + count - 1;
-
-    qCCritical(ttlProxy, "localFirst: %i, localLast: %i", localFirst, localLast);
 
     /// Begin insertion procedure
     ///
