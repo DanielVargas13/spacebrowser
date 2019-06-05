@@ -16,7 +16,6 @@ Item
     {
         id: visualModel
         objectName: "visualModel"
-//        model: tabSelectorModel
 
         delegate: TabSelectorEntry
         {
@@ -120,38 +119,6 @@ Item
     {
         tabSelectorView.currentIndex = modelId
 
-    }
-
-    function getNextTab(viewId)
-    {
-        var id = viewId2ModelId(viewId)
-        var nextId;
-
-        if (id >= 0)
-        {
-            nextId = id+1
-            if (tabSelectorModel.count == nextId)
-                nextId = 0;
-
-            return tabSelectorModel.get(nextId).viewId
-        }
-        return
-    }
-
-    function getPrevTab(viewId)
-    {
-        var id = viewId2ModelId(viewId)
-        var prevId;
-
-        if (id >= 0)
-        {
-            prevId = id-1
-            if (prevId < 0)
-                prevId = tabSelectorModel.count - 1;
-
-            return tabSelectorModel.get(prevId).viewId
-        }
-        return
     }
 
     function dumpCurrentModel()

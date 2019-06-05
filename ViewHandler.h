@@ -168,19 +168,6 @@ private:
 #endif
 
     std::shared_ptr<QQuickView> qView;   /// Smart pointer to main window object
-    TreeModel2 tabsModel;                /// Tree model for holding tab related data
-    TreeToListProxyModel flatModel;      /// List model for ListView
-                                         /// (no TreeView yet available)
-
-    /// Structure for holding WebViewContainer QML object and
-    /// accompanying tab meta information
-    ///
-    struct viewContainer
-    {
-        QVariant view;          /// QVariant pointing to QML WebViewContainer object
-        int parent;             /// id of parent tab or 0 if there is no parent
-        std::vector<int> children;   /// vector of child tab ids
-    };
 
     struct viewData
     {
@@ -188,7 +175,11 @@ private:
     };
 
     mutable std::recursive_mutex views2Mutex;
-    std::map<int, viewData> views2;    // viewId to QML WebViewContainer mapping
+    std::map<int, viewData> views2;      /// viewId to Tab item mapping
+
+    TreeModel2 tabsModel;                /// Tree model for holding tab related data
+    TreeToListProxyModel flatModel;      /// List model for ListView
+                                         /// (no TreeView yet available)
 
     /**
      * Count ancestors of current tab starting with parent

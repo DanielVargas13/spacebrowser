@@ -313,6 +313,7 @@ void ViewHandler::urlChanged(int viewId, QUrl url)
 
 void ViewHandler::titleChanged(int viewId, QString title)
 {
+    std::lock_guard<std::recursive_mutex> lock(views2Mutex);
     qCDebug(vhLog, "Title changed for viewId: %i", viewId);
     tabsDb.setTitle(viewId, title.toStdString());
     views2.at(viewId).tabData->setTitle(title);
@@ -320,6 +321,7 @@ void ViewHandler::titleChanged(int viewId, QString title)
 
 void ViewHandler::iconChanged(int viewId, QUrl icon)
 {
+    std::lock_guard<std::recursive_mutex> lock(views2Mutex);
     qCDebug(vhLog, "Icon changed for viewId: %i", viewId);
     tabsDb.setIcon(viewId, icon.toString().toStdString());
     views2.at(viewId).tabData->setIcon(icon.toString());
@@ -367,20 +369,22 @@ void ViewHandler::loadTabs()
         toAdd.push_back(std::pair<int, QStandardItem*>(child, parent));
     }
 
-    std::lock_guard<std::recursive_mutex> lock(views2Mutex);
-    while (!toAdd.empty())
     {
-        auto id = toAdd.front();
-        toAdd.pop_front();
-
-        Tab* item = new Tab(tabsMap[id.first]);
-        id.second->appendRow(item);
-        item->updateIndent();
-        views2[item->getId()].tabData = item;
-
-        for (auto child: tabsMap[id.first].children)
+        std::lock_guard<std::recursive_mutex> lock(views2Mutex);
+        while (!toAdd.empty())
         {
-            toAdd.push_back(std::pair<int, QStandardItem*>(child, item));
+            auto id = toAdd.front();
+            toAdd.pop_front();
+
+            Tab* item = new Tab(tabsMap[id.first]);
+            id.second->appendRow(item);
+            item->updateIndent();
+            views2[item->getId()].tabData = item;
+
+            for (auto child: tabsMap[id.first].children)
+            {
+                toAdd.push_back(std::pair<int, QStandardItem*>(child, item));
+            }
         }
     }
 
@@ -430,17 +434,17 @@ void ViewHandler::nextTab()
     {
         int viewId = std::stoi(currentTab);
 
-        QVariant nTab;
-        QMetaObject::invokeMethod(tabSelector, "getNextTab",
-                Q_RETURN_ARG(QVariant, nTab),
-                Q_ARG(QVariant, viewId));
+        int flatId = flatModel.getModelId(viewId);
+        flatId += 1;
 
-        if (!nTab.isValid())
-            return;
+        if (flatId >= flatModel.rowCount())
+            flatId = 0;
 
-        int nextId = nTab.toInt();
+        /// Map back to viewId from flatId
+        QModelIndex tabsModelIndex = flatModel.mapToSource(flatModel.index(flatId, 0));
+        Tab* nextTab = dynamic_cast<Tab*>(tabsModel.itemFromIndex(tabsModelIndex));
 
-        selectTab(nextId);
+        selectTab(nextTab->getId());
     }
 }
 
@@ -452,17 +456,18 @@ void ViewHandler::prevTab()
     {
         int viewId = std::stoi(currentTab);
 
-        QVariant pTab;
-        QMetaObject::invokeMethod(tabSelector, "getPrevTab",
-                Q_RETURN_ARG(QVariant, pTab),
-                Q_ARG(QVariant, viewId));
+        int flatId = flatModel.getModelId(viewId);
+        flatId -= 1;
 
-        if (!pTab.isValid())
-            return;
+        if (flatId < 0)
+            flatId = flatModel.rowCount() - 1;
 
-        int prevId = pTab.toInt();
+        /// Map back to viewId from flatId
+        QModelIndex tabsModelIndex = flatModel.mapToSource(flatModel.index(flatId, 0));
+        Tab* prevTab = dynamic_cast<Tab*>(tabsModel.itemFromIndex(tabsModelIndex));
 
-        selectTab(prevId);
+
+        selectTab(prevTab->getId());
     }
 }
 
@@ -472,7 +477,12 @@ void ViewHandler::openScriptBlockingView(int viewId)
     /// that were accessed while loading the view
     ///
 
-    QObject* view = qvariant_cast<QObject *>(views2.at(viewId).tabData->getView());
+    QObject* view;
+    {
+        std::lock_guard<std::recursive_mutex> lock(views2Mutex);
+        view = qvariant_cast<QObject *>(views2.at(viewId).tabData->getView());
+    }
+
     if (!view)
         throw std::runtime_error("ViewHandler::openScriptBlockingView(): there is no view "
                 "associated with this viewId: " + std::to_string(viewId));

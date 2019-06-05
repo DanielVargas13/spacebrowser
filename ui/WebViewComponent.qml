@@ -20,12 +20,12 @@ WebEngineView
     anchors.fill: parent
 
     onTitleChanged: {
-        viewContainer.updateTitle(myViewId, title, true)
+        viewContainer.updateTitle(myViewId, title)
     }
 
     onIconChanged: {
         var iconUri = icon.toString().replace("image://favicon/", "")
-        viewContainer.updateIcon(myViewId, iconUri, true)
+        viewContainer.updateIcon(myViewId, iconUri)
     }
 
     onNewViewRequested: function(request) {

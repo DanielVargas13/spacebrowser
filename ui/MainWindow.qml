@@ -152,18 +152,14 @@ Rectangle
             return createViewObject(newViewId)
         }
 
-        function updateTitle(viewId, title, updateModel)
+        function updateTitle(viewId, title)
         {
-//            tabSelectorPanel.updateTitle(viewId, title)
-//            if (updateModel)
             viewHandler.titleChanged(viewId, title)
         }
 
-        function updateIcon(viewId, icon, updateModel)
+        function updateIcon(viewId, icon)
         {
-            tabSelectorPanel.updateIcon(viewId, icon)
-            if (updateModel)
-                viewHandler.iconChanged(viewId, icon.toString())
+            viewHandler.iconChanged(viewId, icon.toString())
         }
 
         function updateAddressBar(url)

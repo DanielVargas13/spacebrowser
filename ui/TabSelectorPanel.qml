@@ -47,16 +47,6 @@ ScrollView
         tabSelector.createNewTab(obj, insertAfter)
     }
 
-    function updateTitle(viewId, title)
-    {
-        tabSelector.updateTitle(viewId, title)
-    }
-
-    function updateIcon(viewId, icon)
-    {
-        tabSelector.updateIcon(viewId, icon)
-    }
-
     function setModel(model)
     {
         tabSelector.setModel(model)

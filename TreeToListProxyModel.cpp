@@ -258,10 +258,22 @@ QModelIndex TreeToListProxyModel::index(int row, int column,
 
 QModelIndex TreeToListProxyModel::parent(const QModelIndex &index) const
 {
-    qCCritical(ttlProxy, "parent(): NOT IMPLEMENTED");
-    // FIXME: implement
+    // Not sure which parent should be returned here.
+    // Proxy model is flat, so there is no parent
     Q_UNUSED(index);
     return QModelIndex();
+
+    // Code below implements returning of parent according to source model
+    /*
+    QStandardItem* p = toSource.at(index.row())->parent();
+    if (!fromSource.count(p))
+    {
+        qCDebug(ttlProxy, "parent(): parent not found");
+        return QModelIndex();
+    }
+
+    return TreeToListProxyModel::index(fromSource.at(p), 0);
+    */
 }
 
 int TreeToListProxyModel::rowCount(const QModelIndex &parent) const
