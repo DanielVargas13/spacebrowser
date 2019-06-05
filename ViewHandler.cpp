@@ -180,7 +180,7 @@ void ViewHandler::closeTab(int viewId)
 
     /// Remove tab entry from database and from tabSelector component
     ///
-    //tabsDb.closeTab(viewId);
+    tabsDb.closeTab(viewId);
 
     struct viewData toClose = views2.at(viewId);
 
