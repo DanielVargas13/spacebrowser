@@ -252,18 +252,18 @@ bool DbClient::setupDbV1()
         }
     }
 
-    /// Set up globalScriptWhitelist table
+    /// Set up global_script_whitelist table
     ///
-    if (!db.tables().contains(schemaName + "." + "globalScriptWhitelist"))
+    if (!db.tables().contains(schemaName + "." + "global_script_whitelist"))
     {
         QSqlQuery query(db);
         bool result = query.exec("CREATE TABLE IF NOT EXISTS " +
-                                 schemaName + "." + "globalScriptWhitelist" +
+                                 schemaName + "." + "global_script_whitelist" +
                                  "(url varchar PRIMARY KEY)");
 
         if (!result)
         {
-            qCCritical(dbLogs, "(dbName=%s): failed to create globalscriptWhitelist"
+            qCCritical(dbLogs, "(dbName=%s): failed to create global_script_whitelist"
                        " table", dbName.toStdString().c_str());
 
             logError(query);
