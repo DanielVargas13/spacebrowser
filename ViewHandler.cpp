@@ -358,15 +358,12 @@ void ViewHandler::selectTab(int viewId)
 
 void ViewHandler::loadTabs()
 {
-    std::vector<db::Tabs::TabInfo> tabs = tabsDb.getAllTabs();
     auto start = std::chrono::system_clock::now();
     std::map<int, db::Tabs::TabInfo> tabsMap = tabsDb.getAllTabsMap();
 
-    qCDebug(vhLog, "tabs count: %lu, tabsMap count: %lu", tabs.size(), tabsMap.size());
-
     /// Open new empty tab if no tabs were retrieved from database
     ///
-    if (tabs.empty() || tabsMap.empty())
+    if (tabsMap.empty())
     {
         viewSelected(createTab());
         return;

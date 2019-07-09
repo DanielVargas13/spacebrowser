@@ -245,8 +245,9 @@ int main(int argc, char *argv[])
         dbBackend.configureDbConnection(confDbConnDialog, passMan.isEncryptionReady());
     }
 
-    db::Tabs2 t2;
-    t2.initDatabase("localPS");
+    db::DbClient dbc;
+    dbc.initDatabase("localPS"); // in a loop, over all dbs
+    db::Tabs2 t2(dbc);
 
     qCDebug(mainLogs) << "Finished init, executing app";
     int status = app.exec();

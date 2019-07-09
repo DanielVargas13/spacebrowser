@@ -42,6 +42,7 @@ SET(SOURCES
   db/DbClient.cpp
   db/Sql.cpp
   db/Config.cpp
+  db/Config2.cpp
   db/ScriptBlock.cpp
   db/Passwords.cpp
   db/Keys.cpp

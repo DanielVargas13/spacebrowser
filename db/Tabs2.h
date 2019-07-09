@@ -14,7 +14,7 @@ namespace db
 /**
  * Class for handling tabs in database
  */
-class Tabs2 : public DbClient
+class Tabs2
 {
 public:
 
@@ -27,76 +27,64 @@ public:
         QString icon; // FIXME: add zoom level
     };
 
-    Tabs2();
+    Tabs2(DbClient& _dbClient);
     virtual ~Tabs2();
 
     /**
-     * Perform any required db initializations (table creation / update)
-     * @param dbName name of database connection
-     */
-    bool initDatabase(QString dbName);
-
-    /**
      * Create tab entry in the database
-     * @param dbName name of database connection
      * @return unique tab id
      */
-    int32_t createTab(QString dbName);
+    int32_t createTab();
 
     /**
      * Remove database entry for tab
-     * @param dbName name of database connection
      * @param tabId id of tab to be removed
      */
-    void closeTab(QString dbName, int tabId);
-
-    /**
-     * Fetch all saved tab information
-     * @param dbName name of database connection
-     * @return vector of TabInfo structures describing opened tabs
-     */
-    std::vector<TabInfo> getAllTabs(QString dbName);
+    void closeTab(int tabId);
 
     /**
      * Fetch all saved tab information
      * @return vector of TabInfo structures describing opened tabs
      */
-    std::map<QString, std::vector<TabInfo>> getAllTabs();
+    std::vector<TabInfo> getAllTabs();
+
+    /**
+     * Fetch all saved tab information
+     * @return vector of TabInfo structures describing opened tabs
+     */
+//    std::map<QString, std::vector<TabInfo>> getAllTabs();
 
     /**
      * Set parent for tab
-     * @param dbName name of database connection
      * @param tabId id of tab to be updated
      * @param parentId new parent id value
      */
-    void setParent(QString dbName, int tabId, int parentId);
+    void setParent(int tabId, int parentId);
 
     /**
      * Set url entry for tab
-     * @param dbName name of database connection
      * @param tabId id of tab to be updated
      * @param url new url value
      */
-    void setUrl(QString dbName, int tabId, QString url);
+    void setUrl(int tabId, QString url);
 
     /**
      * Set title for tab
-     * @param dbName name of database connection
      * @param tabId id of tab to be updated
      * @param title new title value
      */
-    void setTitle(QString dbName, int tabId, QString title);
+    void setTitle(int tabId, QString title);
 
     /**
      * Set icon for tab
-     * @param dbName name of database connection
      * @param tabId id of tab to be updated
      * @param icon new icon value
      */
-    void setIcon(QString dbName, int tabId, QString icon);
+    void setIcon(int tabId, QString icon);
 
 private:
     static QString tableName;
+    DbClient& dbClient;
 
 };
 

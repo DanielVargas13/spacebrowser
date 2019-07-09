@@ -52,7 +52,7 @@ Item
 //                }
 //                console.log("---")
 //                console.log(JSON.stringify(model))
-//                console.log(model.title)
+//                console.log(model.icon)
 //                console.log("+++")
             }
 
@@ -141,5 +141,4 @@ Item
         return mapFromItem(tabSelectorView,
                            tabSelectorView.currentItem.x, tabSelectorView.currentItem.y)
     }
-
 }
