@@ -11,7 +11,7 @@ set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Krzysztof Borowczyk")
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 FIND_PACKAGE(Qt5 COMPONENTS Core Quick QuickControls2 Sql Test WebEngine WebChannel Widgets REQUIRED)
@@ -37,15 +37,12 @@ set(CMAKE_AUTORCC ON)
 
 SET(SOURCES
   main.cpp
-  db/Tabs.cpp
   db/Tabs2.cpp
   db/DbClient.cpp
-  db/Sql.cpp
-  db/Config.cpp
   db/Config2.cpp
-  db/ScriptBlock.cpp
-  db/Passwords.cpp
-  db/Keys.cpp
+  db/ScriptBlock2.cpp
+  db/Passwords2.cpp
+  db/Keys2.cpp
   db/Backend.cpp
   misc/DebugHelpers.cpp
   Tab.cpp
@@ -68,7 +65,7 @@ ADD_SUBDIRECTORY(gnupgpp)
 ADD_EXECUTABLE(${PROJECT_NAME} ${SOURCES})
 
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} Qt5::Core Qt5::Quick Qt5::QuickControls2
-  Qt5::Sql Qt5::WebEngine Qt5::Widgets gnupgpp pqxx pthread
+  Qt5::Sql Qt5::WebEngine Qt5::Widgets gnupgpp pthread
   )
 
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)

@@ -16,12 +16,12 @@ Tab::Tab(int id_)
     id = id_;
 }
 
-Tab::Tab(const db::Tabs::TabInfo& ti)
+Tab::Tab(const db::Tabs2::TabInfo& ti)
 {
     id = ti.id;
-    url = QString(ti.url.c_str());
-    title = QString(ti.title.c_str());
-    icon = QString(ti.icon.c_str());
+    url = ti.url;
+    title = ti.title;
+    icon = ti.icon;
 }
 
 QVariant Tab::data(int column) const

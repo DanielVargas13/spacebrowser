@@ -1,8 +1,10 @@
 #ifndef DB_CONFIG_H_
 #define DB_CONFIG_H_
 
+#include <db/Backend.h>
 #include <db/DbClient.h>
 
+#include <QString>
 #include <QVariant>
 
 namespace db
@@ -11,15 +13,16 @@ namespace db
 class Config2
 {
 public:
-    Config2(DbClient& _dbClient);
+    Config2(DbClient& _dbClient, Backend& _backend);
     virtual ~Config2();
 
-    bool setProperty(const std::string& key, const QVariant& value);
-    QVariant getProperty(const std::string& key);
+    bool setProperty(QString key, QVariant value);
+    QVariant getProperty(QString key);
 
 private:
-    static std::string tableName;
+    static QString tableName;
     DbClient& dbClient;
+    Backend& backend;
 };
 
 }

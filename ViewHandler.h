@@ -2,16 +2,13 @@
 #define VIEWHANDLER_H_
 
 #ifndef TEST_BUILD
-#include <db/Tabs.h>
-#include <db/Config.h>
-#include <db/ScriptBlock.h>
+#include <db/DbGroup.h>
 #include <ContentFilter.h>
 #else
 class ViewHandler_test;
 #include <test/ViewHandler_test_mock.h>
 #endif
 
-#include <Tab.h>
 #include <TreeModel2.h>
 #include <TreeToListProxyModel.h>
 
@@ -22,9 +19,11 @@ class ViewHandler_test;
 #include <QStandardItemModel>
 
 #include <map>
+#include <memory>
 #include <mutex>
 #include <vector>
 
+class Tab;
 class QQuickWebEngineHistory;
 
 /**
@@ -154,11 +153,15 @@ public slots:
     // deprecated, does not work
     void historyUpdated(int _viewId, QQuickWebEngineHistory* navHistory);
 
+    // FIXME: this is temporary, remove:
+    void setGrp(db::DbGroup* grp)
+    {
+        dbh = grp;
+    }
+
 private:
 #ifndef TEST_BUILD
-    db::Tabs tabsDb;                     /// Tabs database abstraction
-    db::Config configDb;                 /// Config database abstraction
-    db::ScriptBlock sBlockDb;            /// Script blocker database abstraction
+    db::DbGroup* dbh;                    /// Initialized db handles
     QQuickItem* webViewContainer;        /// Pointer to WebViewContainer QML object
     QQuickItem* tabSelector;             /// Pointer to TabSelector QML object
     QQuickItem* scriptBlockingView;      /// Pointer to ScriptBlockingView QML object

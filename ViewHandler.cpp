@@ -97,7 +97,7 @@ void ViewHandler::viewSelected(int viewId)
     }
 
     webViewContainer->setProperty("currentView", vd.tabData->getView());
-    configDb.setProperty("currentTab", std::to_string(viewId));
+    dbh->config.setProperty("currentTab", viewId);
 }
 
 int ViewHandler::createTab(int parent)
@@ -108,8 +108,8 @@ int ViewHandler::createTab(int parent)
     /// create associated entry in tabSelectorModel
     ///
     QVariant newView;
-    int viewId = tabsDb.createTab();
-    tabsDb.setParent(viewId, parent);
+    int viewId = dbh->tabs.createTab();
+    dbh->tabs.setParent(viewId, parent);
 
     QMetaObject::invokeMethod(webViewContainer, "createViewObject",
         Q_RETURN_ARG(QVariant, newView),
@@ -180,7 +180,7 @@ void ViewHandler::closeTab(int viewId)
 
     /// Remove tab entry from database and from tabSelector component
     ///
-    tabsDb.closeTab(viewId);
+    dbh->tabs.closeTab(viewId);
 
     struct viewData toClose = views2.at(viewId);
 
@@ -220,7 +220,7 @@ void ViewHandler::closeTab(int viewId)
     ///
     if (views2.empty())
         viewSelected(createTab());
-    else if (std::stoi(configDb.getProperty(std::string("currentTab"))) == viewId)
+    else if (dbh->config.getProperty("currentTab").toInt() == viewId)
     {
         Tab* item;
         if (closedItemRow == 0)
@@ -312,14 +312,14 @@ void ViewHandler::historyUpdated(int _viewId, QQuickWebEngineHistory* navHistory
 void ViewHandler::urlChanged(int viewId, QUrl url)
 {
     qCDebug(vhLog, "Url changed for viewId: %i", viewId);
-    tabsDb.setUrl(viewId, url.toString().toStdString());
+    dbh->tabs.setUrl(viewId, url.toString());
 }
 
 void ViewHandler::titleChanged(int viewId, QString title)
 {
     std::lock_guard<std::recursive_mutex> lock(views2Mutex);
     qCDebug(vhLog, "Title changed for viewId: %i", viewId);
-    tabsDb.setTitle(viewId, title.toStdString());
+    dbh->tabs.setTitle(viewId, title);
     views2.at(viewId).tabData->setTitle(title);
 }
 
@@ -327,7 +327,7 @@ void ViewHandler::iconChanged(int viewId, QUrl icon)
 {
     std::lock_guard<std::recursive_mutex> lock(views2Mutex);
     qCDebug(vhLog, "Icon changed for viewId: %i", viewId);
-    tabsDb.setIcon(viewId, icon.toString().toStdString());
+    dbh->tabs.setIcon(viewId, icon.toString());
     views2.at(viewId).tabData->setIcon(icon.toString());
 }
 
@@ -359,7 +359,7 @@ void ViewHandler::selectTab(int viewId)
 void ViewHandler::loadTabs()
 {
     auto start = std::chrono::system_clock::now();
-    std::map<int, db::Tabs::TabInfo> tabsMap = tabsDb.getAllTabsMap();
+    std::map<int, db::Tabs2::TabInfo> tabsMap = dbh->tabs.getAllTabsMap();
 
     /// Open new empty tab if no tabs were retrieved from database
     ///
@@ -435,11 +435,11 @@ int ViewHandler::getFlatModelId(int viewId) const
 
 void ViewHandler::selectCurrentTab()
 {
-    std::string currentTab = configDb.getProperty("currentTab");
+    QVariant currentTab = dbh->config.getProperty("currentTab");
 
-    if (!currentTab.empty())
+    if (currentTab.isValid())
     {
-        int viewId = std::stoi(currentTab);
+        int viewId = currentTab.toInt();
 
         selectTab(viewId);
     }
@@ -457,11 +457,11 @@ void ViewHandler::selectCurrentTab()
 
 void ViewHandler::nextTab()
 {
-    std::string currentTab = configDb.getProperty("currentTab");
+    QVariant currentTab = dbh->config.getProperty("currentTab");
 
-    if (!currentTab.empty())
+    if (currentTab.isValid())
     {
-        int viewId = std::stoi(currentTab);
+        int viewId = currentTab.toInt();
 
         int flatId = flatModel.getModelId(viewId);
         flatId += 1;
@@ -479,11 +479,11 @@ void ViewHandler::nextTab()
 
 void ViewHandler::prevTab()
 {
-    std::string currentTab = configDb.getProperty("currentTab");
+    QVariant currentTab = dbh->config.getProperty("currentTab");
 
-    if (!currentTab.empty())
+    if (currentTab.isValid())
     {
-        int viewId = std::stoi(currentTab);
+        int viewId = currentTab.toInt();
 
         int flatId = flatModel.getModelId(viewId);
         flatId -= 1;
@@ -527,11 +527,11 @@ void ViewHandler::openScriptBlockingView(int viewId)
     QMetaObject::invokeMethod(scriptBlockingView, "clearEntries",
             Q_RETURN_ARG(QVariant, noValue));
 
-    using bst = db::ScriptBlock::State;
+    using bst = db::ScriptBlock2::State;
     for (const std::string& u: urls)
     {
         QJSValue val = engine.newObject();
-        bst blockState = sBlockDb.isAllowed(url.toStdString(), u, false);
+        bst blockState = dbh->scb.isAllowed(url, u.c_str(), false);
 
         bool allowed = blockState == bst::AllowedBoth || blockState == bst::Allowed;
         bool gallowed = blockState == bst::AllowedBoth || blockState == bst::AllowedGlobally;

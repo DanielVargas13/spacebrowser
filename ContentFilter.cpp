@@ -1,5 +1,4 @@
 #include <ContentFilter.h>
-#include <db/ScriptBlock.h>
 
 ContentFilter::ContentFilter()
 {
@@ -47,7 +46,7 @@ void ContentFilter::filterScripts(QWebEngineUrlRequestInfo& info)
     if (requestUrl.size() >= firstParty.size())
     {
         bool accept = true;
-        for (unsigned int i = 1; i < firstParty.size(); ++i)
+        for (int i = 1; i < firstParty.size(); ++i)
         {
             if (firstParty[firstParty.size()-i] != requestUrl[requestUrl.size()-i])
             {
@@ -66,10 +65,10 @@ void ContentFilter::filterScripts(QWebEngineUrlRequestInfo& info)
 
     /// Check whitelists in database
     ///
-    db::ScriptBlock::State allowed = sBlock.isAllowed(firstPartyHost.toStdString(),
-            requestUrlHost.toStdString());
+    db::ScriptBlock2::State allowed = dbh->scb.isAllowed(firstPartyHost,
+            requestUrlHost);
 
-    if (allowed == db::ScriptBlock::State::Blocked)
+    if (allowed == db::ScriptBlock2::State::Blocked)
         info.block(true);
 
     return;
@@ -77,20 +76,20 @@ void ContentFilter::filterScripts(QWebEngineUrlRequestInfo& info)
 
 void ContentFilter::whitelistLocal(const QString& site, const QString& url)
 {
-    sBlock.whitelistLocal(site.toStdString(), url.toStdString());
+    dbh->scb.whitelistLocal(site, url);
 }
 
 void ContentFilter::whitelistGlobal(const QString& url)
 {
-    sBlock.whitelistGlobal(url.toStdString());
+    dbh->scb.whitelistGlobal(url);
 }
 
 void ContentFilter::removeLocal(const QString& site, const QString& url)
 {
-    sBlock.removeLocal(site.toStdString(), url.toStdString());
+    dbh->scb.removeLocal(site, url);
 }
 
 void ContentFilter::removeGlobal(const QString& url)
 {
-    sBlock.removeGlobal(url.toStdString());
+    dbh->scb.removeGlobal(url);
 }

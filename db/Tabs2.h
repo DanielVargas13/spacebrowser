@@ -1,6 +1,7 @@
 #ifndef DB_TABS2_H_
 #define DB_TABS2_H_
 
+#include <db/Backend.h>
 #include <db/DbClient.h>
 
 #include <QString>
@@ -25,9 +26,10 @@ public:
         QString url;
         QString title;
         QString icon; // FIXME: add zoom level
+        std::vector<int> children;
     };
 
-    Tabs2(DbClient& _dbClient);
+    Tabs2(DbClient& _dbClient, Backend& _backend);
     virtual ~Tabs2();
 
     /**
@@ -47,12 +49,7 @@ public:
      * @return vector of TabInfo structures describing opened tabs
      */
     std::vector<TabInfo> getAllTabs();
-
-    /**
-     * Fetch all saved tab information
-     * @return vector of TabInfo structures describing opened tabs
-     */
-//    std::map<QString, std::vector<TabInfo>> getAllTabs();
+    std::map<int, Tabs2::TabInfo> getAllTabsMap();
 
     /**
      * Set parent for tab
@@ -85,6 +82,7 @@ public:
 private:
     static QString tableName;
     DbClient& dbClient;
+    Backend& backend;
 
 };
 

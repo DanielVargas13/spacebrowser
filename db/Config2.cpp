@@ -3,9 +3,10 @@
 namespace db
 {
 
-std::string Config2::tableName("config");
+QString Config2::tableName("config");
 
-Config2::Config2(DbClient& _dbClient) : dbClient(_dbClient)
+Config2::Config2(DbClient& _dbClient, Backend& _backend) :
+    dbClient(_dbClient), backend(_backend)
 {
 
 }
@@ -14,59 +15,71 @@ Config2::~Config2()
 {
 
 }
-bool Config2::setProperty(const std::string& key, const QVariant& value)
+
+bool Config2::setProperty(QString key, QVariant value)
 {
-    QSqlQuery query(QSqlDatabase::database(dbClient.getDbName()));
+    Backend::funRet_t result = backend.performQuery(
+        [this, &key, &value]()->Backend::funRet_t
+        {
+            QSqlQuery query(QSqlDatabase::database(dbClient.getDbName()));
+            
+            query.prepare(QString("INSERT INTO %1.%2 "
+                                  "VALUES (:key, :value) "
+                                  "ON CONFLICT (key) DO UPDATE SET value = :value")
+                          .arg(dbClient.getSchemaName())
+                          .arg(tableName));
+            
+            query.bindValue(":key", key);
+            query.bindValue(":value", value);
+            
+            if (!query.exec())
+            {
+                qCCritical(dbLogs, "(dbName=%s): failed to set property %s",
+                           dbClient.getDbName().toStdString().c_str(),
+                           key.toStdString().c_str());
+                dbClient.logError(query);
+                return std::move(query);
+            }
+            
+            return std::move(query);
+        }).get();
 
-    query.prepare(QString("INSERT INTO %1.%2 "
-                          "VALUES (:key, :value) "
-                          "ON CONFLICT (key) DO UPDATE SET value = :value")
-                  .arg(dbClient.getSchemaName())
-                  .arg(tableName.c_str()));
-
-    query.bindValue(":key", key.c_str());
-    query.bindValue(":value", value);
-
-    if (!query.exec())
-    {
-        qCCritical(dbLogs, "(dbName=%s): failed to set property %s",
-                   dbClient.getDbName().toStdString().c_str(),
-                   key.c_str());
-        dbClient.logError(query);
-        return false;
-    }
-
-    return true;
+    return std::holds_alternative<QSqlQuery>(result) &&
+        std::get<QSqlQuery>(result).isActive();
 }
 
-QVariant Config2::getProperty(const std::string& key)
+QVariant Config2::getProperty(QString key)
 {
-    QSqlQuery query(QSqlDatabase::database(dbClient.getDbName()));
+    Backend::funRet_t result = backend.performQuery(
+        [this, &key]()->Backend::funRet_t
+        {
+            QSqlQuery query(QSqlDatabase::database(dbClient.getDbName()));
 
-    query.prepare(QString("SELECT value FROM %1.%2 WHERE key=:key")
-                  .arg(dbClient.getSchemaName())
-                  .arg(tableName.c_str()));
+            query.prepare(QString("SELECT value FROM %1.%2 WHERE key = :key")
+                          .arg(dbClient.getSchemaName())
+                          .arg(tableName));
 
-    query.bindValue(":key", key.c_str());
+            query.bindValue(":key", key);
+    
+            if (!query.exec())
+            {
+                qCCritical(dbLogs, "(dbName=%s): failed to fetch property %s",
+                           dbClient.getDbName().toStdString().c_str(),
+                           key.toStdString().c_str());
+                dbClient.logError(query);
+                throw std::runtime_error("Config::getProperty(): failed to fetch property");
+            }
 
-    if (!query.exec())
-    {
-        qCCritical(dbLogs, "(dbName=%s): failed to fetch property %s",
-                   dbClient.getDbName().toStdString().c_str(),
-                   key.c_str());
-        dbClient.logError(query);
-        throw std::runtime_error("Config::getProperty(): failed to fetch property");
-    }
+            return std::move(query);
+        }).get();
 
+    QSqlQuery query = std::get<QSqlQuery>(result);
+    
     if (query.size() == 0)
-    {
         return "";
-    }
 
     query.next();
-
     return query.value("value");
 }
-
 
 }

@@ -14,6 +14,7 @@
 #include <QVariantMap>
 
 #include <algorithm>
+#include <chrono>
 
 namespace db
 {
@@ -25,7 +26,47 @@ Backend::Backend()
 
 Backend::~Backend()
 {
+    terminate = true;
+    connThread.join();
+}
+/*
+std::future<bool> Backend::performQuery(QSqlQuery* query)
+{
+    std::lock_guard<std::mutex> lock(mQueries);
+    std::promise<bool> p;
+    std::future<bool> f = p.get_future();
 
+    queries.push_back(query_t(query, std::move(p)));
+
+    cv.notify_all();
+
+    return f;
+    }*/
+
+std::future<QSqlQuery> Backend::performQuery(QString dbName, QString queryStr)
+{
+    std::lock_guard<std::mutex> lock(mQueries);
+    std::promise<QSqlQuery> p;
+    std::future<QSqlQuery> f = p.get_future();
+
+    queries.push_back(strQuery_t(dbName, queryStr, std::move(p)));
+
+    cv.notify_all();
+
+    return f;
+}
+
+std::future<Backend::funRet_t> Backend::performQuery(std::function<funRet_t()> fun)
+{
+    std::lock_guard<std::mutex> lock(mQueries);
+    std::promise<funRet_t> p;
+    std::future<funRet_t> f = p.get_future();
+
+    queries.push_back(funQuery_t(fun, std::move(p)));
+
+    cv.notify_all();
+
+    return f;
 }
 
 void Backend::configureDbConnection(QObject* dialog, bool encReady)
@@ -131,50 +172,98 @@ void Backend::dbConfigured(QVariant connData)
     writeAllConnectionEntries(settings, connections);
 }
 
-
 bool Backend::connectDatabases()
 {
-    QSettings settings;
-    unsigned int dbCount = settings.beginReadArray(conf::Databases::dbArray);
-    bool result = false;
+    if (connThread.joinable())
+        return true;
 
-    for (unsigned int i = 0; i < dbCount; ++i)
+    connThread = std::thread([this]()
     {
-        settings.setArrayIndex(i);
+        QSettings settings;
+        unsigned int dbCount = settings.beginReadArray(conf::Databases::dbArray);
 
-        struct connData_t cd = readConnetionEntry(settings);
-
-        if (cd.connName.isEmpty() || cd.driverType.isEmpty() ||
-            cd.hostname.isEmpty() || cd.dbName.isEmpty())
-            continue;
-
-        QSqlDatabase db = QSqlDatabase::addDatabase(cd.driverType, cd.connName);
-
-        db.setHostName(cd.hostname);
-        db.setDatabaseName(cd.dbName);
-        if (!cd.username.isEmpty())
-            db.setUserName(cd.username);
-
-        if (cd.isEncrypted)
+        for (unsigned int i = 0; i < dbCount; ++i)
         {
-            QString decrypted;
-            // FIXME: decrypt
+            settings.setArrayIndex(i);
 
-            db.setPassword(decrypted);
+            struct connData_t cd = readConnetionEntry(settings);
+
+            if (cd.connName.isEmpty() || cd.driverType.isEmpty() ||
+            cd.hostname.isEmpty() || cd.dbName.isEmpty())
+                continue;
+
+            QSqlDatabase db = QSqlDatabase::addDatabase(cd.driverType, cd.connName);
+
+            db.setHostName(cd.hostname);
+            db.setDatabaseName(cd.dbName);
+            if (!cd.username.isEmpty())
+                db.setUserName(cd.username);
+
+            if (cd.isEncrypted)
+            {
+                QString decrypted;
+                // FIXME: decrypt
+
+                db.setPassword(decrypted);
+            }
+            else
+                db.setPassword(cd.password);
+
+            qCDebug(dbLogs) << "Connecting to"
+                            << cd.connName.toStdString().c_str();
+            if (!db.open())
+                qCCritical(dbLogs) << db.lastError().text().toStdString().c_str();
         }
-        else
-            db.setPassword(cd.password);
+        settings.endArray();
 
-        qCDebug(dbLogs) << "Connecting to"
-                        << cd.connName.toStdString().c_str();
-        if (db.open())
-            result = true;
-        else
-            qCCritical(dbLogs) << db.lastError().text().toStdString().c_str();
-    }
-    settings.endArray();
 
-    return result;
+        while (!terminate)
+        {
+            /// Process prepared QSqlQuery
+            while (!queries.empty())
+            {
+                std::lock_guard<std::mutex> lock(mQueries);
+
+                if (queries.empty())
+                    break;
+
+                vquery_t& vq = queries.front();
+
+                if (std::holds_alternative<strQuery_t>(vq))
+                {
+                    strQuery_t& q = std::get<strQuery_t>(vq);
+                    QString& dbName = std::get<0>(q);
+                    QString& queryString = std::get<1>(q);
+                    std::promise<QSqlQuery>& prom = std::get<2>(q);
+
+                    QSqlQuery query(QSqlDatabase::database(dbName));
+
+                    query.exec(queryString);
+                    prom.set_value(std::move(query));
+                }
+                else if (std::holds_alternative<funQuery_t>(vq))
+                {
+                    funQuery_t& q = std::get<funQuery_t>(vq);
+                    std::function<funRet_t()>& fun = q.first;
+                    std::promise<funRet_t>& prom = q.second;
+
+                    prom.set_value(fun());
+                }
+                
+
+                queries.pop_front();
+            }
+
+            /// Wait for new queries
+            {
+                using namespace std::chrono_literals;
+                std::unique_lock<std::mutex> lock(mCv);
+                cv.wait_for(lock, 500ms);
+            }
+        }
+    });
+
+    return true;
 }
 
 void Backend::writeConnectionEntry(QSettings& settings,

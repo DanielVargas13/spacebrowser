@@ -1,7 +1,7 @@
 #ifndef TAB_H_
 #define TAB_H_
 
-#include <db/Tabs.h>
+#include <db/Tabs2.h>
 
 #include <QByteArray>
 #include <QHash>
@@ -16,7 +16,7 @@ class Tab : public QStandardItem
 {
 public:
     Tab(int id);
-    Tab(const db::Tabs::TabInfo& ti);
+    Tab(const db::Tabs2::TabInfo& ti);
 
     bool operator== (const Tab &c1)
     {

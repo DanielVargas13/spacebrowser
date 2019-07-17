@@ -5,6 +5,8 @@
 #include <QSqlQuery>
 #include <QString>
 
+#include <db/Backend.h>
+
 #include <vector>
 
 Q_DECLARE_LOGGING_CATEGORY(dbLogs)
@@ -19,7 +21,7 @@ class DbClient
 {
 public:
 
-    DbClient();
+    DbClient(db::Backend& _backend);
 
     virtual ~DbClient();
 
@@ -51,8 +53,6 @@ public:
      */
     void logError(const QSqlError& error);
 
-protected:
-
 private:
     /**
      * Create database schema
@@ -73,11 +73,12 @@ private:
 
     bool setupDbV1();
 
-protected:
+private:
     QString dbName;
     const QString schemaName = "spacebrowser2";
     const unsigned int schemaVersion = 1;
     std::vector<bool (DbClient::*)()> migrators;
+    db::Backend& backend;
 };
 
 

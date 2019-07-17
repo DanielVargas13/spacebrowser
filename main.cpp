@@ -4,9 +4,8 @@
 #include <PrintHandler.h>
 #include <PasswordManager.h>
 #include <db/Backend.h>
+#include <db/DbGroup.h>
 #include <conf/conf.h>
-
-#include <db/Tabs2.h>
 
 #include <QApplication>
 #include <QJsonArray>
@@ -118,12 +117,6 @@ int main(int argc, char *argv[])
     //QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QtWebEngine::initialize();
 
-    /// Create and setup content filter
-    ///
-    ContentFilter cf;
-    QQuickWebEngineProfile* profile = QQuickWebEngineProfile::defaultProfile();
-    profile->setRequestInterceptor(&cf);
-
     /// Create and setup QQuickView with MainWindow
     ///
     std::shared_ptr<QQuickView> view(new QQuickView);
@@ -138,9 +131,43 @@ int main(int argc, char *argv[])
     QObject::connect(view->rootObject(), SIGNAL(printRequest(QVariant)),
             &ph, SLOT(printRequested(QVariant)));
 
+    /// Initialize databases
+    ///
+    QSettings settings;
+    unsigned int dbCount = settings.beginReadArray(conf::Databases::dbArray);
+    settings.endArray();
+
+    QObject* confDbConnDialog = view->rootObject()->
+        findChild<QObject*>("configureDbConnectionDialog");
+    if (!confDbConnDialog)
+        throw std::runtime_error("No configureDbConnectionDialog object found");
+
+    db::Backend dbBackend;
+    QObject::connect(confDbConnDialog, SIGNAL(dbConfigured(QVariant)),
+                     &dbBackend, SLOT(dbConfigured(QVariant)));
+
+    // FIXME: call connectDatabases async and configure if connect failed
+    if (!dbCount || !dbBackend.connectDatabases())
+    {
+        qCCritical(mainLogs) <<"no db configured or connectDatabases() failed";
+
+        dbBackend.configureDbConnection(confDbConnDialog, /*passMan.isEncryptionReady()*/ false);
+    }
+    app.processEvents();
+    db::DbGroup dbGrp("localPS", dbBackend); // in a loop, over all dbs
+
+    /// Create and setup content filter
+    ///
+    ContentFilter cf;
+    cf.setGrp(&dbGrp);
+    QQuickWebEngineProfile* profile = QQuickWebEngineProfile::defaultProfile();
+    profile->setRequestInterceptor(&cf);
+
     /// Setup password manager
     ///
     PasswordManager passMan;
+    passMan.setGrp(&dbGrp);
+
     QObject::connect(view->rootObject(), SIGNAL(loadSucceeded(QVariant)),
                      &passMan, SLOT(loadSucceeded(QVariant)));
 
@@ -191,6 +218,7 @@ int main(int argc, char *argv[])
             view->rootObject()->findChild<QObject*>("tabSelector"));
 
     ViewHandler vh(&cf, view);
+    vh.setGrp(&dbGrp);
 
     // FIXME: consider removing this contextProperty and communicate via signals instead
     view->engine()->rootContext()->setContextProperty("viewHandler", &vh);
@@ -201,6 +229,8 @@ int main(int argc, char *argv[])
         QObject::connect(tabSelector, SIGNAL(openScriptBlockingView(int)), &vh, SLOT(openScriptBlockingView(int)));
     }
 
+    /// Load tabs, set-up signals
+    ///
     vh.loadTabs();
     app.processEvents();
     vh.selectCurrentTab();
@@ -221,33 +251,6 @@ int main(int argc, char *argv[])
     setupProfileDownloadHandler(bd, profile);
     setupDownloaderSignals(bd, view, profile);
 
-
-    /// Initialize databases
-    ///
-    QSettings settings;
-    unsigned int dbCount = settings.beginReadArray(conf::Databases::dbArray);
-    settings.endArray();
-
-    QObject* confDbConnDialog = view->rootObject()->
-        findChild<QObject*>("configureDbConnectionDialog");
-    if (!confDbConnDialog)
-        throw std::runtime_error("No configureDbConnectionDialog object found");
-
-    db::Backend dbBackend;
-    QObject::connect(confDbConnDialog, SIGNAL(dbConfigured(QVariant)),
-                     &dbBackend, SLOT(dbConfigured(QVariant)));
-
-    // FIXME: call connectDatabases async and configure if connect failed
-    if (!dbCount || !dbBackend.connectDatabases())
-    {
-        qCCritical(mainLogs) <<"no db configured or connectDatabases() failed";
-
-        dbBackend.configureDbConnection(confDbConnDialog, passMan.isEncryptionReady());
-    }
-
-    db::DbClient dbc;
-    dbc.initDatabase("localPS"); // in a loop, over all dbs
-    db::Tabs2 t2(dbc);
 
     qCDebug(mainLogs) << "Finished init, executing app";
     int status = app.exec();

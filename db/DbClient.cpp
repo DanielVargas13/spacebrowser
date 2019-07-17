@@ -13,7 +13,7 @@ Q_LOGGING_CATEGORY(dbLogs, "db")
 
 namespace db
 {
-DbClient::DbClient()
+DbClient::DbClient(db::Backend& _backend) : backend(_backend)
 {
     migrators.push_back(&DbClient::setupDbV1);
 }
@@ -90,11 +90,17 @@ bool DbClient::initDatabase(QString _dbName)
 
 unsigned int DbClient::fetchSchemaVersion()
 {
-    QSqlDatabase db = QSqlDatabase::database(dbName);
     int dbVersion = 0;
 
-    Config2 cfg(*this);
-    if (db.tables().contains(schemaName + "." + "config"))
+    Config2 cfg(*this, backend);
+    Backend::funRet_t result = backend.performQuery(
+        [this]()->Backend::funRet_t
+        {
+            QSqlDatabase db = QSqlDatabase::database(dbName);
+            return db.tables().contains(schemaName + "." + "config");
+        }).get();
+
+    if (std::holds_alternative<bool>(result) && std::get<bool>(result))
     {
         bool ok = false;
         int dbv = cfg.getProperty("schemaVersion").toInt(&ok);
@@ -110,9 +116,7 @@ unsigned int DbClient::fetchSchemaVersion()
 
 void DbClient::setSchemaVersion(unsigned int version)
 {
-    QSqlDatabase db = QSqlDatabase::database(dbName);
-
-    Config2 cfg(*this);
+    Config2 cfg(*this, backend);
 
     if (cfg.setProperty("schemaVersion", version))
         qCDebug(dbLogs, "(dbname=%s): schema version set to = %i",
@@ -127,9 +131,9 @@ bool DbClient::createSchemaIfNotExists()
 {
 //FIXME: test this with sqlite as it will 99% NOT WORK
 
-    QSqlQuery query(QSqlDatabase::database(dbName));
-
-    bool result = query.exec("CREATE SCHEMA IF NOT EXISTS " + schemaName);
+    QSqlQuery query = backend.performQuery(
+        dbName, "CREATE SCHEMA IF NOT EXISTS " + schemaName).get();
+    bool result = query.isActive();
 
     if (!result)
     {
@@ -169,14 +173,16 @@ bool DbClient::setupDbV1()
 
     if (!db.tables().contains(schemaName + "." + "tabs"))
     {
-        QSqlQuery query(db);
-        bool result = query.exec("CREATE TABLE IF NOT EXISTS " +
-                                 schemaName + "." + "tabs" +
-                                 "(id serial PRIMARY KEY,"
-                                 "parent integer default 0,"
-                                 "url varchar default \'\',"
-                                 "title varchar default \'\',"
-                                 "icon varchar default \'\')");
+        QSqlQuery query = backend.performQuery(
+            dbName,
+            "CREATE TABLE IF NOT EXISTS " +
+            schemaName + "." + "tabs" +
+            "(id serial PRIMARY KEY,"
+            "parent integer default 0,"
+            "url varchar default \'\',"
+            "title varchar default \'\',"
+            "icon varchar default \'\')").get();
+        bool result = query.isActive();
 
         if (!result)
         {
@@ -192,10 +198,12 @@ bool DbClient::setupDbV1()
     ///
     if (!db.tables().contains(schemaName + "." + "config"))
     {
-        QSqlQuery query(db);
-        bool result = query.exec("CREATE TABLE IF NOT EXISTS " +
-                                 schemaName + "." + "config" +
-                                 "(key varchar PRIMARY KEY, value varchar)");
+        QSqlQuery query = backend.performQuery(
+            dbName,
+            "CREATE TABLE IF NOT EXISTS " +
+            schemaName + "." + "config" +
+            "(key varchar PRIMARY KEY, value varchar)").get();
+        bool result = query.isActive();
 
         if (!result)
         {
@@ -211,11 +219,13 @@ bool DbClient::setupDbV1()
     ///
     if (!db.tables().contains(schemaName + "." + "keys"))
     {
-        QSqlQuery query(db);
-        bool result = query.exec("CREATE TABLE IF NOT EXISTS " +
-                                 schemaName + "." + "keys" +
-                                 "(fingerprint varchar PRIMARY KEY,"
-                                 "def boolean DEFAULT false)");
+        QSqlQuery query = backend.performQuery(
+            dbName,
+            "CREATE TABLE IF NOT EXISTS " +
+            schemaName + "." + "keys" +
+            "(fingerprint varchar PRIMARY KEY,"
+            "def boolean DEFAULT false)").get();
+        bool result = query.isActive();
 
         if (!result)
         {
@@ -231,16 +241,18 @@ bool DbClient::setupDbV1()
     ///
     if (!db.tables().contains(schemaName + "." + "passwords"))
     {
-        QSqlQuery query(db);
-        bool result = query.exec("CREATE TABLE IF NOT EXISTS " +
-                                 schemaName + "." + "passwords" +
-                                 "(host varchar NOT NULL, path varchar,"
-                                 "login varchar NOT NULL,"
-                                 "password varchar NOT NULL,"
-                                 "key_fp varchar REFERENCES " + schemaName +
-                                 ".keys(fingerprint),"
-                                 "CONSTRAINT pass_pkey "
-                                 "PRIMARY KEY(host, path, login))");
+        QSqlQuery query = backend.performQuery(
+            dbName,
+            "CREATE TABLE IF NOT EXISTS " +
+            schemaName + "." + "passwords" +
+            "(host varchar NOT NULL, path varchar,"
+            "login varchar NOT NULL,"
+            "password varchar NOT NULL,"
+            "key_fp varchar REFERENCES " + schemaName +
+            ".keys(fingerprint),"
+            "CONSTRAINT pass_pkey "
+            "PRIMARY KEY(host, path, login))").get();
+        bool result = query.isActive();
 
         if (!result)
         {
@@ -256,10 +268,12 @@ bool DbClient::setupDbV1()
     ///
     if (!db.tables().contains(schemaName + "." + "global_script_whitelist"))
     {
-        QSqlQuery query(db);
-        bool result = query.exec("CREATE TABLE IF NOT EXISTS " +
-                                 schemaName + "." + "global_script_whitelist" +
-                                 "(url varchar PRIMARY KEY)");
+        QSqlQuery query = backend.performQuery(
+            dbName,
+            "CREATE TABLE IF NOT EXISTS " +
+            schemaName + "." + "global_script_whitelist" +
+            "(url varchar PRIMARY KEY)").get();
+        bool result = query.isActive();
 
         if (!result)
         {
@@ -275,10 +289,12 @@ bool DbClient::setupDbV1()
     ///
     if (!db.tables().contains(schemaName + "." + "site_list"))
     {
-        QSqlQuery query(db);
-        bool result = query.exec("CREATE TABLE IF NOT EXISTS " +
-                                 schemaName + "." + "site_list" +
-                                 "(url varchar PRIMARY KEY)");
+        QSqlQuery query = backend.performQuery(
+            dbName,
+            "CREATE TABLE IF NOT EXISTS " +
+            schemaName + "." + "site_list" +
+            "(url varchar PRIMARY KEY)").get();
+        bool result = query.isActive();
 
         if (!result)
         {
@@ -294,12 +310,14 @@ bool DbClient::setupDbV1()
     ///
     if (!db.tables().contains(schemaName + "." + "script_whitelist"))
     {
-        QSqlQuery query(db);
-        bool result = query.exec("CREATE TABLE IF NOT EXISTS " +
-                                 schemaName + "." + "script_whitelist" +
-                                 "(id serial PRIMARY KEY,"
-                                 "site_url varchar REFERENCES " + schemaName +
-                                 ".site_list, url varchar)");
+        QSqlQuery query = backend.performQuery(
+            dbName,
+            "CREATE TABLE IF NOT EXISTS " +
+            schemaName + "." + "script_whitelist" +
+            "(id serial PRIMARY KEY,"
+            "site_url varchar REFERENCES " + schemaName +
+            ".site_list, url varchar)").get();
+        bool result = query.isActive();
 
         if (!result)
         {

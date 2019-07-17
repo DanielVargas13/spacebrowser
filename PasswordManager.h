@@ -1,8 +1,7 @@
 #ifndef PASSWORDMANAGER_H_
 #define PASSWORDMANAGER_H_
 
-#include <db/Keys.h>
-#include <db/Passwords.h>
+#include <db/DbGroup.h>
 #include <gnupgpp/GnupgPP.h>
 
 #include <QObject>
@@ -23,6 +22,13 @@ public:
     bool isEncryptionReady();
     QStringList keysList() const;
 
+    // FIXME: this is temporary, remove:
+    void setGrp(db::DbGroup* grp)
+    {
+        dbh = grp;
+    }
+
+
 signals:
     void shouldBeSaved(QVariant url, QVariant login);
     void shouldBeUpdated(QVariant url, QVariant login);
@@ -37,9 +43,9 @@ public slots:
 
 private:
     gnupgpp::GnupgPP gpg;
-    db::Keys keys;
-    db::Passwords pwds;
-    std::map<QString, struct db::Passwords::entry_t> tempStore;
+    db::DbGroup* dbh;
+
+    std::map<QString, struct db::Passwords2::entry_t> tempStore;
     QString formExtractor;
     QString formFiller;
     QString qWebChannel;

@@ -33,8 +33,8 @@ void PasswordManager::fillPassword(QVariant view)
 {
     QObject* v = qvariant_cast<QObject *>(view);
 
-    bool s = QMetaObject::invokeMethod(v, "runJavaScript",
-            Q_ARG(QString, formFiller));
+    QMetaObject::invokeMethod(v, "runJavaScript",
+                              Q_ARG(QString, formFiller));
 
 }
 
@@ -46,7 +46,7 @@ void PasswordManager::keySelected(QString id)
         std::cout << "PasswordManager::keySelected(id='" << id.toStdString() <<
             "'): invalid id format";
 
-    keys.addKey(parts[0].toStdString(), true);
+    dbh->keys.addKey(parts[0].toStdString(), true);
 }
 
 void PasswordManager::loadSucceeded(QVariant view)
@@ -69,7 +69,7 @@ void PasswordManager::loadSucceeded(QVariant view)
     QString host = url.host();
     QString path = url.path();
 
-    if (int passCount = pwds.countSavedCredentials(host, path) > 0)
+    if (int passCount = dbh->pwds.countSavedCredentials(host, path) > 0)
     {
         QMetaObject::invokeMethod(v, "passAvailable",
                 Q_ARG(QVariant, QVariant(passCount)));
@@ -96,12 +96,12 @@ void PasswordManager::saveAccepted(QString url, bool accepted)
 
     const auto& entry = tempStore.at(url);
 
-    switch (pwds.isSaved(entry))
+    switch (dbh->pwds.isSaved(entry))
     {
-    case db::Passwords::SaveState::Outdated:
-    case db::Passwords::SaveState::Absent:
+    case db::Passwords2::SaveState::Outdated:
+    case db::Passwords2::SaveState::Absent:
     {
-        pwds.saveOrUpdate(entry);
+        dbh->pwds.saveOrUpdate(entry);
     } break;
     default:
     {
@@ -114,7 +114,7 @@ bool PasswordManager::savePassword(QVariant fields_qv)
 {
     QJsonArray f = fields_qv.toJsonArray();
 
-    db::Passwords::entry_t fields;
+    db::Passwords2::entry_t fields;
 
     for (const auto& field: f)
     {
@@ -127,7 +127,7 @@ bool PasswordManager::savePassword(QVariant fields_qv)
         else if (obj["type"] == "password" && !obj["value"].toString().isEmpty())
         {
             fields.password = encrypt(obj["value"].toString());
-            fields.fingerprint = keys.getDefaultKey().c_str();
+            fields.fingerprint = dbh->keys.getDefaultKey();
         }
         else if (obj["type"] == "host")
             fields.host = obj["value"].toString();
@@ -148,13 +148,13 @@ bool PasswordManager::savePassword(QVariant fields_qv)
 
     tempStore[fields.host + fields.path] = fields;
 
-    switch (pwds.isSaved(fields))
+    switch (dbh->pwds.isSaved(fields))
     {
-    case db::Passwords::SaveState::Outdated:
+    case db::Passwords2::SaveState::Outdated:
     {
         emit shouldBeUpdated(fields.host + fields.path, fields.login);
     } break;
-    case db::Passwords::SaveState::Absent:
+    case db::Passwords2::SaveState::Absent:
     {
         emit shouldBeSaved(fields.host + fields.path, fields.login);
     } break;
@@ -174,11 +174,11 @@ QString PasswordManager::encrypt(QString text)
         gnupgpp::GpgContext ctx = gpg.createContext();
         ctx.setArmor(true);
 
-        std::string keyFp = keys.getDefaultKey();
-        if (keyFp.empty())
+        QString keyFp = dbh->keys.getDefaultKey();
+        if (keyFp.isEmpty())
             return QString();
 
-        std::shared_ptr<gnupgpp::GpgKey> key = ctx.getKey(keyFp);
+        std::shared_ptr<gnupgpp::GpgKey> key = ctx.getKey(keyFp.toStdString());
 
         return QString(ctx.encrypt(text.toStdString(), key).c_str());
 
@@ -194,16 +194,16 @@ QString PasswordManager::encrypt(QString text)
 
 bool PasswordManager::isEncryptionReady()
 {
-    std::string keyFp = keys.getDefaultKey();
-    if (keyFp.empty())
+    QString keyFp = dbh->keys.getDefaultKey();
+    if (keyFp.isEmpty())
         return false;
 
     gnupgpp::GpgContext ctx = gpg.createContext();
-    std::shared_ptr<gnupgpp::GpgKey> key = ctx.getKey(keyFp);
+    std::shared_ptr<gnupgpp::GpgKey> key = ctx.getKey(keyFp.toStdString());
     if (!key)
         return false;
 
-    std::shared_ptr<gnupgpp::GpgKey> sKey = ctx.getKey(keyFp, true);
+    std::shared_ptr<gnupgpp::GpgKey> sKey = ctx.getKey(keyFp.toStdString(), true);
     if (!sKey)
         return false;
 
@@ -260,7 +260,7 @@ QVariant PasswordManager::getCredentials(QVariant host, QVariant path) noexcept
 
     path.isValid() ? p = path.toString() : p = "";
 
-    auto creds = pwds.getCredentials(h, p);
+    auto creds = dbh->pwds.getCredentials(h, p);
 
     switch (creds.size())
     {

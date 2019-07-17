@@ -1,7 +1,7 @@
 #ifndef CONTENTFILTER_H_
 #define CONTENTFILTER_H_
 
-#include <db/ScriptBlock.h>
+#include <db/DbGroup.h>
 
 #include <QWebEngineUrlRequestInterceptor>
 
@@ -20,6 +20,12 @@ public:
 
     std::set<std::string> getUrlsFor(const std::string& url);
 
+    // FIXME: this is temporary, remove:
+    void setGrp(db::DbGroup* grp)
+    {
+        dbh = grp;
+    }
+
 public slots:
     void whitelistLocal(const QString& site, const QString& url);
     void whitelistGlobal(const QString& url);
@@ -28,7 +34,7 @@ public slots:
 
 private:
     std::map<std::string, std::set<std::string>> requestedScripts;
-    db::ScriptBlock sBlock;
+    db::DbGroup* dbh;
 
     void filterScripts(QWebEngineUrlRequestInfo& info);
 };
