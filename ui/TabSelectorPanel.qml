@@ -9,7 +9,7 @@ ScrollView
 
     clip: true
 
-    signal newTabCreated()
+    signal newTabRequested()
 
     Item
     {
@@ -38,9 +38,9 @@ ScrollView
             anchors.leftMargin: Style.margin
             anchors.rightMargin: Style.margin
 
-            onNewTabCreated: {
-                root.newTabCreated();
-                root.scrollToCurrent()
+            onNewTabRequested:
+            {
+                root.newTabRequested()
             }
         }
     }
@@ -48,7 +48,6 @@ ScrollView
     function createNewTab(obj, insertAfter)
     {
         tabSelector.createNewTab(obj, insertAfter)
-        console.log(root.contentItem)
     }
 
     function scrollToBottom()
@@ -79,4 +78,11 @@ ScrollView
     {
         tabSelector.setModel(model)
     }
+
+    function createTab()
+    {// FIXME: this is better than signal, easier to decide on which tabSelector to call it
+        // and will be accessible from WebViewComponent.qml
+        return tabSelector.createTab()
+    }
+   
 }

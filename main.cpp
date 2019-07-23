@@ -7,7 +7,7 @@
 #include <db/DbGroup.h>
 #include <conf/conf.h>
 
-#include <QApplication>
+#include <QGuiApplication>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QLoggingCategory>
@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
 
     /// Create and setup QApplication
     ///
-    QApplication app(argc, argv);
+    QGuiApplication app(argc, argv);
     app.setOrganizationName("SpaceFoundation");
     app.setApplicationName("SpaceBrowser");
     //FIXME: test this
@@ -207,8 +207,6 @@ int main(int argc, char *argv[])
 
     /// Setup View Handler
     ///
-
-    // FIXME: refactor below to use slots/signals instead of calling vh directly
     QQuickItem* scriptBlockingView = qobject_cast<QQuickItem*>(
             view->rootObject()->findChild<QObject*>("scriptBlockingView"));
     if (!scriptBlockingView)
@@ -220,20 +218,29 @@ int main(int argc, char *argv[])
     ViewHandler vh(&cf, view);
     vh.setGrp(&dbGrp);
 
-    // FIXME: consider removing this contextProperty and communicate via signals instead
-    view->engine()->rootContext()->setContextProperty("viewHandler", &vh);
     if (tabSelector)
-    {
-        QObject::connect(tabSelector, SIGNAL(viewSelected(int)), &vh, SLOT(viewSelected(int)));
-        QObject::connect(tabSelector, SIGNAL(closeTab(int)), &vh, SLOT(closeTab(int)));
+    { // FIXME: multiple tab selectors for multiple db backends
         QObject::connect(tabSelector, SIGNAL(openScriptBlockingView(int)), &vh, SLOT(openScriptBlockingView(int)));
     }
 
+/*    QObject* webViewContainer = view->rootObject()->
+        findChild<QObject*>("webViewContainer");
+    if (!webViewContainer)
+        throw std::runtime_error("No webViewContainer object found");
+*/
+
+    QObject* tabSelectorPanel = view->rootObject()->
+        findChild<QObject*>("tabSelectorPanel");
+    if (!tabSelectorPanel)
+        throw std::runtime_error("No tabSelectorPanel object found");
+
+    QObject::connect(view->rootObject(), SIGNAL(showFullscreen(bool)),
+                     &vh, SLOT(showFullscreen(bool)));
+
+
     /// Load tabs, set-up signals
     ///
-    vh.loadTabs();
-    app.processEvents();
-    vh.selectCurrentTab();
+    vh.init(app);
 
     QObject::connect(scriptBlockingView, SIGNAL(whitelistLocal(QString, QString)),
             &cf, SLOT(whitelistLocal(QString, QString)));

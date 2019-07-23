@@ -51,6 +51,7 @@ SET(SOURCES
   BasicDownloader.cpp
   PrintHandler.cpp
   PasswordManager.cpp
+  TabModel.cpp
   TreeToListProxyModel.cpp
   TreeModel2.cpp
   resources.qrc

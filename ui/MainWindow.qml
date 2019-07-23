@@ -12,9 +12,14 @@ Rectangle
 
     property bool isFullscreen: false
 
-    signal printRequest(var webView)
+    signal createTab(int parent, bool select, bool scroll)
+    signal closeTab(int viewId)
     signal loadSucceeded(var webView)
+    signal nextTab()
+    signal prevTab()
+    signal printRequest(var webView)
     signal savePasswordAccepted(string url, bool accepted)
+    signal showFullscreen(bool toggleOn)
 
     visible: true
     color: Style.background
@@ -115,7 +120,11 @@ Rectangle
         anchors.bottom: mainWindow.bottom
         width: Style.tabSelector.width
 
-        onNewTabCreated: addressBar.focus = true
+        onNewTabRequested:
+        {
+            mainWindow.createTab(0, true, true)
+            addressBar.focus = true
+        }
     }
 
     WebViewContainer
@@ -143,16 +152,6 @@ Rectangle
             return view;
         }
 
-        function updateTitle(viewId, title)
-        {
-            viewHandler.titleChanged(viewId, title)
-        }
-
-        function updateIcon(viewId, icon)
-        {
-            viewHandler.iconChanged(viewId, icon.toString())
-        }
-
         function updateAddressBar(url)
         {
             addressBar.text = url
@@ -165,7 +164,7 @@ Rectangle
 
             onFullScreenRequested: function(request) {
                 mainWindow.isFullscreen = request.toggleOn
-                viewHandler.showFullscreen(request.toggleOn)
+                showFullscreen(request.toggleOn)
                 request.accept()
                 webViewContainer.currentView.parent = request.toggleOn ? mainWindow : webViewContainer
             }
@@ -219,11 +218,11 @@ Rectangle
 
     Shortcut {
         sequence: "Ctrl+Tab"
-        onActivated: viewHandler.nextTab();
+        onActivated: nextTab();
     }
     Shortcut {
         sequence: "Ctrl+Shift+Tab"
-        onActivated: viewHandler.prevTab();
+        onActivated: prevTab();
     }
     Shortcut {
         sequence: StandardKey.ZoomIn//"Ctrl++"
@@ -240,17 +239,14 @@ Rectangle
     Shortcut {
         sequence: "Ctrl+t"
         onActivated: {
-            var id = viewHandler.createTab()
-            viewHandler.selectTab(id)
-            tabSelectorPanel.scrollToCurrent()
+            mainWindow.createTab(0, true, true)
             addressBar.focus = true
         }
     }
     Shortcut {
         sequence: "Ctrl+w"
         onActivated: {
-            viewHandler.closeTab(webViewContainer.currentView.myViewId)
-            tabSelectorPanel.scrollToCurrent()
+            closeTab(webViewContainer.currentView.myViewId)
         }
     }
     Shortcut { // test shorcut

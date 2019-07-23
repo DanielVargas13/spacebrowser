@@ -6,9 +6,9 @@ Item
 {
     id: root
 
-    signal viewSelected(int viewId)           // connected in c++ code
-    signal closeTab(int viewId)               // connected in c++ code
-    signal openScriptBlockingView(int viewId) // connected in c++ code
+    signal viewSelected(int viewId)
+    signal closeTab(int viewId)
+    signal openScriptBlockingView(int viewId)
 
     height: Style.tabSelector.entry.height * visualModel.count
 
@@ -65,6 +65,14 @@ Item
 
         anchors.fill: parent
         model: visualModel
+
+        onCurrentIndexChanged:
+        {
+            console.log("Current index: " + currentIndex);
+
+            /// check here if view is available, and if not - create it
+            console.log(visualModel.model.data(visualModel.model.index(currentIndex, 0), 5))
+        }
 //        highlightFollowsCurrentItem: false
     }
 

@@ -6,6 +6,7 @@
 
 Q_LOGGING_CATEGORY(treeModel2, "treeModel2")
 
+
 bool TreeModel2::moveRows(const QModelIndex &srcParent, int srcRow, int count,
               const QModelIndex &dstParent, int dstRow)
 {

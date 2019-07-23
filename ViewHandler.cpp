@@ -18,19 +18,14 @@
 
 Q_LOGGING_CATEGORY(vhLog, "viewHandler")
 
-ViewHandler::ViewHandler(ContentFilter* _cf, std::shared_ptr<QQuickView> _qView)
-    : cf(_cf), qView(_qView)
+ViewHandler::ViewHandler(ContentFilter* _cf, std::shared_ptr<QQuickView> _qView) :
+    cf(_cf), qView(_qView), tabsModel(qView)
 {
 #ifndef TEST_BUILD
     webViewContainer = qobject_cast<QQuickItem*>(
         qView->rootObject()->findChild<QObject*>("webViewContainer"));
     if (!webViewContainer)
         throw std::runtime_error("No webViewContainer object found");
-
-    tabSelector = qobject_cast<QQuickItem*>(
-        qView->rootObject()->findChild<QObject*>("tabSelector"));
-    if (!tabSelector)
-        throw std::runtime_error("No tabSelector object found");
 
     scriptBlockingView = qobject_cast<QQuickItem*>(
         qView->rootObject()->findChild<QObject*>("scriptBlockingView"));
@@ -53,108 +48,15 @@ ViewHandler::~ViewHandler()
 #endif
 }
 
-bool ViewHandler::init()
+bool ViewHandler::init(QGuiApplication& app)
 {
     // FIXME: here initialize db::Tabs, and other db:: in the future
 
+    tabsModel.loadTabs();
+    app.processEvents();
+    tabsModel.selectCurrentTab();
+
     return true;
-}
-
-void ViewHandler::viewSelected(int viewId)
-{
-    qCDebug(vhLog, "Selecting tab: %i", viewId);
-
-    std::lock_guard<std::recursive_mutex> lock(views2Mutex);
-
-    struct viewData& vd = views2[viewId];
-
-    if (vd.tabData && !vd.tabData->getView().isValid())
-    {
-        QVariant newView;
-        QMetaObject::invokeMethod(webViewContainer, "createViewObject",
-            Q_RETURN_ARG(QVariant, newView),
-            Q_ARG(QVariant, viewId));
-
-        QObject* v = qvariant_cast<QObject *>(newView);
-
-
-        if (vd.tabData)
-        {
-            const Tab* td = vd.tabData;
-            v->setProperty("targetUrl", td->getUrl());
-        }
-
-        vd.tabData->setView(newView);
-    }
-    else
-    {
-        if (!vd.tabData)
-        {
-            qCWarning(vhLog, "There was no tabData, "
-                "not sure if this should happen");
-            qCWarning(vhLog, "viewId: %i", viewId);
-        }
-    }
-
-    webViewContainer->setProperty("currentView", vd.tabData->getView());
-    dbh->config.setProperty("currentTab", viewId);
-}
-
-int ViewHandler::createTab(int parent)
-{
-    std::lock_guard<std::recursive_mutex> lock(views2Mutex);
-
-    /// Call webViewContainer to create new QML Web View object and
-    /// create associated entry in tabSelectorModel
-    ///
-    QVariant newView;
-    int viewId = dbh->tabs.createTab();
-    dbh->tabs.setParent(viewId, parent);
-
-    QMetaObject::invokeMethod(webViewContainer, "createViewObject",
-        Q_RETURN_ARG(QVariant, newView),
-        Q_ARG(QVariant, viewId));
-
-    struct viewData& vd = views2[viewId];
-
-    if (vd.tabData)
-    {
-        qCCritical(vhLog, "vd.tabData should be nullptr");
-    }
-
-    QStandardItem* par = nullptr;
-
-    if (parent)
-    {
-        qCDebug(vhLog, "createTab: found parent tab: %i", parent);
-        par = views2.at(parent).tabData;
-    }
-    else
-        par = tabsModel.invisibleRootItem();
-
-    Tab* item = new Tab(viewId);
-
-    if (par)
-        par->appendRow(item);
-    else
-    {
-        qCCritical(vhLog, "Could not find parent to add tab to");
-    }
-
-    item->updateIndent();
-    vd.tabData = item;
-    vd.tabData->setView(newView);
-
-    qCDebug(vhLog, "Tab created: %i", viewId);
-
-    return viewId;
-}
-
-QVariant ViewHandler::getView(int viewId)
-{
-    std::lock_guard<std::recursive_mutex> lock(views2Mutex);
-
-    return views2.at(viewId).tabData->getView();
 }
 
 void ViewHandler::showFullscreen(bool fullscreen)
@@ -167,74 +69,6 @@ void ViewHandler::showFullscreen(bool fullscreen)
         qView->showNormal();
 }
 
-void ViewHandler::closeTab(int viewId)
-{
-    qCDebug(vhLog, "Closing tab: %i", viewId);
-    std::lock_guard<std::recursive_mutex> lock(views2Mutex);
-
-    if (views2.count(viewId) == 0)
-    {
-        qCCritical(vhLog, "Trying to close nonexistent tab: %i", viewId);
-        return;
-    }
-
-    /// Remove tab entry from database and from tabSelector component
-    ///
-    dbh->tabs.closeTab(viewId);
-
-    struct viewData toClose = views2.at(viewId);
-
-    qCDebug(vhLog, "title: %s\nurl: %s", toClose.tabData->getTitle().toStdString().c_str(),
-            toClose.tabData->getUrl().toStdString().c_str());
-
-    int closedItemRow = toClose.tabData->row();
-    QStandardItem* parent = toClose.tabData->parent();
-    if (!parent)
-        parent = tabsModel.invisibleRootItem();
-
-    if (toClose.tabData->hasChildren())
-    {
-        qCDebug(vhLog, "Has children");
-
-        /// Move children tabs to parents' children, inserting them
-        /// at removed tabs' position
-        ///
-        bool res = tabsModel.moveRows(
-            toClose.tabData->index(), 0, toClose.tabData->rowCount(),
-            parent->index(), closedItemRow+1);
-
-        qCDebug(vhLog, "Moving result: %i", res);
-    }
-
-
-    /// Remove qml view object and then remove entry from model and map
-    QVariant novalue;
-    QMetaObject::invokeMethod(webViewContainer, "destroyView",
-        Q_RETURN_ARG(QVariant, novalue),
-        Q_ARG(QVariant, toClose.tabData->getView()));
-
-    parent->removeRow(closedItemRow);
-    views2.erase(viewId);
-
-    /// Optionally create new empty tab if last tab was closed
-    ///
-    if (views2.empty())
-        viewSelected(createTab());
-    else if (dbh->config.getProperty("currentTab").toInt() == viewId)
-    {
-        Tab* item;
-        if (closedItemRow == 0)
-        {
-            item = dynamic_cast<Tab*>(parent);
-            if (!item)
-                item = dynamic_cast<Tab*>(parent->child(0));
-        }
-        else
-            item = dynamic_cast<Tab*>(parent->child(closedItemRow-1));
-
-        selectTab(item->getId());
-    }
-}
 
 void ViewHandler::historyUpdated(int _viewId, QQuickWebEngineHistory* navHistory)
 {
@@ -309,196 +143,6 @@ void ViewHandler::historyUpdated(int _viewId, QQuickWebEngineHistory* navHistory
 }
 
 
-void ViewHandler::urlChanged(int viewId, QUrl url)
-{
-    qCDebug(vhLog, "Url changed for viewId: %i", viewId);
-    dbh->tabs.setUrl(viewId, url.toString());
-}
-
-void ViewHandler::titleChanged(int viewId, QString title)
-{
-    std::lock_guard<std::recursive_mutex> lock(views2Mutex);
-    qCDebug(vhLog, "Title changed for viewId: %i", viewId);
-    dbh->tabs.setTitle(viewId, title);
-    views2.at(viewId).tabData->setTitle(title);
-}
-
-void ViewHandler::iconChanged(int viewId, QUrl icon)
-{
-    std::lock_guard<std::recursive_mutex> lock(views2Mutex);
-    qCDebug(vhLog, "Icon changed for viewId: %i", viewId);
-    dbh->tabs.setIcon(viewId, icon.toString());
-    views2.at(viewId).tabData->setIcon(icon.toString());
-}
-
-void ViewHandler::selectTab(int viewId)
-{
-    QVariant selected;
-    int modelId;
-    try
-    {
-        modelId = flatModel.getModelId(viewId);
-    }
-    catch (std::out_of_range& e)
-    {
-        qCCritical(vhLog, "selectTab(viewId=%i): no view in model", viewId);
-        return;
-    }
-
-    qCDebug(vhLog, "selectTab(viewId=%i, modelId=%i)", viewId, modelId);
-
-    QMetaObject::invokeMethod(tabSelector, "selectView",
-            Q_ARG(QVariant, modelId));
-
-    if (selected.toInt() < 0)
-        return;
-
-    viewSelected(viewId);
-}
-
-void ViewHandler::loadTabs()
-{
-    auto start = std::chrono::system_clock::now();
-    std::map<int, db::Tabs2::TabInfo> tabsMap = dbh->tabs.getAllTabsMap();
-
-    /// Open new empty tab if no tabs were retrieved from database
-    ///
-    if (tabsMap.empty())
-    {
-        viewSelected(createTab());
-        return;
-    }
-
-    tabsModel.setItemRoleNames(Tab::roles);
-    flatModel.setRoleNames(Tab::roles);
-
-    /// Fill model and assign to tab container
-    ///
-    QStandardItem* parent = tabsModel.invisibleRootItem();
-
-    std::deque<std::pair<int, QStandardItem*>> toAdd;
-
-    for (auto child: tabsMap[0].children)
-    {
-        toAdd.push_back(std::pair<int, QStandardItem*>(child, parent));
-    }
-
-    {
-        std::lock_guard<std::recursive_mutex> lock(views2Mutex);
-        while (!toAdd.empty())
-        {
-            auto id = toAdd.front();
-            toAdd.pop_front();
-
-            Tab* item = new Tab(tabsMap[id.first]);
-            id.second->appendRow(item);
-            item->updateIndent();
-            views2[item->getId()].tabData = item;
-
-            for (auto child: tabsMap[id.first].children)
-            {
-                toAdd.push_back(std::pair<int, QStandardItem*>(child, item));
-            }
-        }
-    }
-
-    /// Configure models
-    ///
-    flatModel.setSourceModel(&tabsModel);
-
-    QQuickItem* visualModel = qobject_cast<QQuickItem*>(
-        qView->rootObject()->findChild<QObject*>("tabSelectorPanel"));
-
-    if (!visualModel)
-        throw std::runtime_error("No visualModel object found");
-
-    QVariant qv = QVariant::fromValue<QObject*>(&flatModel);
-    QMetaObject::invokeMethod(visualModel, "setModel",
-                              Qt::ConnectionType::QueuedConnection,
-                              Q_ARG(QVariant, qv));
-
-    /// Log timing
-    ///
-    auto end = std::chrono::system_clock::now();
-
-
-    std::chrono::duration<double> total = end-start;
-    qCDebug(vhLog, "Model load time: %lli ns",
-            std::chrono::duration_cast<std::chrono::nanoseconds>(total));
-
-}
-
-int ViewHandler::getFlatModelId(int viewId) const
-{
-    return flatModel.getModelId(viewId);
-}
-
-void ViewHandler::selectCurrentTab()
-{
-    QVariant currentTab = dbh->config.getProperty("currentTab");
-
-    if (currentTab.isValid())
-    {
-        int viewId = currentTab.toInt();
-
-        selectTab(viewId);
-    }
-
-    QQuickItem* visualModel = qobject_cast<QQuickItem*>(
-        qView->rootObject()->findChild<QObject*>("tabSelectorPanel"));
-
-    if (!visualModel)
-        throw std::runtime_error("No visualModel object found");
-
-    QMetaObject::invokeMethod(visualModel, "scrollToCurrent",
-                              Qt::ConnectionType::QueuedConnection);
-
-}
-
-void ViewHandler::nextTab()
-{
-    QVariant currentTab = dbh->config.getProperty("currentTab");
-
-    if (currentTab.isValid())
-    {
-        int viewId = currentTab.toInt();
-
-        int flatId = flatModel.getModelId(viewId);
-        flatId += 1;
-
-        if (flatId >= flatModel.rowCount())
-            flatId = 0;
-
-        /// Map back to viewId from flatId
-        QModelIndex tabsModelIndex = flatModel.mapToSource(flatModel.index(flatId, 0));
-        Tab* nextTab = dynamic_cast<Tab*>(tabsModel.itemFromIndex(tabsModelIndex));
-
-        selectTab(nextTab->getId());
-    }
-}
-
-void ViewHandler::prevTab()
-{
-    QVariant currentTab = dbh->config.getProperty("currentTab");
-
-    if (currentTab.isValid())
-    {
-        int viewId = currentTab.toInt();
-
-        int flatId = flatModel.getModelId(viewId);
-        flatId -= 1;
-
-        if (flatId < 0)
-            flatId = flatModel.rowCount() - 1;
-
-        /// Map back to viewId from flatId
-        QModelIndex tabsModelIndex = flatModel.mapToSource(flatModel.index(flatId, 0));
-        Tab* prevTab = dynamic_cast<Tab*>(tabsModel.itemFromIndex(tabsModelIndex));
-
-
-        selectTab(prevTab->getId());
-    }
-}
 
 void ViewHandler::openScriptBlockingView(int viewId)
 {
@@ -506,11 +150,7 @@ void ViewHandler::openScriptBlockingView(int viewId)
     /// that were accessed while loading the view
     ///
 
-    QObject* view;
-    {
-        std::lock_guard<std::recursive_mutex> lock(views2Mutex);
-        view = qvariant_cast<QObject *>(views2.at(viewId).tabData->getView());
-    }
+    QObject* view = qvariant_cast<QObject *>(tabsModel.getView(viewId));
 
     if (!view)
         throw std::runtime_error("ViewHandler::openScriptBlockingView(): there is no view "

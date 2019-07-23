@@ -9,9 +9,10 @@ class ViewHandler_test;
 #include <test/ViewHandler_test_mock.h>
 #endif
 
-#include <TreeModel2.h>
+#include <TabModel.h>
 #include <TreeToListProxyModel.h>
 
+#include <QGuiApplication>
 #include <QLoggingCategory>
 #include <QObject>
 #include <QQuickItem>
@@ -50,86 +51,9 @@ public slots:
      * Initializes ViewHandler. This function should be called after at least one
      * database connection is established. Can be called multiple times, e.g. when
      * new database connection is established, or some connection was lost.
+     * @param app reference to application object. Init procedure needs to process events
      */
-    bool init();
-
-    /**
-     * Create new QML WebEngineView object
-     * @param parent optional id of parent tab
-     * @return id of the newly created tab
-     */
-    int createTab(int parent = 0);
-
-    /**
-     * Removes tab entry from the database, destructs associated WebEngineView object,
-     * fixes tab hierarchy and indentation. If the last tab is closed it automatically
-     * creates new empty tab (call to createTab(0) )
-     * @param viewId id of tab to be closed
-     */
-    void closeTab(int viewId);
-
-    /**
-     * Returns WebEngineView QML object associated with viewId
-     * @param viewId id of tab / view
-     * @return returns QVariant with WebEngineView QML object, throws if viewId is invalid
-     */
-    QVariant getView(int viewId);
-
-    /**
-     * Sets the selected view as currently visible
-     * @param viewId viewId id of tab / view
-     */
-    void viewSelected(int viewId); // FIXME: rename to selectView
-
-    /**
-     * Updates url database entry for given tab
-     * @param viewId id of tab to be updated
-     * @param url new url value
-     */
-    void urlChanged(int viewId, QUrl url);
-
-    /**
-     * Updates title database entry for given tab
-     * @param viewId id of tab to be updated
-     * @param title new title value
-     */
-    void titleChanged(int viewId, QString title);
-
-    /**
-     * Updates icon database entry for given tab
-     * @param viewId id of tab to be updated
-     * @param icon new icon value
-     */
-    void iconChanged(int viewId, QUrl icon);
-
-    /**
-     * Load all tabs that were stored in the database.
-     * If there are no tabs saved, open new empty one.
-     */
-    void loadTabs();
-
-    /**
-     * Select current tab.
-     * This function needs to be called after Qt events are processed after
-     * calling loadTabs()
-     */
-    void selectCurrentTab();
-
-    /**
-     * Switch to next tab
-     */
-    void nextTab();
-
-    /**
-     * Switcth to previous tab
-     */
-    void prevTab();
-
-    /**
-     * Mark selected tab as active on TabSelectorPanel and make selected view visible
-     * @param viewId viewId id of tab / view
-     */
-    void selectTab(int viewId);
+    bool init(QGuiApplication& app);
 
     /**
      * Show view allowing modification of script blocking rules for site opened
@@ -144,11 +68,6 @@ public slots:
      */
     void showFullscreen(bool fullscreen = true);
 
-    /**
-     * Find flatModel id of viewId
-     * @param viewId id of tab / view
-     */
-    int getFlatModelId(int viewId) const;
 
     // deprecated, does not work
     void historyUpdated(int _viewId, QQuickWebEngineHistory* navHistory);
@@ -157,14 +76,14 @@ public slots:
     void setGrp(db::DbGroup* grp)
     {
         dbh = grp;
+        tabsModel.setGrp(dbh);
     }
 
 private:
 #ifndef TEST_BUILD
-    db::DbGroup* dbh;                    /// Initialized db handles
-    QQuickItem* webViewContainer;        /// Pointer to WebViewContainer QML object
-    QQuickItem* tabSelector;             /// Pointer to TabSelector QML object
+    db::DbGroup* dbh;                         /// Initialized db handles
     QQuickItem* scriptBlockingView;      /// Pointer to ScriptBlockingView QML object
+    QQuickItem* webViewContainer;        /// Pointer to WebViewContainer QML object
     ContentFilter* cf;                   /// Reference to content filtering class
 #else
     friend ViewHandler_test;
@@ -179,36 +98,8 @@ private:
 
     std::shared_ptr<QQuickView> qView;   /// Smart pointer to main window object
 
-    struct viewData
-    {
-        Tab* tabData = nullptr;
-    };
-
-    mutable std::recursive_mutex views2Mutex;
-    std::map<int, viewData> views2;      /// viewId to Tab item mapping
-
-    TreeModel2 tabsModel;                /// Tree model for holding tab related data
-    TreeToListProxyModel flatModel;      /// List model for ListView
+    TabModel tabsModel;                  /// Tree model for holding tab related data
                                          /// (no TreeView yet available)
-
-    /**
-     * Count ancestors of current tab starting with parent
-     * @param parent id of parent tab
-     * @return 0 if there is no parent (parent==0), number of ancestors otherwise
-     */
-//    int countAncestors(int parent) const;
-
-    /**
-     * Remove view from parent's children, and add it's children to parent's
-     * @param viewId id of tab for which hierarchy structure needs to be fixed
-     */
-//    void fixHierarchy(int viewId);
-
-    /**
-     * Update indentation level for all descendants of this tab
-     * @param viewId id of tab for which indentation needs to be fixed
-     */
-//    void fixIndentation(int viewId);
 };
 
 #endif /* VIEWHANDLER_H_ */

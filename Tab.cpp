@@ -2,14 +2,15 @@
 
 #include <QLoggingCategory>
 
-Q_LOGGING_CATEGORY(tabModel, "tabModel")
+Q_LOGGING_CATEGORY(tabLog, "tabLog")
 
 QHash<int, QByteArray> Tab::roles = {
     {0, "url"},
     {1, "title"},
     {2, "icon"},
     {3, "viewId"},
-    {4, "indent"}};
+    {4, "indent"},
+    {5, "view"}};
 
 Tab::Tab(int id_)
 {
@@ -33,6 +34,7 @@ QVariant Tab::data(int column) const
         case 2: return icon;
         case 3: return id;
         case 4: return indent;
+        case 5: return view;
         }
     return id;
 }
@@ -78,7 +80,6 @@ QVariant Tab::getView() const
 
 void Tab::setTitle(QString title_)
 {
-    qCDebug(tabModel, "Title updated");
     title = title_;
     emitDataChanged();
 }

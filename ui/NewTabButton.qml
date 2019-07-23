@@ -8,7 +8,7 @@ Rectangle
     color: Style.lightBackground
     height: Style.tabSelector.entry.height
 
-    signal newTabCreated()
+    signal newTabRequested()
 
     Text
     {
@@ -22,9 +22,7 @@ Rectangle
         anchors.fill: root
         onClicked:
         {
-            var id = viewHandler.createTab();
-            viewHandler.selectTab(id)
-            root.newTabCreated()
+            newTabRequested()
         }
     }
 }

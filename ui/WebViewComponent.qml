@@ -9,6 +9,7 @@ WebEngineView
 
     property int myViewId
     property var viewContainer
+    property var tabModel
 
     property var targetUrl // FIXME: these two are needed to handle lazy loading of webpages
     property int passCount: 0
@@ -29,8 +30,8 @@ WebEngineView
     }
 
     onNewViewRequested: function(request) {
-        var viewId = viewHandler.createTab(myViewId)
-        var view = viewHandler.getView(viewId)
+        var viewId = tabModel.createTab(myViewId)
+        var view = tabModel.getView(viewId)
         view.visible = false
         request.openIn(view)
     }
@@ -39,7 +40,7 @@ WebEngineView
         if (viewContainer.currentView && viewContainer.currentView.myViewId == myViewId)
             viewContainer.updateAddressBar(url)
 
-        viewHandler.urlChanged(myViewId, url)
+        viewContainer.urlChanged(myViewId, url)
     }
 
     onContextMenuRequested: function(request) {
