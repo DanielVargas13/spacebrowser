@@ -39,6 +39,7 @@ SET(SOURCES
   main.cpp
   db/Tabs2.cpp
   db/DbClient.cpp
+  db/DbGroup.cpp
   db/Config2.cpp
   db/ScriptBlock2.cpp
   db/Passwords2.cpp
@@ -52,6 +53,7 @@ SET(SOURCES
   PrintHandler.cpp
   PasswordManager.cpp
   TabModel.cpp
+  TabView.cpp
   TreeToListProxyModel.cpp
   TreeModel2.cpp
   resources.qrc

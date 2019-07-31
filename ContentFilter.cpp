@@ -1,5 +1,10 @@
 #include <ContentFilter.h>
 
+#include <conf/conf.h>
+#include <db/DbGroup.h>
+
+#include <QSettings>
+
 ContentFilter::ContentFilter()
 {
 
@@ -65,10 +70,16 @@ void ContentFilter::filterScripts(QWebEngineUrlRequestInfo& info)
 
     /// Check whitelists in database
     ///
-    db::ScriptBlock2::State allowed = dbh->scb.isAllowed(firstPartyHost,
-            requestUrlHost);
-
-    if (allowed == db::ScriptBlock2::State::Blocked)
+    auto dbh = getDefDbGroup();
+    if (dbh)
+    {
+        db::ScriptBlock2::State allowed = dbh->scb.isAllowed(firstPartyHost,
+                                                             requestUrlHost);
+        
+        if (allowed == db::ScriptBlock2::State::Blocked)
+            info.block(true);
+    }
+    else
         info.block(true);
 
     return;
@@ -76,20 +87,49 @@ void ContentFilter::filterScripts(QWebEngineUrlRequestInfo& info)
 
 void ContentFilter::whitelistLocal(const QString& site, const QString& url)
 {
-    dbh->scb.whitelistLocal(site, url);
+    auto dbh = getDefDbGroup();
+    if (dbh)
+    {
+        dbh->scb.whitelistLocal(site, url);
+    }
 }
 
 void ContentFilter::whitelistGlobal(const QString& url)
 {
-    dbh->scb.whitelistGlobal(url);
+    auto dbh = getDefDbGroup();        
+    if (dbh)
+    {
+        dbh->scb.whitelistGlobal(url);
+    }
 }
 
 void ContentFilter::removeLocal(const QString& site, const QString& url)
 {
-    dbh->scb.removeLocal(site, url);
+    auto dbh = getDefDbGroup();        
+    if (dbh)
+    {
+        dbh->scb.removeLocal(site, url);
+    }
 }
 
 void ContentFilter::removeGlobal(const QString& url)
 {
-    dbh->scb.removeGlobal(url);
+    auto dbh = getDefDbGroup();
+        
+    if (dbh)
+    {
+        dbh->scb.removeGlobal(url);
+    }
+}
+
+std::shared_ptr<db::DbGroup> ContentFilter::getDefDbGroup()
+{
+    QSettings settings;
+    if (settings.contains(conf::Databases::defContFiltDb))
+    {
+        QString dbName = settings.value(conf::Databases::defContFiltDb).toString();
+        return db::DbGroup::getGroup(dbName);
+    }        
+
+    return nullptr;
 }

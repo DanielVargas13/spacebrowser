@@ -3,6 +3,7 @@
 #include <ViewHandler.h>
 #include <PrintHandler.h>
 #include <PasswordManager.h>
+#include <TabView.h>
 #include <db/Backend.h>
 #include <db/DbGroup.h>
 #include <conf/conf.h>
@@ -101,6 +102,9 @@ void readSettings(std::shared_ptr<QQuickView> view)
 
 int main(int argc, char *argv[])
 {
+    /// Register qml types
+    qmlRegisterType<TabView>("spacebrowser.TabView", 1,0, "TabView");
+
     /// Initialize logging
     ///
     QString colorsStart = "%{if-debug}\033[34m%{endif}%{if-warning}\033[33m%{endif}"
@@ -154,19 +158,19 @@ int main(int argc, char *argv[])
         dbBackend.configureDbConnection(confDbConnDialog, /*passMan.isEncryptionReady()*/ false);
     }
     app.processEvents();
-    db::DbGroup dbGrp("localPS", dbBackend); // in a loop, over all dbs
+    //db::DbGroup dbGrp("localPS", dbBackend); // in a loop, over all dbs
 
     /// Create and setup content filter
     ///
     ContentFilter cf;
-    cf.setGrp(&dbGrp);
+    //cf.setGrp(&dbGrp);
     QQuickWebEngineProfile* profile = QQuickWebEngineProfile::defaultProfile();
     profile->setRequestInterceptor(&cf);
 
     /// Setup password manager
     ///
     PasswordManager passMan;
-    passMan.setGrp(&dbGrp);
+    //passMan.setGrp(&dbGrp);
 
     QObject::connect(view->rootObject(), SIGNAL(loadSucceeded(QVariant)),
                      &passMan, SLOT(loadSucceeded(QVariant)));
@@ -216,7 +220,7 @@ int main(int argc, char *argv[])
             view->rootObject()->findChild<QObject*>("tabSelector"));
 
     ViewHandler vh(&cf, view);
-    vh.setGrp(&dbGrp);
+    //vh.setGrp(&dbGrp);
 
     if (tabSelector)
     { // FIXME: multiple tab selectors for multiple db backends

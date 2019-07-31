@@ -186,7 +186,7 @@ void ScriptBlock2::removeLocal(const QString& site, const QString& url)
             query.bindValue(":surl", site);
             query.bindValue(":url", url);
             
-            if (!query.exec());
+            if (!query.exec())
             {
                 qCCritical(dbLogs, "(dbName=%s): failed to remove from local whitelist %s",
                            dbClient.getDbName().toStdString().c_str(),

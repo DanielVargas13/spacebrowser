@@ -1,5 +1,8 @@
 #include <ViewHandler.h>
 
+#include <conf/conf.h>
+#include <db/DbGroup.h>
+
 #ifndef TEST_BUILD
 #include <Tab.h>
 #include <misc/DebugHelpers.h>
@@ -52,9 +55,32 @@ bool ViewHandler::init(QGuiApplication& app)
 {
     // FIXME: here initialize db::Tabs, and other db:: in the future
 
-    tabsModel.loadTabs();
-    app.processEvents();
-    tabsModel.selectCurrentTab();
+    /// Configure model for Panel Selector
+    QQuickItem* panelSelector = qobject_cast<QQuickItem*>(
+        qView->rootObject()->findChild<QObject*>("panelSelector"));
+    QVariant pMod = QVariant::fromValue<QObject*>(&panelModel);
+    QMetaObject::invokeMethod(panelSelector, "setModel",
+                              Qt::ConnectionType::QueuedConnection,
+                              Q_ARG(QVariant, pMod));
+
+
+    {
+        //tabsModel.setGrp();
+        tabsModel.loadTabs();
+
+/*
+    QQuickItem* tabSelectorPanel = qobject_cast<QQuickItem*>(
+        qView->rootObject()->findChild<QObject*>("tabSelectorPanel"));
+
+
+    QVariant qv = QVariant::fromValue<QObject*>(tabsModel.getFlatModel());
+    QMetaObject::invokeMethod(tabSelectorPanel, "setModel",
+                              Qt::ConnectionType::QueuedConnection,
+                              Q_ARG(QVariant, qv));
+*/
+        app.processEvents();
+        tabsModel.selectCurrentTab();
+    }
 
     return true;
 }
@@ -149,7 +175,6 @@ void ViewHandler::openScriptBlockingView(int viewId)
     /// Find current url for viewId and fetch list of script source urls
     /// that were accessed while loading the view
     ///
-
     QObject* view = qvariant_cast<QObject *>(tabsModel.getView(viewId));
 
     if (!view)
@@ -166,6 +191,16 @@ void ViewHandler::openScriptBlockingView(int viewId)
     QVariant noValue;
     QMetaObject::invokeMethod(scriptBlockingView, "clearEntries",
             Q_RETURN_ARG(QVariant, noValue));
+
+
+    QSettings settings;
+    std::shared_ptr<db::DbGroup> dbh;
+    if (settings.contains(conf::Databases::defContFiltDb))
+    {
+        QString dbName = settings.value(conf::Databases::defContFiltDb).toString();
+        dbh = db::DbGroup::getGroup(dbName);
+    }        
+
 
     using bst = db::ScriptBlock2::State;
     for (const std::string& u: urls)

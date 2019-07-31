@@ -9,18 +9,13 @@
 #include <db/ScriptBlock2.h>
 #include <db/Tabs2.h>
 
+#include <memory>
+
 namespace db
 {
 
 struct DbGroup
 {
-    DbGroup(QString dbName, Backend& _backend) :
-        backend(_backend), dbc(backend), config(dbc, backend),
-        keys(dbc, backend), pwds(dbc, backend), scb(dbc, backend), tabs(dbc, backend)
-    {
-        dbc.initDatabase(dbName);
-    }
-
     db::Backend& backend;
     db::DbClient dbc;
     db::Config2 config;
@@ -28,6 +23,14 @@ struct DbGroup
     db::Passwords2 pwds;
     db::ScriptBlock2 scb;
     db::Tabs2 tabs;
+    
+    static void createGroup(QString dbName, Backend& backend);
+    static std::shared_ptr<DbGroup> getGroup(QString dbName);
+    
+private:
+    static std::map<QString, std::shared_ptr<DbGroup>> groups;
+
+    DbGroup(QString dbName, Backend& _backend);
 };
 
 }

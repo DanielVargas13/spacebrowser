@@ -2,7 +2,9 @@ import QtQuick 2.7
 import QtQuick.Controls 2.2
 import QtQml.Models 2.11
 
-Item
+import spacebrowser.TabView 1.0
+
+TabView
 {
     id: root
 
@@ -10,7 +12,7 @@ Item
     signal closeTab(int viewId)
     signal openScriptBlockingView(int viewId)
 
-    height: Style.tabSelector.entry.height * visualModel.count
+    //height: Style.tabSelector.entry.height * visualModel.count
 
     DelegateModel
     {
@@ -25,7 +27,7 @@ Item
             icon: model.icon
             viewId: model.viewId
             color: ListView.isCurrentItem ?
-                Style.tabSelector.entry.selected : Style.lightBackground
+                Style.tabSelector.entry.selected : Style.lightBackgrounda
             anchors.leftMargin: (model.indent+1) * Style.margin
 
             onClose: {
@@ -141,6 +143,7 @@ Item
 
     function setModel(model)
     {
+        console.log("Model has been set")
         visualModel.model = model
     }
 
@@ -148,5 +151,10 @@ Item
     {
         return mapFromItem(tabSelectorView,
                            tabSelectorView.currentItem.x, tabSelectorView.currentItem.y)
+    }
+
+    function getHeight()
+    {
+        return Style.tabSelector.entry.height * visualModel.count
     }
 }

@@ -3,86 +3,127 @@ import QtQuick.Controls 2.2
 
 import "."
 
-ScrollView
-{
-    id: root
-
-    clip: true
-
-    signal newTabRequested()
-
-    Item
+Item {
+    PanelSelector
     {
-        id: tabSelectorItem
+        id: panelSelector
+        objectName: "panelSelector"
 
-        implicitWidth: Style.tabSelector.width
-        implicitHeight: tabSelector.height + newTabButton.height
+        height: 50
 
-        TabSelector
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.right: parent.right
+    }
+
+    ScrollView
+    {
+        id: root
+
+        clip: true
+
+        anchors.left: parent.left
+        anchors.top: panelSelector.bottom
+        anchors.bottom: parent.bottom
+        anchors.right: parent.right
+
+        signal newTabRequested()
+
+        Item
         {
-            id: tabSelector
-            objectName: "tabSelector"
+            id: tabSelectorItem
 
-            anchors.left: parent.left
-            anchors.top: parent.top
-            anchors.right: parent.right
-        }
+            implicitWidth: Style.tabSelector.width
+            implicitHeight: tabSelector.height + newTabButton.height
 
-        NewTabButton
-        {
-            id: newTabButton
-
-            anchors.top: tabSelector.bottom
-            anchors.right: parent.right
-            anchors.left: parent.left
-            anchors.leftMargin: Style.margin
-            anchors.rightMargin: Style.margin
-
-            onNewTabRequested:
+            Item
             {
-                root.newTabRequested()
+                id: tabSelectorWrapper
+                
+                anchors.left: parent.left
+                anchors.top: parent.top
+                anchors.right: parent.right
+                height: tabSelector.getHeight()
+                // children:
+                TabSelector
+                {
+                    id: tabSelector
+                    objectName: "tabSelector"
+
+                    anchors.fill: parent
+                }
+            }
+
+            NewTabButton
+            {
+                id: newTabButton
+
+                anchors.top: tabSelectorWrapper.bottom
+                anchors.right: parent.right
+                anchors.left: parent.left
+                anchors.leftMargin: Style.margin
+                anchors.rightMargin: Style.margin
+
+                onNewTabRequested:
+                {
+                    console.log(">>>>>>>>>>>>. " + tabSelector.height)
+                    console.log(">>>>>>>>>>>>. " + tabSelector.implicitHeight)
+                    console.log(">>>>>>>>>>>>. " + tabSelector.getCount())
+
+                    root.newTabRequested()
+                }
             }
         }
-    }
 
-    function createNewTab(obj, insertAfter)
-    {
-        tabSelector.createNewTab(obj, insertAfter)
-    }
-
-    function scrollToBottom()
-    {
-        if (tabSelectorItem.height - contentItem.height < 0)
-            contentItem.contentY = 0
-        else
-            contentItem.contentY = tabSelectorItem.height - contentItem.height
-    }
-
-    function scrollToCurrent()
-    {
-        var itemPosition = tabSelector.getCurrentItemPosition().y
-        var bottom = tabSelectorItem.height - contentItem.height
-        var newPosition = itemPosition - (contentItem.height / 2)
-
-        if (newPosition < 0)
+        function getTabSelector()
         {
-            contentItem.contentY = 0
+            return tabSelectorWrapper.children
         }
-        else if (newPosition >= bottom)
-            scrollToBottom()
-        else
-            contentItem.contentY = itemPosition - contentItem.height / 2
+
+        function createNewTab(obj, insertAfter)
+        {
+            tabSelector.createNewTab(obj, insertAfter)
+        }
+
+        function scrollToBottom()
+        {
+            if (tabSelectorItem.height - contentItem.height < 0)
+                contentItem.contentY = 0
+            else
+                contentItem.contentY = tabSelectorItem.height - contentItem.height
+        }
+
+        function scrollToCurrent()
+        {
+            var itemPosition = tabSelector.getCurrentItemPosition().y
+            var bottom = tabSelectorItem.height - contentItem.height
+            var newPosition = itemPosition - (contentItem.height / 2)
+
+            if (newPosition < 0)
+            {
+                contentItem.contentY = 0
+            }
+            else if (newPosition >= bottom)
+                scrollToBottom()
+            else
+                contentItem.contentY = itemPosition - contentItem.height / 2
+        }
+
+//        function setModel(model)
+//        {
+//            tabSelector.setModel(model)
+//        }
+
+        function createTab()
+        {// FIXME: this is better than signal, easier to decide on which tabSelector to call it
+            // and will be accessible from WebViewComponent.qml
+            return tabSelector.createTab()
+        }
+        
     }
 
     function setModel(model)
     {
         tabSelector.setModel(model)
     }
-
-    function createTab()
-    {// FIXME: this is better than signal, easier to decide on which tabSelector to call it
-        // and will be accessible from WebViewComponent.qml
-        return tabSelector.createTab()
-    }
-   
 }

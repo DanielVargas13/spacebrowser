@@ -2,7 +2,6 @@
 #define VIEWHANDLER_H_
 
 #ifndef TEST_BUILD
-#include <db/DbGroup.h>
 #include <ContentFilter.h>
 #else
 class ViewHandler_test;
@@ -72,16 +71,8 @@ public slots:
     // deprecated, does not work
     void historyUpdated(int _viewId, QQuickWebEngineHistory* navHistory);
 
-    // FIXME: this is temporary, remove:
-    void setGrp(db::DbGroup* grp)
-    {
-        dbh = grp;
-        tabsModel.setGrp(dbh);
-    }
-
 private:
 #ifndef TEST_BUILD
-    db::DbGroup* dbh;                         /// Initialized db handles
     QQuickItem* scriptBlockingView;      /// Pointer to ScriptBlockingView QML object
     QQuickItem* webViewContainer;        /// Pointer to WebViewContainer QML object
     ContentFilter* cf;                   /// Reference to content filtering class
@@ -100,6 +91,7 @@ private:
 
     TabModel tabsModel;                  /// Tree model for holding tab related data
                                          /// (no TreeView yet available)
+    QStandardItemModel panelModel;
 };
 
 #endif /* VIEWHANDLER_H_ */

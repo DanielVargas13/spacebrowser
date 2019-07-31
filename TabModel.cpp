@@ -201,9 +201,10 @@ void TabModel::viewSelected(int viewId)
     qCDebug(tabModelLog, "Selecting tab: %i", viewId);
 
     std::lock_guard<std::recursive_mutex> lock(views2Mutex);
-
     struct viewData& vd = views2[viewId];
 
+    /// Create view qml object if it doesn't exist already
+    ///
     if (vd.tabData && !vd.tabData->getView().isValid())
     {
         QVariant newView;
@@ -230,6 +231,8 @@ void TabModel::viewSelected(int viewId)
         }
     }
 
+    /// Update properties and db
+    ///
     webViewContainer->setProperty("currentView", vd.tabData->getView());
     dbh->config.setProperty("currentTab", viewId);
 }
@@ -269,7 +272,7 @@ void TabModel::loadTabs()
     setItemRoleNames(Tab::roles);
     flatModel.setRoleNames(Tab::roles);
 
-    /// Fill model and assign to tab container
+    /// Fill model and assign to tab selector panel
     ///
     QStandardItem* parent = invisibleRootItem();
 
@@ -303,10 +306,12 @@ void TabModel::loadTabs()
     ///
     flatModel.setSourceModel(this);
 
+/*
     QVariant qv = QVariant::fromValue<QObject*>(&flatModel);
     QMetaObject::invokeMethod(tabSelectorPanel, "setModel",
                               Qt::ConnectionType::QueuedConnection,
                               Q_ARG(QVariant, qv));
+*/
 
     /// Log timing
     ///
@@ -406,4 +411,9 @@ void TabModel::selectTab(int viewId)
 int TabModel::getFlatModelId(int viewId) const
 {
     return flatModel.getModelId(viewId);
+}
+
+QAbstractItemModel* TabModel::getFlatModel()
+{
+    return &flatModel;
 }

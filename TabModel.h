@@ -45,7 +45,7 @@ public slots:
      * Sets the selected view as currently visible
      * @param viewId viewId id of tab / view
      */
-    void viewSelected(int viewId); // FIXME: rename to selectView
+    void viewSelected(int viewId);
 
     /**
      * Updates url database entry for given tab
@@ -110,6 +110,11 @@ public:
      * @param viewId id of tab / view
      */
     int getFlatModelId(int viewId) const;
+
+    /**
+     * Returns flat representation of model
+     */
+    QAbstractItemModel* getFlatModel();
 
 
     // FIXME: this is temporary, remove:
