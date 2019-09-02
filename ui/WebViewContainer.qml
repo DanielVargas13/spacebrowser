@@ -25,7 +25,8 @@ Item
 
     function destroyView(view)
     {
-        view.destroy()
+        if (typeof view !== 'undefined')
+            view.destroy()
     }
 
     function setFocus()

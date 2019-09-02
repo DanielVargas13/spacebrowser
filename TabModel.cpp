@@ -164,8 +164,8 @@ void TabModel::closeTab(int viewId)
         qCDebug(tabModelLog, "Moving result: %i", res);
     }
 
-
     /// Remove qml view object and then remove entry from model and map
+    ///
     QVariant novalue;
     QMetaObject::invokeMethod(webViewContainer, "destroyView",
         Q_RETURN_ARG(QVariant, novalue),
