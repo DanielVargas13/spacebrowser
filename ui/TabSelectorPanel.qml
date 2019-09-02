@@ -4,21 +4,27 @@ import QtQuick.Controls 2.2
 import "."
 
 Item {
+    id: root
+
+    signal openScriptBlockingView(string dbName, int viewId)
+    signal newTabRequested()
+
     PanelSelector
     {
         id: panelSelector
         objectName: "panelSelector"
 
-        height: 50
+        height: Style.panelSelector.height
 
         anchors.left: parent.left
+        anchors.leftMargin: Style.margin
         anchors.top: parent.top
         anchors.right: parent.right
     }
 
     ScrollView
     {
-        id: root
+        id: scrollView
 
         clip: true
 
@@ -26,8 +32,6 @@ Item {
         anchors.top: panelSelector.bottom
         anchors.bottom: parent.bottom
         anchors.right: parent.right
-
-        signal newTabRequested()
 
         Item
         {
@@ -51,6 +55,11 @@ Item {
                     objectName: "tabSelector"
 
                     anchors.fill: parent
+
+                    onOpenScriptBlockingView:
+                    {
+                        root.openScriptBlockingView(dbName, viewId)
+                    }
                 }
             }
 
@@ -66,10 +75,6 @@ Item {
 
                 onNewTabRequested:
                 {
-                    console.log(">>>>>>>>>>>>. " + tabSelector.height)
-                    console.log(">>>>>>>>>>>>. " + tabSelector.implicitHeight)
-                    console.log(">>>>>>>>>>>>. " + tabSelector.getCount())
-
                     root.newTabRequested()
                 }
             }
@@ -83,30 +88,6 @@ Item {
         function createNewTab(obj, insertAfter)
         {
             tabSelector.createNewTab(obj, insertAfter)
-        }
-
-        function scrollToBottom()
-        {
-            if (tabSelectorItem.height - contentItem.height < 0)
-                contentItem.contentY = 0
-            else
-                contentItem.contentY = tabSelectorItem.height - contentItem.height
-        }
-
-        function scrollToCurrent()
-        {
-            var itemPosition = tabSelector.getCurrentItemPosition().y
-            var bottom = tabSelectorItem.height - contentItem.height
-            var newPosition = itemPosition - (contentItem.height / 2)
-
-            if (newPosition < 0)
-            {
-                contentItem.contentY = 0
-            }
-            else if (newPosition >= bottom)
-                scrollToBottom()
-            else
-                contentItem.contentY = itemPosition - contentItem.height / 2
         }
 
 //        function setModel(model)
@@ -125,5 +106,29 @@ Item {
     function setModel(model)
     {
         tabSelector.setModel(model)
+    }
+
+    function scrollToBottom()
+    {
+        if (tabSelectorItem.height - scrollView.contentItem.height < 0)
+            scrollView.contentItem.contentY = 0
+        else
+            scrollView.contentItem.contentY = tabSelectorItem.height - scrollView.contentItem.height
+    }
+
+    function scrollToCurrent()
+    {
+        var itemPosition = tabSelector.getCurrentItemPosition().y
+        var bottom = tabSelectorItem.height - scrollView.contentItem.height
+        var newPosition = itemPosition - (scrollView.contentItem.height / 2)
+
+        if (newPosition < 0)
+        {
+            scrollView.contentItem.contentY = 0
+        }
+        else if (newPosition >= bottom)
+            scrollToBottom()
+        else
+            scrollView.contentItem.contentY = itemPosition - scrollView.contentItem.height / 2
     }
 }

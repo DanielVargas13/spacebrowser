@@ -1,4 +1,3 @@
-#include <BasicDownloader.h>
 #include <ContentFilter.h>
 #include <ViewHandler.h>
 #include <PrintHandler.h>
@@ -27,63 +26,6 @@
 
 Q_DECLARE_LOGGING_CATEGORY(mainLogs)
 Q_LOGGING_CATEGORY(mainLogs, "main")
-
-void setupProfileDownloadHandler(BasicDownloader& bd, QQuickWebEngineProfile* profile)
-{
-    QObject::connect(profile,
-            SIGNAL(downloadRequested(QQuickWebEngineDownloadItem*)), &bd,
-            SLOT(downloadRequested(QQuickWebEngineDownloadItem*)));
-    QObject::connect(profile,
-            SIGNAL(downloadFinished(QQuickWebEngineDownloadItem*)), &bd,
-            SLOT(downloadFinished(QQuickWebEngineDownloadItem*)));
-}
-
-void setupDownloaderSignals(BasicDownloader& bd, const std::shared_ptr<QQuickView> view,
-        QQuickWebEngineProfile* profile)
-{
-    /// Set-up downloader module
-    ///
-    QQuickItem* downloaderProgressBar = qobject_cast<QQuickItem*>(
-            view->rootObject()->findChild<QObject*>("downloadProgressBar"));
-    if (!downloaderProgressBar)
-        throw std::runtime_error("No downloaderProgressBar object found");
-
-    QObject::connect(&bd, SIGNAL(progressUpdated(QVariant)),
-            downloaderProgressBar, SLOT(updateProgress(QVariant)));
-    QQuickItem* downloadHistoryButton = qobject_cast<QQuickItem*>(
-            view->rootObject()->findChild<QObject*>("downloadHistoryButton"));
-    if (!downloadHistoryButton)
-        throw std::runtime_error("No downloadHistoryButton object found");
-
-    QObject::connect(&bd, &BasicDownloader::historyChanged,
-            downloadHistoryButton, &QQuickItem::setVisible);
-    QQuickItem* downloadHistoryView = qobject_cast<QQuickItem*>(
-            view->rootObject()->findChild<QObject*>("downloadHistoryView"));
-    if (!downloadHistoryView)
-        throw std::runtime_error("No downloadHistoryView object found");
-
-    QObject::connect(&bd, SIGNAL(downloadFinished(QVariant)),
-            downloadHistoryView, SLOT(downloadFinished(QVariant)));
-    QObject::connect(&bd, SIGNAL(newHistoryEntry(QVariant)),
-            downloadHistoryView, SLOT(addEntry(QVariant)));
-    QObject::connect(&bd, SIGNAL(progressUpdated(QVariant, QVariant, QVariant)),
-            downloadHistoryView,
-            SLOT(updateProgress(QVariant, QVariant, QVariant)));
-    QObject::connect(&bd, SIGNAL(downloadPaused(QVariant)), downloadHistoryView,
-            SLOT(downloadPaused(QVariant)));
-    QObject::connect(&bd, SIGNAL(downloadResumed(QVariant)),
-            downloadHistoryView, SLOT(downloadResumed(QVariant)));
-    QObject::connect(&bd, SIGNAL(downloadCanceled(QVariant)),
-            downloadHistoryView, SLOT(downloadCanceled(QVariant)));
-    QObject::connect(downloadHistoryView, SIGNAL(openUrl(QString)), &bd,
-            SLOT(openUrl(QString)));
-    QObject::connect(downloadHistoryView, SIGNAL(pause(int)), &bd,
-            SLOT(pause(int)));
-    QObject::connect(downloadHistoryView, SIGNAL(resume(int)), &bd,
-            SLOT(resume(int)));
-    QObject::connect(downloadHistoryView, SIGNAL(cancel(int)), &bd,
-            SLOT(cancel(int)));
-}
 
 void writeSettings(std::shared_ptr<QQuickView> view)
 {
@@ -147,25 +89,18 @@ int main(int argc, char *argv[])
         throw std::runtime_error("No configureDbConnectionDialog object found");
 
     db::Backend dbBackend;
+    dbBackend.setObjectName("dbBackend");
     QObject::connect(confDbConnDialog, SIGNAL(dbConfigured(QVariant)),
                      &dbBackend, SLOT(dbConfigured(QVariant)));
 
     // FIXME: call connectDatabases async and configure if connect failed
-    if (!dbCount || !dbBackend.connectDatabases())
+    if (!dbCount)
     {
         qCCritical(mainLogs) <<"no db configured or connectDatabases() failed";
 
         dbBackend.configureDbConnection(confDbConnDialog, /*passMan.isEncryptionReady()*/ false);
     }
-    app.processEvents();
-    //db::DbGroup dbGrp("localPS", dbBackend); // in a loop, over all dbs
-
-    /// Create and setup content filter
-    ///
-    ContentFilter cf;
-    //cf.setGrp(&dbGrp);
-    QQuickWebEngineProfile* profile = QQuickWebEngineProfile::defaultProfile();
-    profile->setRequestInterceptor(&cf);
+    dbBackend.connectDatabases();
 
     /// Setup password manager
     ///
@@ -192,7 +127,7 @@ int main(int argc, char *argv[])
                      &passMan, SLOT(fillPassword(QVariant)));
 
 
-
+/* FIXME: this has to be run after db gets connected
     if (!passMan.isEncryptionReady())
     {
         QStringList model = passMan.keysList();
@@ -200,6 +135,8 @@ int main(int argc, char *argv[])
                                   Qt::ConnectionType::QueuedConnection,
                                   Q_ARG(QVariant, model));
     }
+
+*/
 
     QObject::connect(&passMan, SIGNAL(shouldBeSaved(QVariant, QVariant)),
             view->rootObject(), SLOT(shouldBeSaved(QVariant, QVariant)));
@@ -216,22 +153,16 @@ int main(int argc, char *argv[])
     if (!scriptBlockingView)
         throw std::runtime_error("No scriptBlockingView object found");
 
-    QQuickItem* tabSelector = qobject_cast<QQuickItem*>(
-            view->rootObject()->findChild<QObject*>("tabSelector"));
-
-    ViewHandler vh(&cf, view);
-    //vh.setGrp(&dbGrp);
-
-    if (tabSelector)
-    { // FIXME: multiple tab selectors for multiple db backends
-        QObject::connect(tabSelector, SIGNAL(openScriptBlockingView(int)), &vh, SLOT(openScriptBlockingView(int)));
-    }
-
-/*    QObject* webViewContainer = view->rootObject()->
-        findChild<QObject*>("webViewContainer");
-    if (!webViewContainer)
-        throw std::runtime_error("No webViewContainer object found");
-*/
+    ViewHandler vh(view);
+    vh.setObjectName("ViewHandler");
+    QObject::connect(&dbBackend, SIGNAL(dbConnected(QString)),
+                     &vh, SLOT(dbConnected(QString)), Qt::QueuedConnection);
+    QObject::connect(&dbBackend, &db::Backend::dbConnected,
+                     &vh, [&vh]()
+                     {
+                         qCDebug(mainLogs, "Connection is direct: %i",
+                                 QThread::currentThread() == vh.thread());
+                     }, Qt::DirectConnection);
 
     QObject* tabSelectorPanel = view->rootObject()->
         findChild<QObject*>("tabSelectorPanel");
@@ -241,27 +172,26 @@ int main(int argc, char *argv[])
     QObject::connect(view->rootObject(), SIGNAL(showFullscreen(bool)),
                      &vh, SLOT(showFullscreen(bool)));
 
+    QObject::connect(tabSelectorPanel, SIGNAL(openScriptBlockingView(QString, int)),
+                     &vh, SLOT(openScriptBlockingView(QString, int)));
+
 
     /// Load tabs, set-up signals
     ///
-    vh.init(app);
-
-    QObject::connect(scriptBlockingView, SIGNAL(whitelistLocal(QString, QString)),
-            &cf, SLOT(whitelistLocal(QString, QString)));
-    QObject::connect(scriptBlockingView, SIGNAL(whitelistGlobal(QString)),
-            &cf, SLOT(whitelistGlobal(QString)));
-    QObject::connect(scriptBlockingView, SIGNAL(removeLocal(QString, QString)),
-            &cf, SLOT(removeLocal(QString, QString)));
-    QObject::connect(scriptBlockingView, SIGNAL(removeGlobal(QString)),
-            &cf, SLOT(removeGlobal(QString)));
-
+    vh.init();
 
     /// Setup Downloader
     ///
-    BasicDownloader bd;
-    setupProfileDownloadHandler(bd, profile);
-    setupDownloaderSignals(bd, view, profile);
 
+//    setupProfileDownloadHandler(bd, profile);
+//    setupDownloaderSignals(bd, view, profile);
+
+
+//    qCDebug(mainLogs, "------- vh");
+//    vh.dumpObjectInfo();
+//    qCDebug(mainLogs, "------- dbBackend");
+//    dbBackend.dumpObjectInfo();
+//    qCDebug(mainLogs, "-------");
 
     qCDebug(mainLogs) << "Finished init, executing app";
     int status = app.exec();

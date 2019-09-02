@@ -6,7 +6,7 @@ ScrollView
     id: root
     clip: true
 
-    signal panelSelected(var panel)
+    signal panelSelected(string dbName)
 
     ListView
     {
@@ -20,23 +20,65 @@ ScrollView
 
         delegate: Rectangle
         {
-            color: ListView.isCurrentItem ?
-                Style.tabSelector.entry.selected : Style.lightBackground
+            color: ListView.isCurrentItem ? Style.lightBackground : Style.background
+            height: Style.panelSelector.height
+            width: Style.panelSelector.entry.width
 
-            Image
+            Item
             {
-                source: model.icon
+                anchors.fill: parent
+                Image
+                {
+                    anchors.top: parent.top
+                    anchors.topMargin: Style.margin
+                    anchors.bottom: buttonText.top
+                    anchors.horizontalCenter: parent.horizontalCenter
+
+                    fillMode: Image.PreserveAspectFit
+                    source: model.toolTip
+                }
+                Text
+                {
+                    id: buttonText
+                    height: parent.height / 4
+                    font.pixelSize: height
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: Style.margin
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: model.display
+                }
             }
 
-//            onSelected:
-//            {
-//                panelSelected() // set tabSelector in TabSelectorPanel
-//            }
+            MouseArea
+            {
+                anchors.fill: parent
+
+                onClicked:
+                {
+                    panelList.currentIndex = index
+                    panelSelected(model.display)
+                }
+            }
+
+
         }
     }
 
     function setModel(model)
     {
         panelList.model = model
+    }
+
+    function setCurrentPanel(dbName)
+    {
+        var i;
+        for (i = 0; i < panelList.model.rowCount(); ++i)
+        {
+            var index = panelList.model.index(i, 0)
+            var data = panelList.model.data(index)
+
+            if (data == dbName)
+                panelList.currentIndex = i
+        }
     }
 }

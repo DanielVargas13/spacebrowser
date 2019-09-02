@@ -120,11 +120,11 @@ Rectangle
         anchors.bottom: mainWindow.bottom
         width: Style.tabSelector.width
 
-//        onNewTabRequested:
-//        {
-//            mainWindow.createTab(0, true, true)
-//            addressBar.focus = true
-//        }
+        onNewTabRequested:
+        {
+            mainWindow.createTab(0, true, true)
+            addressBar.focus = true
+        }
     }
 
     WebViewContainer

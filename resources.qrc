@@ -24,6 +24,7 @@
     <file>ui/WebViewContainer.qml</file>
     <file>ui/icons/close.svg</file>
     <file>ui/icons/download2.svg</file>
+    <file>ui/icons/home.svg</file>
     <file>ui/icons/lock.svg</file>
     <file>ui/icons/searchUp.svg</file>
     <file>ui/icons/searchDown.svg</file>
@@ -32,7 +33,7 @@
     <file>js/formExtractor.js</file>
     <file>js/formFiller.js</file>
   </qresource>
-  <qresource prefix="Space">
+  <qresource prefix="Space"> <!-- these are style files -->
     <file alias="Menu.qml">ui/Space/Menu.qml</file>
     <file alias="MenuItem.qml">ui/Space/MenuItem.qml</file>
     <file alias="MenuSeparator.qml">ui/Space/MenuSeparator.qml</file>

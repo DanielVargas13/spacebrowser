@@ -29,7 +29,7 @@ ScriptBlock2::State ScriptBlock2::isAllowed(const QString& site,
         {
             QSqlQuery query(QSqlDatabase::database(dbClient.getDbName()));
             
-            query.prepare(QString("SELECT EXISTS(SELECT 1 FROM %1.%2 WHERE url=:url)")
+            query.prepare(QString("SELECT EXISTS(SELECT * FROM %1.%2 WHERE url=:url)")
                           .arg(dbClient.getSchemaName())
                           .arg(globalTableName));
             
@@ -63,7 +63,7 @@ ScriptBlock2::State ScriptBlock2::isAllowed(const QString& site,
         {
             QSqlQuery query(QSqlDatabase::database(dbClient.getDbName()));
 
-            query.prepare(QString("SELECT EXISTS(SELECT 1 FROM %1.%2 "
+            query.prepare(QString("SELECT EXISTS(SELECT * FROM %1.%2 "
                                   "WHERE site_url=:surl AND url=:url)")
                           .arg(dbClient.getSchemaName())
                           .arg(localTableName));
@@ -124,6 +124,7 @@ void ScriptBlock2::whitelistLocal(const QString& site, const QString& url)
                 return false;
             }
 
+            query.clear();
             query.prepare(QString("INSERT INTO %1.%2 (site_url, url) VALUES (:site, :url) ")
                           .arg(dbClient.getSchemaName())
                           .arg(localTableName));

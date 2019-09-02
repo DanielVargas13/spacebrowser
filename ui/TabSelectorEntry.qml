@@ -9,6 +9,16 @@ MouseArea {
 
     property bool held: false
 
+    property alias title: content.title
+    property alias icon: content.icon
+    property alias viewId: content.viewId
+    property alias dbName: content.dbName
+    property alias color: content.color
+    property alias border: content.border
+
+    signal close()
+    signal selected()
+
     //    anchors { left: parent.left; right: parent.right }
     height: content.height
     anchors.left: parent.left
@@ -43,15 +53,6 @@ MouseArea {
     }
 
 
-    signal close()
-    signal selected()
-
-    property alias title: content.title
-    property alias icon: content.icon
-    property alias viewId: content.viewId
-    property alias color: content.color
-    property alias border: content.border
-
     Component.onCompleted: {
 //        console.log(root.title)
 //        console.log(root.visible)
@@ -80,6 +81,7 @@ MouseArea {
         property string title: ""
         property string icon: ""
         property int viewId: 0
+        property string dbName
 
         height: Style.tabSelector.entry.height
 
@@ -172,8 +174,6 @@ MouseArea {
 
     function drawMarker(entry, y, height)
     {
-
-
         if (y < height * 0.20) {
             console.log(entry)
             entry.border.width = Style.tabSelector.entry.target.width

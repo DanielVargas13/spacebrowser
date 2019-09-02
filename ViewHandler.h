@@ -8,6 +8,7 @@ class ViewHandler_test;
 #include <test/ViewHandler_test_mock.h>
 #endif
 
+#include <BasicDownloader.h>
 #include <TabModel.h>
 #include <TreeToListProxyModel.h>
 
@@ -16,6 +17,7 @@ class ViewHandler_test;
 #include <QObject>
 #include <QQuickItem>
 #include <QQuickView>
+#include <QQuickWebEngineProfile>
 #include <QStandardItemModel>
 
 #include <map>
@@ -37,10 +39,9 @@ class ViewHandler : public QObject
 public:
     /**
      * Creates ViewHandler object
-     * @param _cf reference to ContentFilter class that provides interface for handling script blocking etc.
      * @param _qView shared pointer to the main window QQuickView object
      */
-    ViewHandler(ContentFilter* _cf, std::shared_ptr<QQuickView> _qView);
+    ViewHandler(std::shared_ptr<QQuickView> _qView);
 
     virtual ~ViewHandler();
 
@@ -50,16 +51,16 @@ public slots:
      * Initializes ViewHandler. This function should be called after at least one
      * database connection is established. Can be called multiple times, e.g. when
      * new database connection is established, or some connection was lost.
-     * @param app reference to application object. Init procedure needs to process events
      */
-    bool init(QGuiApplication& app);
+    bool init();
 
     /**
      * Show view allowing modification of script blocking rules for site opened
      * in selected tab
+     * @param dbName name of database backend containing view
      * @param viewId id of tab / view for which list of blocked script sources will be shown
      */
-    void openScriptBlockingView(int viewId);
+    void openScriptBlockingView(QString dbName, int viewId);
 
     /**
      * Enter fullscreen mode
@@ -67,6 +68,17 @@ public slots:
      */
     void showFullscreen(bool fullscreen = true);
 
+    /**
+     * Creates DbGroup, tab models and adds new panel
+     * @param dbName name of database backend
+     */
+    void dbConnected(QString dbName);
+
+    /**
+     * Select panel by name of database backend
+     * @param dbName name of database backend
+     */
+    void selectPanel(QString dbName);
 
     // deprecated, does not work
     void historyUpdated(int _viewId, QQuickWebEngineHistory* navHistory);
@@ -75,7 +87,6 @@ private:
 #ifndef TEST_BUILD
     QQuickItem* scriptBlockingView;      /// Pointer to ScriptBlockingView QML object
     QQuickItem* webViewContainer;        /// Pointer to WebViewContainer QML object
-    ContentFilter* cf;                   /// Reference to content filtering class
 #else
     friend ViewHandler_test;
     db::Tabs_mock tabsDb;
@@ -84,14 +95,21 @@ private:
     QQuickItem_mock* webViewContainer;
     QQuickItem_mock* tabSelector;
     QQuickItem_mock* scriptBlockingView;
-    ContentFilter* cf;
 #endif
 
-    std::shared_ptr<QQuickView> qView;   /// Smart pointer to main window object
+    std::shared_ptr<QQuickView> qView;                       /// Smart pointer to main window object
 
-    TabModel tabsModel;                  /// Tree model for holding tab related data
-                                         /// (no TreeView yet available)
+    std::map<QString, std::shared_ptr<TabModel>> tabsModels; /// Tree model for holding tab related data
+                                                             /// (no TreeView yet available)
+    std::map<QString, std::shared_ptr<QQuickWebEngineProfile>> webProfiles;/// Each db backend needs separate
+                                                                           /// profile to correctly do script filtering
+    std::map<QString, std::shared_ptr<ContentFilter>> contentFilters;      /// Filtering classes for each db backend
+    BasicDownloader bd;
+
     QStandardItemModel panelModel;
+
+
+    void createWebProfile(QString dbName);                   /// Creates profile object, sets up content filter on it
 };
 
 #endif /* VIEWHANDLER_H_ */

@@ -25,6 +25,7 @@ class Backend : public QObject
 {
     Q_OBJECT
 
+public:
     struct connData_t
     {
         QString connName;
@@ -34,9 +35,10 @@ class Backend : public QObject
         QString username;
         QString password;
         bool isEncrypted = false;
+        QString connIcon;
     };
 
-public:
+
     Backend();
     ~Backend();
 
@@ -46,6 +48,10 @@ public:
 
     typedef std::variant<bool, QSqlQuery> funRet_t;
     std::future<funRet_t> performQuery(std::function<funRet_t()> fun);
+    static std::vector<struct connData_t> readAllConnectionEntries(QSettings& settings);
+
+signals:
+    void dbConnected(QString dbName);
 
 public slots:
     void configureDbConnection(QObject* dialog, bool encReady);
@@ -56,10 +62,9 @@ public slots:
 
 private:
     void writeConnectionEntry(QSettings& settings, const struct connData_t& connData);
-    static struct connData_t readConnetionEntry(QSettings& settings);
+    static struct connData_t readConnectionEntry(QSettings& settings);
     void writeAllConnectionEntries(QSettings& settings,
         const std::vector<struct connData_t>& connData);
-    std::vector<struct connData_t> readAllConnectionEntries(QSettings& settings);
 
 private:
     std::thread connThread;
@@ -73,7 +78,6 @@ private:
     std::mutex mCv;
     bool terminate = false;
 };
-
 
 }
 

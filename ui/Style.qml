@@ -75,6 +75,16 @@ QtObject
         }
     }
 
+    property QtObject panelSelector: QtObject
+    {
+        property int height: 50
+
+        property QtObject entry: QtObject
+        {
+            property int width: 50
+        }
+    }
+
     property QtObject tabSelector: QtObject
     {
         property int width: 250

@@ -9,11 +9,12 @@ Rectangle
     color: Style.background
 
     property string targetUrl
+    property string dbName
 
-    signal whitelistLocal(string site, string url);
-    signal whitelistGlobal(string url);
-    signal removeLocal(string site, string url);
-    signal removeGlobal(string url);
+    signal whitelistLocal(string dbName, string site, string url);
+    signal whitelistGlobal(string dbName, string url);
+    signal removeLocal(string dbName, string site, string url);
+    signal removeGlobal(string dbName, string url);
     
     ListModel
     {
@@ -119,15 +120,15 @@ Rectangle
                 
                 onAllowedChanged: {
                     if (allowed)
-                        whitelistLocal(targetUrl, url)
+                        whitelistLocal(dbName, targetUrl, url)
                     else
-                        removeLocal(targetUrl, url)
+                        removeLocal(dbName, targetUrl, url)
                 }
                 onGallowedChanged: {
                     if (gallowed)
-                        whitelistGlobal(url)
+                        whitelistGlobal(dbName, url)
                     else
-                        removeGlobal(url)
+                        removeGlobal(dbName, url)
                 }
             }
         }
@@ -164,9 +165,15 @@ Rectangle
     {
         scriptBlockListModel.clear()
     }
+
     function addEntry(entry)
     {
         entry["myId"] = scriptBlockListModel.count
         scriptBlockListModel.append(entry)
+    }
+
+    function setDbName(_dbName)
+    {
+        root.dbName = _dbName
     }
 }

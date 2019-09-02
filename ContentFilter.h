@@ -17,7 +17,7 @@ class ContentFilter: public QWebEngineUrlRequestInterceptor
     Q_OBJECT
 
 public:
-    ContentFilter();
+    ContentFilter(QString _dbName);
     virtual ~ContentFilter();
 
     void interceptRequest(QWebEngineUrlRequestInfo &info);
@@ -25,16 +25,16 @@ public:
     std::set<std::string> getUrlsFor(const std::string& url);
 
 public slots:
-    void whitelistLocal(const QString& site, const QString& url);
-    void whitelistGlobal(const QString& url);
-    void removeLocal(const QString& site, const QString& url);
-    void removeGlobal(const QString& url);
+    void whitelistLocal(QString _dbName, QString site, QString url);
+    void whitelistGlobal(QString _dbName, QString url);
+    void removeLocal(QString _dbName, QString site, QString url);
+    void removeGlobal(QString _dbName, QString url);
 
 private:
     std::map<std::string, std::set<std::string>> requestedScripts;
+    QString dbName;
 
     void filterScripts(QWebEngineUrlRequestInfo& info);
-    std::shared_ptr<db::DbGroup> getDefDbGroup();
 };
 
 #endif /* CONTENTFILTER_H_ */

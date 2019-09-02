@@ -2,6 +2,7 @@
 
 #include <conf/conf.h>
 #include <db/DbClient.h>
+#include <db/DbGroup.h>
 
 #include <QJSEngine>
 #include <QJSValue>
@@ -29,19 +30,6 @@ Backend::~Backend()
     terminate = true;
     connThread.join();
 }
-/*
-std::future<bool> Backend::performQuery(QSqlQuery* query)
-{
-    std::lock_guard<std::mutex> lock(mQueries);
-    std::promise<bool> p;
-    std::future<bool> f = p.get_future();
-
-    queries.push_back(query_t(query, std::move(p)));
-
-    cv.notify_all();
-
-    return f;
-    }*/
 
 std::future<QSqlQuery> Backend::performQuery(QString dbName, QString queryStr)
 {
@@ -186,7 +174,7 @@ bool Backend::connectDatabases()
         {
             settings.setArrayIndex(i);
 
-            struct connData_t cd = readConnetionEntry(settings);
+            struct connData_t cd = readConnectionEntry(settings);
 
             if (cd.connName.isEmpty() || cd.driverType.isEmpty() ||
             cd.hostname.isEmpty() || cd.dbName.isEmpty())
@@ -209,10 +197,16 @@ bool Backend::connectDatabases()
             else
                 db.setPassword(cd.password);
 
-            qCDebug(dbLogs) << "Connecting to"
+            qCDebug(dbLogs) << "Connecting to: "
                             << cd.connName.toStdString().c_str();
             if (!db.open())
                 qCCritical(dbLogs) << db.lastError().text().toStdString().c_str();
+            else
+            {
+                qCDebug(dbLogs, "Connected to backend: %s", cd.connName.toStdString().c_str());
+                emit dbConnected(cd.connName);
+                qCDebug(dbLogs, "Signal emitted");
+            }
         }
         settings.endArray();
 
@@ -276,9 +270,10 @@ void Backend::writeConnectionEntry(QSettings& settings,
     settings.setValue(conf::Databases::array::username, connData.username);
     settings.setValue(conf::Databases::array::password, connData.password);
     settings.setValue(conf::Databases::array::isEncrypted, connData.isEncrypted);
+    settings.setValue(conf::Databases::array::connIcon, connData.connIcon);
 }
 
-struct Backend::connData_t Backend::readConnetionEntry(QSettings& settings)
+struct Backend::connData_t Backend::readConnectionEntry(QSettings& settings)
 {
     struct connData_t result;
 
@@ -289,6 +284,7 @@ struct Backend::connData_t Backend::readConnetionEntry(QSettings& settings)
     QVariant username = settings.value(conf::Databases::array::username);
     QVariant password = settings.value(conf::Databases::array::password);
     QVariant isEncrypted = settings.value(conf::Databases::array::isEncrypted);
+    QVariant connIcon = settings.value(conf::Databases::array::connIcon);
 
     if (connName.isValid())
         result.connName = connName.toString();
@@ -304,6 +300,8 @@ struct Backend::connData_t Backend::readConnetionEntry(QSettings& settings)
         result.password = password.toString();
     if (isEncrypted.isValid())
         result.isEncrypted = isEncrypted.toBool();
+    if (connIcon.isValid())
+        result.connIcon = connIcon.toString();
 
     return result;
 }
@@ -318,7 +316,7 @@ std::vector<struct Backend::connData_t> Backend::readAllConnectionEntries(
     {
         settings.setArrayIndex(i);
 
-        result.push_back(readConnetionEntry(settings));
+        result.push_back(readConnectionEntry(settings));
     }
 
     settings.endArray();

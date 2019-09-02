@@ -3,11 +3,14 @@
 #include <Tab.h>
 
 #include <QLoggingCategory>
+#include <QQuickWebEngineProfile>
 
 Q_LOGGING_CATEGORY(tabModelLog, "tabModelLog")
 
 
-TabModel::TabModel(std::shared_ptr<QQuickView> _qView) : qView(_qView)
+TabModel::TabModel(std::shared_ptr<QQuickView> _qView, QString _dbName,
+                   std::shared_ptr<QQuickWebEngineProfile> _webProfile) : qView(_qView),
+    dbName(_dbName), webProfile(_webProfile)
 {
 #ifndef TEST_BUILD
     QObject::connect(qView->rootObject(), SIGNAL(createTab(int, bool, bool)),
@@ -62,9 +65,11 @@ int TabModel::createTab(int parent, bool select, bool scroll)
     /// Call webViewContainer to create new QML Web View object and
     /// create associated entry in tabSelectorModel
     ///
+    auto dbg = db::DbGroup::getGroup(dbName);
+
     QVariant newView;
-    int viewId = dbh->tabs.createTab();
-    dbh->tabs.setParent(viewId, parent);
+    int viewId = dbg->tabs.createTab();
+    dbg->tabs.setParent(viewId, parent);
 
     QMetaObject::invokeMethod(webViewContainer, "createViewObject",
         Q_RETURN_ARG(QVariant, newView),
@@ -72,6 +77,7 @@ int TabModel::createTab(int parent, bool select, bool scroll)
 
     QObject* v = qvariant_cast<QObject *>(newView);
     v->setProperty("tabModel", QVariant::fromValue<QObject*>(this));
+    v->setProperty("profile", QVariant::fromValue<QObject*>(webProfile.get()));
 
     struct viewData& vd = views2[viewId];
 
@@ -130,7 +136,9 @@ void TabModel::closeTab(int viewId)
 
     /// Remove tab entry from database and from tabSelector component
     ///
-    dbh->tabs.closeTab(viewId);
+    auto dbg = db::DbGroup::getGroup(dbName);
+
+    dbg->tabs.closeTab(viewId);
 
     struct viewData toClose = views2.at(viewId);
 
@@ -171,7 +179,7 @@ void TabModel::closeTab(int viewId)
     if (views2.empty())
         viewSelected(createTab());
     /// or select 
-    else if (dbh->config.getProperty("currentTab").toInt() == viewId)
+    else if (dbg->config.getProperty("currentTab").toInt() == viewId)
     {
         Tab* item;
         if (closedItemRow == 0)
@@ -216,8 +224,8 @@ void TabModel::viewSelected(int viewId)
 
         const Tab* td = vd.tabData;
         v->setProperty("targetUrl", td->getUrl());
-
         v->setProperty("tabModel", QVariant::fromValue<QObject*>(this));
+        v->setProperty("profile", QVariant::fromValue<QObject*>(webProfile.get()));
 
         vd.tabData->setView(newView);
     }
@@ -233,33 +241,39 @@ void TabModel::viewSelected(int viewId)
 
     /// Update properties and db
     ///
+    auto dbg = db::DbGroup::getGroup(dbName);
+
     webViewContainer->setProperty("currentView", vd.tabData->getView());
-    dbh->config.setProperty("currentTab", viewId);
+    dbg->config.setProperty("currentTab", viewId);
 }
 
 void TabModel::urlChanged(int viewId, QString url)
 {
-    dbh->tabs.setUrl(viewId, url);
+    auto dbg = db::DbGroup::getGroup(dbName);
+    dbg->tabs.setUrl(viewId, url);
 }
 
 void TabModel::titleChanged(int viewId, QString title)
 {
     std::lock_guard<std::recursive_mutex> lock(views2Mutex);
-    dbh->tabs.setTitle(viewId, title);
+    auto dbg = db::DbGroup::getGroup(dbName);
+    dbg->tabs.setTitle(viewId, title);
     views2.at(viewId).tabData->setTitle(title);
 }
 
 void TabModel::iconChanged(int viewId, QString icon)
 {
     std::lock_guard<std::recursive_mutex> lock(views2Mutex);
-    dbh->tabs.setIcon(viewId, icon);
+    auto dbg = db::DbGroup::getGroup(dbName);
+    dbg->tabs.setIcon(viewId, icon);
     views2.at(viewId).tabData->setIcon(icon);
 }
 
 void TabModel::loadTabs()
 {
     auto start = std::chrono::system_clock::now();
-    std::map<int, db::Tabs2::TabInfo> tabsMap = dbh->tabs.getAllTabsMap();
+    auto dbg = db::DbGroup::getGroup(dbName);
+    std::map<int, db::Tabs2::TabInfo> tabsMap = dbg->tabs.getAllTabsMap();
 
     /// Open new empty tab if no tabs were retrieved from database
     ///
@@ -270,6 +284,7 @@ void TabModel::loadTabs()
     }
 
     setItemRoleNames(Tab::roles);
+    flatModel.setDbName(dbName);
     flatModel.setRoleNames(Tab::roles);
 
     /// Fill model and assign to tab selector panel
@@ -326,7 +341,9 @@ void TabModel::loadTabs()
 
 void TabModel::selectCurrentTab()
 {
-    QVariant currentTab = dbh->config.getProperty("currentTab");
+    auto dbg = db::DbGroup::getGroup(dbName);
+
+    QVariant currentTab = dbg->config.getProperty("currentTab");
 
     if (currentTab.isValid())
     {
@@ -341,7 +358,9 @@ void TabModel::selectCurrentTab()
 
 void TabModel::nextTab()
 {
-    QVariant currentTab = dbh->config.getProperty("currentTab");
+    auto dbg = db::DbGroup::getGroup(dbName);
+
+    QVariant currentTab = dbg->config.getProperty("currentTab");
 
     if (currentTab.isValid())
     {
@@ -363,7 +382,9 @@ void TabModel::nextTab()
 
 void TabModel::prevTab()
 {
-    QVariant currentTab = dbh->config.getProperty("currentTab");
+    auto dbg = db::DbGroup::getGroup(dbName);
+
+    QVariant currentTab = dbg->config.getProperty("currentTab");
 
     if (currentTab.isValid())
     {

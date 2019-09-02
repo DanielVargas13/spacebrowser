@@ -12,8 +12,8 @@ constexpr const char* geometry = "MainWindow/geometry";
 namespace Databases
 {
 constexpr const char* dbArray = "Databases/array";
-constexpr const char* defContFiltDb = "Databases/contentFilterDb";
 constexpr const char* defPassManDb = "Databases/passwordManagerDb";
+constexpr const char* currentPanel = "Databases/currentPanel";
 
 namespace array
 {
@@ -24,6 +24,7 @@ constexpr const char* dbName = "dbName";
 constexpr const char* username = "username";
 constexpr const char* password = "password";
 constexpr const char* isEncrypted = "isEncrypted";
+constexpr const char* connIcon = "connIcon";
 }
 }
 

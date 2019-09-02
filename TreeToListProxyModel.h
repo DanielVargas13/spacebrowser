@@ -27,6 +27,7 @@ public:
     QVariant data(const QModelIndex &index, int role) const override;
 
     void setRoleNames(const QHash<int, QByteArray> &roleNames);
+    void setDbName(QString _dbName);
     QHash<int, QByteArray> roleNames() const override;
 
     Q_INVOKABLE int getModelId(int viewId) const;
@@ -45,6 +46,7 @@ private:
     std::map<QStandardItem*, int> fromSource;
     std::map<int, int> viewId2ModelId;  // viewId to id in proxy model
     QHash<int, QByteArray> rNames;
+    QString dbName;
 
 #ifdef TEST_BUILD
     friend ViewHandler_test;

@@ -13,6 +13,7 @@
 #include <mutex>
 
 class Tab;  /// Defined in Tab.h
+class QQuickWebEngineProfile;
 
 class TabModel: public TreeModel2
 {
@@ -20,7 +21,8 @@ class TabModel: public TreeModel2
 
 public:
 // FIXME: qView doesnt belong here, rip it out
-    TabModel(std::shared_ptr<QQuickView> _qView);
+    TabModel(std::shared_ptr<QQuickView> _qView, QString _dbName,
+             std::shared_ptr<QQuickWebEngineProfile> _webProfile);
     virtual ~TabModel();
 
 public slots:
@@ -116,26 +118,18 @@ public:
      */
     QAbstractItemModel* getFlatModel();
 
-
-    // FIXME: this is temporary, remove:
-    void setGrp(db::DbGroup* grp)
-    {
-        dbh = grp;
-    }
-
-
 private:
 #ifndef TEST_BUILD
 // FIXME: not sure if QQuickItems belong here
-    db::DbGroup* dbh;                         /// Initialized db handles
     QQuickItem* webViewContainer;             /// Pointer to WebViewContainer QML object
     QQuickItem* tabSelector;                  /// Pointer to TabSelector QML object
     QQuickItem* tabSelectorPanel;             /// Pointer to TabSelectorPanel QML object 
 
 #else
 #endif
-
     std::shared_ptr<QQuickView> qView;        /// Smart pointer to main window object
+    QString dbName;                           /// Name of db backend to be used
+    std::shared_ptr<QQuickWebEngineProfile> webProfile; /// Profile to be set upon creating view
 
     struct viewData
     {

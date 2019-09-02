@@ -10,7 +10,8 @@ QHash<int, QByteArray> Tab::roles = {
     {2, "icon"},
     {3, "viewId"},
     {4, "indent"},
-    {5, "view"}};
+    {5, "view"},
+    {6, "dbName"}};
 
 Tab::Tab(int id_)
 {

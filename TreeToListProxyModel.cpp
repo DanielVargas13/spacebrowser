@@ -291,6 +291,10 @@ int TreeToListProxyModel::columnCount(const QModelIndex &parent) const
 
 QVariant TreeToListProxyModel::data(const QModelIndex &index, int role) const
 {
+    /// If dbName was requested, we handle it here.
+    /// See roles definition in Tab.cpp
+    if (role == 6)
+        return dbName;
 
     return sourceModel()->data(mapToSource(index), role);
 }
@@ -392,3 +396,9 @@ int TreeToListProxyModel::getModelId(int viewId) const
 {
     return viewId2ModelId.at(viewId);
 }
+
+void TreeToListProxyModel::setDbName(QString _dbName)
+{
+    dbName = _dbName;
+}
+

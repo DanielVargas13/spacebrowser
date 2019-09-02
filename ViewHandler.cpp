@@ -1,6 +1,7 @@
 #include <ViewHandler.h>
 
 #include <conf/conf.h>
+#include <db/Backend.h>
 #include <db/DbGroup.h>
 
 #ifndef TEST_BUILD
@@ -11,9 +12,15 @@
 #endif
 
 #include <QAbstractListModel>
+#include <QGuiApplication>
+#include <QIcon>
 #include <QJSEngine>
 #include <QJSValue>
 #include <QModelIndex>
+#include <QSettings>
+#include <QSqlDatabase>
+#include <QStandardItem>
+
 //#include <QtWebEngine/5.9.1/QtWebEngine/private/qquickwebenginehistory_p.h>
 
 #include <chrono>
@@ -21,8 +28,7 @@
 
 Q_LOGGING_CATEGORY(vhLog, "viewHandler")
 
-ViewHandler::ViewHandler(ContentFilter* _cf, std::shared_ptr<QQuickView> _qView) :
-    cf(_cf), qView(_qView), tabsModel(qView)
+ViewHandler::ViewHandler(std::shared_ptr<QQuickView> _qView) : qView(_qView), bd(_qView)
 {
 #ifndef TEST_BUILD
     webViewContainer = qobject_cast<QQuickItem*>(
@@ -51,10 +57,8 @@ ViewHandler::~ViewHandler()
 #endif
 }
 
-bool ViewHandler::init(QGuiApplication& app)
+bool ViewHandler::init()
 {
-    // FIXME: here initialize db::Tabs, and other db:: in the future
-
     /// Configure model for Panel Selector
     QQuickItem* panelSelector = qobject_cast<QQuickItem*>(
         qView->rootObject()->findChild<QObject*>("panelSelector"));
@@ -63,24 +67,8 @@ bool ViewHandler::init(QGuiApplication& app)
                               Qt::ConnectionType::QueuedConnection,
                               Q_ARG(QVariant, pMod));
 
-
-    {
-        //tabsModel.setGrp();
-        tabsModel.loadTabs();
-
-/*
-    QQuickItem* tabSelectorPanel = qobject_cast<QQuickItem*>(
-        qView->rootObject()->findChild<QObject*>("tabSelectorPanel"));
-
-
-    QVariant qv = QVariant::fromValue<QObject*>(tabsModel.getFlatModel());
-    QMetaObject::invokeMethod(tabSelectorPanel, "setModel",
-                              Qt::ConnectionType::QueuedConnection,
-                              Q_ARG(QVariant, qv));
-*/
-        app.processEvents();
-        tabsModel.selectCurrentTab();
-    }
+    QObject::connect(panelSelector, SIGNAL(panelSelected(QString)),
+                     this, SLOT(selectPanel(QString)));
 
     return true;
 }
@@ -170,19 +158,19 @@ void ViewHandler::historyUpdated(int _viewId, QQuickWebEngineHistory* navHistory
 
 
 
-void ViewHandler::openScriptBlockingView(int viewId)
+void ViewHandler::openScriptBlockingView(QString dbName, int viewId)
 {
     /// Find current url for viewId and fetch list of script source urls
     /// that were accessed while loading the view
     ///
-    QObject* view = qvariant_cast<QObject *>(tabsModel.getView(viewId));
+    QObject* view = qvariant_cast<QObject *>(tabsModels.at(dbName)->getView(viewId));
 
     if (!view)
         throw std::runtime_error("ViewHandler::openScriptBlockingView(): there is no view "
                 "associated with this viewId: " + std::to_string(viewId));
 
     QString url = view->property("url").toUrl().host();
-    std::set<std::string> urls = cf->getUrlsFor(url.toStdString());
+    std::set<std::string> urls = contentFilters.at(dbName)->getUrlsFor(url.toStdString());
 
     QJSEngine engine;
 
@@ -193,20 +181,14 @@ void ViewHandler::openScriptBlockingView(int viewId)
             Q_RETURN_ARG(QVariant, noValue));
 
 
-    QSettings settings;
-    std::shared_ptr<db::DbGroup> dbh;
-    if (settings.contains(conf::Databases::defContFiltDb))
-    {
-        QString dbName = settings.value(conf::Databases::defContFiltDb).toString();
-        dbh = db::DbGroup::getGroup(dbName);
-    }        
-
+    std::shared_ptr<db::DbGroup> dbg;
+    dbg = db::DbGroup::getGroup(dbName);
 
     using bst = db::ScriptBlock2::State;
     for (const std::string& u: urls)
     {
         QJSValue val = engine.newObject();
-        bst blockState = dbh->scb.isAllowed(url, u.c_str(), false);
+        bst blockState = dbg->scb.isAllowed(url, u.c_str(), false);
 
         bool allowed = blockState == bst::AllowedBoth || blockState == bst::Allowed;
         bool gallowed = blockState == bst::AllowedBoth || blockState == bst::AllowedGlobally;
@@ -220,6 +202,14 @@ void ViewHandler::openScriptBlockingView(int viewId)
                 Q_ARG(QVariant, val.toVariant()));
     }
 
+    /// scriptBlockingView needs to propagate dbName with it's signals
+    /// so that content filters will be able to filter out which signals
+    /// are directed at them
+    ///
+    QMetaObject::invokeMethod(scriptBlockingView, "setDbName",
+            Q_RETURN_ARG(QVariant, noValue),
+            Q_ARG(QVariant, dbName));
+
     /// Show scriptBlockingView and hide webViewContainer and
     /// also TabSelector (which is hidden by webViewContainer
     ///
@@ -227,4 +217,97 @@ void ViewHandler::openScriptBlockingView(int viewId)
     scriptBlockingView->setProperty("visible", true);
     webViewContainer->setProperty("visible", false);
 
+}
+
+void ViewHandler::createWebProfile(QString dbName)
+{
+    contentFilters[dbName] = std::shared_ptr<ContentFilter>(new ContentFilter(dbName));
+    ContentFilter& cf = *contentFilters[dbName];
+
+    webProfiles[dbName] = std::shared_ptr<QQuickWebEngineProfile>(new QQuickWebEngineProfile());
+    webProfiles[dbName]->setStorageName(dbName);
+    webProfiles[dbName]->setRequestInterceptor(&cf);
+
+    QObject::connect(scriptBlockingView, SIGNAL(whitelistLocal(QString, QString, QString)),
+                     &cf, SLOT(whitelistLocal(QString, QString, QString)));
+    QObject::connect(scriptBlockingView, SIGNAL(whitelistGlobal(QString, QString)),
+                     &cf, SLOT(whitelistGlobal(QString, QString)));
+    QObject::connect(scriptBlockingView, SIGNAL(removeLocal(QString, QString, QString)),
+                     &cf, SLOT(removeLocal(QString, QString, QString)));
+    QObject::connect(scriptBlockingView, SIGNAL(removeGlobal(QString, QString)),
+                     &cf, SLOT(removeGlobal(QString, QString)));
+
+    bd.setupProfile(webProfiles[dbName]);
+}
+
+void ViewHandler::dbConnected(QString dbName)
+{
+    qCDebug(dbLogs, "Database %s connected, setting up", dbName.toStdString().c_str());
+
+    /// After db is connected, we can create database group
+    ///
+    db::Backend* backend = dynamic_cast<db::Backend*>(sender());
+    db::DbGroup::createGroup(dbName, *backend);
+
+
+    /// Next create and fill model
+    ///
+    QSettings settings;
+    auto dbConnData = db::Backend::readAllConnectionEntries(settings);
+
+    createWebProfile(dbName);
+
+    std::shared_ptr<TabModel> tabsModel(new TabModel(qView, dbName, webProfiles[dbName]));
+    tabsModels[dbName] = tabsModel;
+    tabsModel->loadTabs();
+
+    /// Find icon for connected database
+    ///
+    auto result = std::find_if(dbConnData.begin(), dbConnData.end(),
+                               [&dbName](const struct db::Backend::connData_t& cd)->bool
+                               {
+                                   if (dbName == cd.connName)
+                                       return true;
+
+                                   return false;
+                               });
+    QString icon;
+    if (result != dbConnData.end())
+        icon = result->connIcon;
+
+    /// Add row to panel model and select panel if it was the previously selected one
+    ///
+    QStandardItem* item = new QStandardItem(dbName);
+    item->setToolTip(icon); /// FIXME: this should be proper role in the model
+    panelModel.appendRow(item);
+
+    if (settings.contains(conf::Databases::currentPanel) &&
+        settings.value(conf::Databases::currentPanel).toString() == dbName)
+        selectPanel(dbName);
+}
+
+void ViewHandler::selectPanel(QString dbName)
+{
+    QQuickItem* tabSelectorPanel = qobject_cast<QQuickItem*>(
+        qView->rootObject()->findChild<QObject*>("tabSelectorPanel"));
+
+    auto& tabsModel = tabsModels.at(dbName);
+
+    QVariant qv = QVariant::fromValue<QObject*>(tabsModel->getFlatModel());
+    QMetaObject::invokeMethod(tabSelectorPanel, "setModel",
+                              Qt::ConnectionType::QueuedConnection,
+                              Q_ARG(QVariant, qv));
+
+    QQuickItem* panelSelector = qobject_cast<QQuickItem*>(
+        qView->rootObject()->findChild<QObject*>("panelSelector"));
+
+    QMetaObject::invokeMethod(panelSelector, "setCurrentPanel",
+                              Qt::ConnectionType::QueuedConnection,
+                              Q_ARG(QVariant, dbName));
+
+    QGuiApplication::processEvents();
+    tabsModel->selectCurrentTab();
+
+    QSettings settings;
+    settings.setValue(conf::Databases::currentPanel, dbName);
 }

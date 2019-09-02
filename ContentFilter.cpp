@@ -5,7 +5,7 @@
 
 #include <QSettings>
 
-ContentFilter::ContentFilter()
+ContentFilter::ContentFilter(QString _dbName) : dbName(_dbName)
 {
 
 }
@@ -70,7 +70,7 @@ void ContentFilter::filterScripts(QWebEngineUrlRequestInfo& info)
 
     /// Check whitelists in database
     ///
-    auto dbh = getDefDbGroup();
+    auto dbh = db::DbGroup::getGroup(dbName);
     if (dbh)
     {
         db::ScriptBlock2::State allowed = dbh->scb.isAllowed(firstPartyHost,
@@ -85,51 +85,43 @@ void ContentFilter::filterScripts(QWebEngineUrlRequestInfo& info)
     return;
 }
 
-void ContentFilter::whitelistLocal(const QString& site, const QString& url)
+void ContentFilter::whitelistLocal(QString _dbName, QString site, QString url)
 {
-    auto dbh = getDefDbGroup();
+    if (dbName != _dbName)
+        return;
+
+    auto dbh = db::DbGroup::getGroup(dbName);
     if (dbh)
-    {
         dbh->scb.whitelistLocal(site, url);
-    }
 }
 
-void ContentFilter::whitelistGlobal(const QString& url)
+void ContentFilter::whitelistGlobal(QString _dbName, QString url)
 {
-    auto dbh = getDefDbGroup();        
+    if (dbName != _dbName)
+        return;
+
+    auto dbh = db::DbGroup::getGroup(dbName);
     if (dbh)
-    {
         dbh->scb.whitelistGlobal(url);
-    }
 }
 
-void ContentFilter::removeLocal(const QString& site, const QString& url)
+void ContentFilter::removeLocal(QString _dbName, QString site, QString url)
 {
-    auto dbh = getDefDbGroup();        
+    if (dbName != _dbName)
+        return;
+
+    auto dbh = db::DbGroup::getGroup(dbName);
     if (dbh)
-    {
         dbh->scb.removeLocal(site, url);
-    }
 }
 
-void ContentFilter::removeGlobal(const QString& url)
+void ContentFilter::removeGlobal(QString _dbName, QString url)
 {
-    auto dbh = getDefDbGroup();
-        
+    if (dbName != _dbName)
+        return;
+
+    auto dbh = db::DbGroup::getGroup(dbName);
     if (dbh)
-    {
         dbh->scb.removeGlobal(url);
-    }
 }
 
-std::shared_ptr<db::DbGroup> ContentFilter::getDefDbGroup()
-{
-    QSettings settings;
-    if (settings.contains(conf::Databases::defContFiltDb))
-    {
-        QString dbName = settings.value(conf::Databases::defContFiltDb).toString();
-        return db::DbGroup::getGroup(dbName);
-    }        
-
-    return nullptr;
-}

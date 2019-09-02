@@ -10,7 +10,7 @@ TabView
 
     signal viewSelected(int viewId)
     signal closeTab(int viewId)
-    signal openScriptBlockingView(int viewId)
+    signal openScriptBlockingView(string dbName, int viewId)
 
     //height: Style.tabSelector.entry.height * visualModel.count
 
@@ -26,8 +26,9 @@ TabView
             title: model.title
             icon: model.icon
             viewId: model.viewId
+            dbName: model.dbName
             color: ListView.isCurrentItem ?
-                Style.tabSelector.entry.selected : Style.lightBackgrounda
+                Style.tabSelector.entry.selected : Style.lightBackground
             anchors.leftMargin: (model.indent+1) * Style.margin
 
             onClose: {
@@ -67,15 +68,6 @@ TabView
 
         anchors.fill: parent
         model: visualModel
-
-        onCurrentIndexChanged:
-        {
-            console.log("Current index: " + currentIndex);
-
-            /// check here if view is available, and if not - create it
-            console.log(visualModel.model.data(visualModel.model.index(currentIndex, 0), 5))
-        }
-//        highlightFollowsCurrentItem: false
     }
 
     Menu {
@@ -88,7 +80,8 @@ TabView
         ContextMenuEntry {
             text: "Script blocking"
             onTriggered: {
-                openScriptBlockingView(tabSelectorView.itemAt(contextMenu.x, contextMenu.y).viewId)
+                var item = tabSelectorView.itemAt(contextMenu.x, contextMenu.y)
+                openScriptBlockingView(item.dbName, item.viewId)
             }
         }
     }
@@ -99,10 +92,6 @@ TabView
         acceptedButtons: Qt.RightButton // FIXME: add dragging here??
 
         onClicked: {
-            console.log(root.visible)
-            console.log(visualModel.count)
-            console.log(visualModel.model.count)
-
             contextMenu.x = mouseX
             contextMenu.y = mouseY
             contextMenu.open()
