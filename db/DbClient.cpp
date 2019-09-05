@@ -13,7 +13,8 @@ Q_LOGGING_CATEGORY(dbLogs, "db")
 
 namespace db
 {
-DbClient::DbClient(db::Backend& _backend) : backend(_backend)
+DbClient::DbClient(db::Backend& _backend, QString _schemaName) :
+    schemaName(_schemaName), backend(_backend)
 {
     migrators.push_back(&DbClient::setupDbV1);
 }
@@ -44,15 +45,8 @@ bool DbClient::initDatabase(QString _dbName)
     if (dbVersion == schemaVersion)
         return true;
 
-    /// Open a transaction
-    ///
-    QSqlDatabase db = QSqlDatabase::database(dbName);
-    if (!db.transaction())
-    {
-        qCCritical(dbLogs, "(dbname=%s): failed to open transaction",
-                   dbName.toStdString().c_str());
-        return false;
-    }
+    qCDebug(dbLogs, "(dbname=%s): db schema needs update, proceeding",
+            dbName.toStdString().c_str());
 
     /// Perform db migrations if necessary
     ///
@@ -62,8 +56,6 @@ bool DbClient::initDatabase(QString _dbName)
         {
             qCCritical(dbLogs, "(dbname=%s): failed to perform migration from version %i to %lu",
                        dbName.toStdString().c_str(), dbVersion, i+1);
-            if (!db.rollback())
-                qCCritical(dbLogs, "(dbname=%s): rollback failed", dbName.toStdString().c_str());
 
             return false;
         }
@@ -73,16 +65,8 @@ bool DbClient::initDatabase(QString _dbName)
     if (newestVersion > 0 && dbVersion < newestVersion)
         setSchemaVersion(newestVersion);
 
-    /// All processing was successful, commit changes to db
-    ///
-    if (!db.commit())
-    {
-        qCCritical(dbLogs, "(dbname=%s): commit failed", dbName.toStdString().c_str());
-        logError(db.lastError());
-        return false;
+    // FIXME: mark if initialization succeeded, refuse to use db if it didn't
 
-        // FIXME: mark if initialization succeeded, refuse to use db if it didn't
-    }
     qCDebug(dbLogs, "(dbname=%s): db initialized properly", dbName.toStdString().c_str());
 
     return true;
@@ -92,6 +76,8 @@ unsigned int DbClient::fetchSchemaVersion()
 {
     int dbVersion = 0;
 
+    /// Check if database contains config table, and try to get schemaVersion if it does
+    ///
     Config2 cfg(*this, backend);
     Backend::funRet_t result = backend.performQuery(
         [this]()->Backend::funRet_t
@@ -167,172 +153,192 @@ QString DbClient::getSchemaName()
 
 bool DbClient::setupDbV1()
 {
-    /// Set up Tabs table
-    ///
-    QSqlDatabase db = QSqlDatabase::database(dbName);
-
-    if (!db.tables().contains(schemaName + "." + "tabs"))
-    {
-        QSqlQuery query = backend.performQuery(
-            dbName,
-            "CREATE TABLE IF NOT EXISTS " +
-            schemaName + "." + "tabs" +
-            "(id serial PRIMARY KEY,"
-            "parent integer default 0,"
-            "url varchar default \'\',"
-            "title varchar default \'\',"
-            "icon varchar default \'\')").get();
-        bool result = query.isActive();
-
-        if (!result)
+    Backend::funRet_t result = backend.performQuery(
+        [this]()->Backend::funRet_t
         {
-            qCCritical(dbLogs, "(dbName=%s): failed to create tabs table",
-                       dbName.toStdString().c_str());
+            /// Set up Tabs table
+            ///
+            QSqlDatabase db = QSqlDatabase::database(dbName);
+            if (!db.transaction())
+            {
+                qCCritical(dbLogs, "(dbname=%s): failed to open transaction",
+                           dbName.toStdString().c_str());
+                return false;
+            }
 
-            logError(query);
-            return false;
-        }
+            if (!db.tables().contains(schemaName + "." + "tabs"))
+            {
+                QSqlQuery query(db);
+                query.exec("CREATE TABLE IF NOT EXISTS " +
+                           schemaName + "." + "tabs" +
+                           "(id serial PRIMARY KEY,"
+                           "parent integer default 0,"
+                           "url varchar default \'\',"
+                           "title varchar default \'\',"
+                           "icon varchar default \'\')");
+                bool result = query.isActive();
+
+                if (!result)
+                {
+                    qCCritical(dbLogs, "(dbName=%s): failed to create tabs table",
+                               dbName.toStdString().c_str());
+
+                    logError(query);
+                    return false;
+                }
+            }
+
+            /// Set up Config table
+            ///
+            if (!db.tables().contains(schemaName + "." + "config"))
+            {
+                QSqlQuery query(db);
+                query.exec("CREATE TABLE IF NOT EXISTS " +
+                           schemaName + "." + "config" +
+                           "(key varchar PRIMARY KEY, value varchar)");
+                bool result = query.isActive();
+
+                if (!result)
+                {
+                    qCCritical(dbLogs, "(dbName=%s): failed to create config table",
+                               dbName.toStdString().c_str());
+
+                    logError(query);
+                    return false;
+                }
+            }
+
+            /// Set up keys table
+            ///
+            if (!db.tables().contains(schemaName + "." + "keys"))
+            {
+                QSqlQuery query(db);
+                query.exec("CREATE TABLE IF NOT EXISTS " +
+                           schemaName + "." + "keys" +
+                           "(fingerprint varchar PRIMARY KEY,"
+                           "def boolean DEFAULT false)");
+                bool result = query.isActive();
+
+                if (!result)
+                {
+                    qCCritical(dbLogs, "(dbName=%s): failed to create keys table",
+                               dbName.toStdString().c_str());
+
+                    logError(query);
+                    return false;
+                }
+            }
+
+            /// Set up passwords table
+            ///
+            if (!db.tables().contains(schemaName + "." + "passwords"))
+            {
+                QSqlQuery query(db);
+                query.exec("CREATE TABLE IF NOT EXISTS " +
+                           schemaName + "." + "passwords" +
+                           "(host varchar NOT NULL, path varchar,"
+                           "login varchar NOT NULL,"
+                           "password varchar NOT NULL,"
+                           "key_fp varchar REFERENCES " + schemaName +
+                           ".keys(fingerprint),"
+                           "CONSTRAINT pass_pkey "
+                           "PRIMARY KEY(host, path, login))");
+                bool result = query.isActive();
+
+                if (!result)
+                {
+                    qCCritical(dbLogs, "(dbName=%s): failed to create passwords table",
+                               dbName.toStdString().c_str());
+
+                    logError(query);
+                    return false;
+                }
+            }
+
+            /// Set up global_script_whitelist table
+            ///
+            if (!db.tables().contains(schemaName + "." + "global_script_whitelist"))
+            {
+                QSqlQuery query(db);
+                query.exec("CREATE TABLE IF NOT EXISTS " +
+                           schemaName + "." + "global_script_whitelist" +
+                           "(url varchar PRIMARY KEY)");
+                bool result = query.isActive();
+
+                if (!result)
+                {
+                    qCCritical(dbLogs, "(dbName=%s): failed to create global_script_whitelist"
+                               " table", dbName.toStdString().c_str());
+
+                    logError(query);
+                    return false;
+                }
+            }
+
+            /// Set up site_list table
+            ///
+            if (!db.tables().contains(schemaName + "." + "site_list"))
+            {
+                QSqlQuery query(db);
+                query.exec("CREATE TABLE IF NOT EXISTS " +
+                           schemaName + "." + "site_list" +
+                           "(url varchar PRIMARY KEY)");
+                bool result = query.isActive();
+
+                if (!result)
+                {
+                    qCCritical(dbLogs, "(dbName=%s): failed to create site_list"
+                               " table", dbName.toStdString().c_str());
+
+                    logError(query);
+                    return false;
+                }
+            }
+
+            /// Set up script_whitelist table
+            ///
+            if (!db.tables().contains(schemaName + "." + "script_whitelist"))
+            {
+                QSqlQuery query(db);
+                query.exec("CREATE TABLE IF NOT EXISTS " +
+                           schemaName + "." + "script_whitelist" +
+                           "(id serial PRIMARY KEY,"
+                           "site_url varchar REFERENCES " + schemaName +
+                           ".site_list, url varchar)");
+                bool result = query.isActive();
+
+                if (!result)
+                {
+                    qCCritical(dbLogs, "(dbName=%s): failed to create script_whitelist"
+                               " table", dbName.toStdString().c_str());
+
+                    logError(query);
+                    return false;
+                }
+            }
+
+            /// All processing was successful, commit changes to db
+            ///
+            if (!db.commit())
+            {
+                qCCritical(dbLogs, "(dbname=%s): commit failed", dbName.toStdString().c_str());
+                logError(db.lastError());
+                return false;
+
+                // FIXME: mark if initialization succeeded, refuse to use db if it didn't
+            }
+
+            return true;
+        }).get();
+
+    if (std::holds_alternative<bool>(result))
+    {
+        qCDebug(dbLogs, "(dbName=%s): setupDbV1() finished successfully",
+                dbName.toStdString().c_str());
+        return std::get<bool>(result);
     }
 
-    /// Set up Config table
-    ///
-    if (!db.tables().contains(schemaName + "." + "config"))
-    {
-        QSqlQuery query = backend.performQuery(
-            dbName,
-            "CREATE TABLE IF NOT EXISTS " +
-            schemaName + "." + "config" +
-            "(key varchar PRIMARY KEY, value varchar)").get();
-        bool result = query.isActive();
-
-        if (!result)
-        {
-            qCCritical(dbLogs, "(dbName=%s): failed to create config table",
-                       dbName.toStdString().c_str());
-
-            logError(query);
-            return false;
-        }
-    }
-
-    /// Set up keys table
-    ///
-    if (!db.tables().contains(schemaName + "." + "keys"))
-    {
-        QSqlQuery query = backend.performQuery(
-            dbName,
-            "CREATE TABLE IF NOT EXISTS " +
-            schemaName + "." + "keys" +
-            "(fingerprint varchar PRIMARY KEY,"
-            "def boolean DEFAULT false)").get();
-        bool result = query.isActive();
-
-        if (!result)
-        {
-            qCCritical(dbLogs, "(dbName=%s): failed to create keys table",
-                       dbName.toStdString().c_str());
-
-            logError(query);
-            return false;
-        }
-    }
-
-    /// Set up passwords table
-    ///
-    if (!db.tables().contains(schemaName + "." + "passwords"))
-    {
-        QSqlQuery query = backend.performQuery(
-            dbName,
-            "CREATE TABLE IF NOT EXISTS " +
-            schemaName + "." + "passwords" +
-            "(host varchar NOT NULL, path varchar,"
-            "login varchar NOT NULL,"
-            "password varchar NOT NULL,"
-            "key_fp varchar REFERENCES " + schemaName +
-            ".keys(fingerprint),"
-            "CONSTRAINT pass_pkey "
-            "PRIMARY KEY(host, path, login))").get();
-        bool result = query.isActive();
-
-        if (!result)
-        {
-            qCCritical(dbLogs, "(dbName=%s): failed to create passwords table",
-                       dbName.toStdString().c_str());
-
-            logError(query);
-            return false;
-        }
-    }
-
-    /// Set up global_script_whitelist table
-    ///
-    if (!db.tables().contains(schemaName + "." + "global_script_whitelist"))
-    {
-        QSqlQuery query = backend.performQuery(
-            dbName,
-            "CREATE TABLE IF NOT EXISTS " +
-            schemaName + "." + "global_script_whitelist" +
-            "(url varchar PRIMARY KEY)").get();
-        bool result = query.isActive();
-
-        if (!result)
-        {
-            qCCritical(dbLogs, "(dbName=%s): failed to create global_script_whitelist"
-                       " table", dbName.toStdString().c_str());
-
-            logError(query);
-            return false;
-        }
-    }
-
-    /// Set up site_list table
-    ///
-    if (!db.tables().contains(schemaName + "." + "site_list"))
-    {
-        QSqlQuery query = backend.performQuery(
-            dbName,
-            "CREATE TABLE IF NOT EXISTS " +
-            schemaName + "." + "site_list" +
-            "(url varchar PRIMARY KEY)").get();
-        bool result = query.isActive();
-
-        if (!result)
-        {
-            qCCritical(dbLogs, "(dbName=%s): failed to create site_list"
-                       " table", dbName.toStdString().c_str());
-
-            logError(query);
-            return false;
-        }
-    }
-
-    /// Set up script_whitelist table
-    ///
-    if (!db.tables().contains(schemaName + "." + "script_whitelist"))
-    {
-        QSqlQuery query = backend.performQuery(
-            dbName,
-            "CREATE TABLE IF NOT EXISTS " +
-            schemaName + "." + "script_whitelist" +
-            "(id serial PRIMARY KEY,"
-            "site_url varchar REFERENCES " + schemaName +
-            ".site_list, url varchar)").get();
-        bool result = query.isActive();
-
-        if (!result)
-        {
-            qCCritical(dbLogs, "(dbName=%s): failed to create script_whitelist"
-                       " table", dbName.toStdString().c_str());
-
-            logError(query);
-            return false;
-        }
-    }
-
-    qCDebug(dbLogs, "(dbName=%s): setupDbV1() finished successfully",
-               dbName.toStdString().c_str());
-
-    return true;
+    return false;
 }
 
 QString DbClient::getDbName()

@@ -153,16 +153,10 @@ int main(int argc, char *argv[])
     if (!scriptBlockingView)
         throw std::runtime_error("No scriptBlockingView object found");
 
-    ViewHandler vh(view);
+    ViewHandler vh(view, dbBackend);
     vh.setObjectName("ViewHandler");
-    QObject::connect(&dbBackend, SIGNAL(dbConnected(QString)),
-                     &vh, SLOT(dbConnected(QString)), Qt::QueuedConnection);
-    QObject::connect(&dbBackend, &db::Backend::dbConnected,
-                     &vh, [&vh]()
-                     {
-                         qCDebug(mainLogs, "Connection is direct: %i",
-                                 QThread::currentThread() == vh.thread());
-                     }, Qt::DirectConnection);
+    QObject::connect(&dbBackend, SIGNAL(dbConnected(QString, QString)),
+                     &vh, SLOT(dbConnected(QString, QString)), Qt::QueuedConnection);
 
     QObject* tabSelectorPanel = view->rootObject()->
         findChild<QObject*>("tabSelectorPanel");

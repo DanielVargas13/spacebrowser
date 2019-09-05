@@ -21,7 +21,7 @@ class DbClient
 {
 public:
 
-    DbClient(db::Backend& _backend);
+    DbClient(db::Backend& _backend, QString _schemaName = "spacebrowser2");
 
     virtual ~DbClient();
 
@@ -75,7 +75,7 @@ private:
 
 private:
     QString dbName;
-    const QString schemaName = "spacebrowser2";
+    QString schemaName;
     const unsigned int schemaVersion = 1;
     std::vector<bool (DbClient::*)()> migrators;
     db::Backend& backend;

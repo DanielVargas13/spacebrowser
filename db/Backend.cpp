@@ -71,6 +71,7 @@ void Backend::configureDbConnection(QObject* dialog, bool encReady)
         QVariant driverType = settings.value(conf::Databases::array::driverType);
         QVariant hostname = settings.value(conf::Databases::array::hostname);
         QVariant dbName = settings.value(conf::Databases::array::dbName);
+        QVariant schemaName = settings.value(conf::Databases::array::schemaName);
         QVariant username = settings.value(conf::Databases::array::username);
         QVariant isEncrypted = settings.value(conf::Databases::array::isEncrypted);
 
@@ -79,6 +80,7 @@ void Backend::configureDbConnection(QObject* dialog, bool encReady)
         obj.insert(conf::Databases::array::driverType, driverType.toString());
         obj.insert(conf::Databases::array::hostname, hostname.toString());
         obj.insert(conf::Databases::array::dbName, dbName.toString());
+        obj.insert(conf::Databases::array::schemaName, schemaName.toString());
         obj.insert(conf::Databases::array::username, username.toString());
         obj.insert(conf::Databases::array::password, "");
         obj.insert(conf::Databases::array::isEncrypted, isEncrypted.toBool());
@@ -110,29 +112,26 @@ void Backend::dbConfigured(QVariant connData)
 
     QString connName = cd.value(conf::Databases::array::connName).toString();
     QString driverType = cd.value(conf::Databases::array::driverType).toString();
-    QSqlDatabase db = QSqlDatabase::addDatabase(driverType, connName);
+//    QSqlDatabase db = QSqlDatabase::addDatabase(driverType, connName);
 
     QString hostname = cd.value(conf::Databases::array::hostname).toString();
     QString dbName = cd.value(conf::Databases::array::dbName).toString();
+    QString schemaName = cd.value(conf::Databases::array::schemaName).toString();
     QString username = cd.value(conf::Databases::array::username).toString();
     QString password = cd.value(conf::Databases::array::password).toString();
     bool isEncrypted = cd.value(conf::Databases::array::isEncrypted).toBool();
-    db.setHostName(hostname);
-    db.setDatabaseName(dbName);
-    db.setUserName(username);
-    db.setPassword(password);
 
-    if (!db.open())
-    {
-        reconfigureDbConnection(sender(), db.lastError().text());
-        return;
-    }
+//    db.setHostName(hostname);
+//    db.setDatabaseName(dbName);
+//    db.setUserName(username);
+//    db.setPassword(password);
 
     struct connData_t newEntry;
     newEntry.connName = connName;
     newEntry.driverType = driverType;
     newEntry.hostname = hostname;
     newEntry.dbName = dbName;
+    newEntry.schemaName = schemaName;
     newEntry.username = username;
 
     if (isEncrypted) {
@@ -158,10 +157,18 @@ void Backend::dbConfigured(QVariant connData)
 
     connections.push_back(newEntry);
     writeAllConnectionEntries(settings, connections);
+
+    performQuery(
+        [newEntry, this]()->funRet_t
+        {
+            connectDb(newEntry);
+            return true;
+        });
 }
 
 bool Backend::connectDatabases()
 {
+    qCDebug(dbLogs, "Backend::connectDatabases()");
     if (connThread.joinable())
         return true;
 
@@ -177,36 +184,11 @@ bool Backend::connectDatabases()
             struct connData_t cd = readConnectionEntry(settings);
 
             if (cd.connName.isEmpty() || cd.driverType.isEmpty() ||
-            cd.hostname.isEmpty() || cd.dbName.isEmpty())
+                cd.hostname.isEmpty() || cd.dbName.isEmpty() ||
+                cd.schemaName.isEmpty())
                 continue;
 
-            QSqlDatabase db = QSqlDatabase::addDatabase(cd.driverType, cd.connName);
-
-            db.setHostName(cd.hostname);
-            db.setDatabaseName(cd.dbName);
-            if (!cd.username.isEmpty())
-                db.setUserName(cd.username);
-
-            if (cd.isEncrypted)
-            {
-                QString decrypted;
-                // FIXME: decrypt
-
-                db.setPassword(decrypted);
-            }
-            else
-                db.setPassword(cd.password);
-
-            qCDebug(dbLogs) << "Connecting to: "
-                            << cd.connName.toStdString().c_str();
-            if (!db.open())
-                qCCritical(dbLogs) << db.lastError().text().toStdString().c_str();
-            else
-            {
-                qCDebug(dbLogs, "Connected to backend: %s", cd.connName.toStdString().c_str());
-                emit dbConnected(cd.connName);
-                qCDebug(dbLogs, "Signal emitted");
-            }
+            connectDb(cd);
         }
         settings.endArray();
 
@@ -243,7 +225,7 @@ bool Backend::connectDatabases()
 
                     prom.set_value(fun());
                 }
-                
+
 
                 queries.pop_front();
             }
@@ -260,6 +242,35 @@ bool Backend::connectDatabases()
     return true;
 }
 
+void Backend::connectDb(const struct connData_t& cd)
+{
+    QSqlDatabase db = QSqlDatabase::addDatabase(cd.driverType, cd.connName);
+
+    db.setHostName(cd.hostname);
+    db.setDatabaseName(cd.dbName);
+    if (!cd.username.isEmpty())
+        db.setUserName(cd.username);
+
+    if (cd.isEncrypted)
+    {
+        QString decrypted;
+        // FIXME: decrypt
+
+        db.setPassword(decrypted);
+    }
+    else
+        db.setPassword(cd.password);
+
+    qCDebug(dbLogs) << "Connecting to: "
+                    << cd.connName.toStdString().c_str();
+    if (!db.open())
+        qCCritical(dbLogs) << db.lastError().text().toStdString().c_str();
+    else
+    {
+        emit dbConnected(cd.connName, cd.schemaName);
+    }
+}
+
 void Backend::writeConnectionEntry(QSettings& settings,
     const struct connData_t& connData)
 {
@@ -271,6 +282,7 @@ void Backend::writeConnectionEntry(QSettings& settings,
     settings.setValue(conf::Databases::array::password, connData.password);
     settings.setValue(conf::Databases::array::isEncrypted, connData.isEncrypted);
     settings.setValue(conf::Databases::array::connIcon, connData.connIcon);
+    settings.setValue(conf::Databases::array::schemaName, connData.schemaName);
 }
 
 struct Backend::connData_t Backend::readConnectionEntry(QSettings& settings)
@@ -281,6 +293,7 @@ struct Backend::connData_t Backend::readConnectionEntry(QSettings& settings)
     QVariant driverType = settings.value(conf::Databases::array::driverType);
     QVariant hostname = settings.value(conf::Databases::array::hostname);
     QVariant dbName = settings.value(conf::Databases::array::dbName);
+    QVariant schemaName = settings.value(conf::Databases::array::schemaName);
     QVariant username = settings.value(conf::Databases::array::username);
     QVariant password = settings.value(conf::Databases::array::password);
     QVariant isEncrypted = settings.value(conf::Databases::array::isEncrypted);
@@ -294,6 +307,8 @@ struct Backend::connData_t Backend::readConnectionEntry(QSettings& settings)
         result.hostname = hostname.toString();
     if (dbName.isValid())
         result.dbName = dbName.toString();
+    if (schemaName.isValid())
+        result.schemaName = schemaName.toString();
     if (username.isValid())
         result.username = username.toString();
     if (password.isValid())

@@ -24,13 +24,13 @@ struct DbGroup
     db::ScriptBlock2 scb;
     db::Tabs2 tabs;
     
-    static void createGroup(QString dbName, Backend& backend);
+    static void createGroup(QString dbName, QString schemaName, Backend& backend);
     static std::shared_ptr<DbGroup> getGroup(QString dbName);
     
 private:
     static std::map<QString, std::shared_ptr<DbGroup>> groups;
 
-    DbGroup(QString dbName, Backend& _backend);
+    DbGroup(QString dbName, QString schemaName, Backend& _backend);
 };
 
 }

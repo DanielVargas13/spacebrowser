@@ -36,8 +36,8 @@ public:
         QString password;
         bool isEncrypted = false;
         QString connIcon;
+        QString schemaName;
     };
-
 
     Backend();
     ~Backend();
@@ -51,13 +51,14 @@ public:
     static std::vector<struct connData_t> readAllConnectionEntries(QSettings& settings);
 
 signals:
-    void dbConnected(QString dbName);
+    void dbConnected(QString dbName, QString schemaName);
 
 public slots:
     void configureDbConnection(QObject* dialog, bool encReady);
     void reconfigureDbConnection(QObject* dialog, QString err);
     void dbConfigured(QVariant connData);
     bool connectDatabases();
+    void connectDb(const struct connData_t& cd);
 
 
 private:

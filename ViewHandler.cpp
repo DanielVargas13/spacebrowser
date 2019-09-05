@@ -28,7 +28,8 @@
 
 Q_LOGGING_CATEGORY(vhLog, "viewHandler")
 
-ViewHandler::ViewHandler(std::shared_ptr<QQuickView> _qView) : qView(_qView), bd(_qView)
+ViewHandler::ViewHandler(std::shared_ptr<QQuickView> _qView, db::Backend& _dbBack) :
+    qView(_qView), dbBack(_dbBack), bd(_qView)
 {
 #ifndef TEST_BUILD
     webViewContainer = qobject_cast<QQuickItem*>(
@@ -69,6 +70,10 @@ bool ViewHandler::init()
 
     QObject::connect(panelSelector, SIGNAL(panelSelected(QString)),
                      this, SLOT(selectPanel(QString)));
+
+    QStandardItem* item = new QStandardItem(addDbText);
+    item->setToolTip("qrc://ui/icons/plus.svg"); /// FIXME: this should be proper role in the model
+    panelModel.appendRow(item);
 
     return true;
 }
@@ -240,15 +245,14 @@ void ViewHandler::createWebProfile(QString dbName)
     bd.setupProfile(webProfiles[dbName]);
 }
 
-void ViewHandler::dbConnected(QString dbName)
+void ViewHandler::dbConnected(QString dbName, QString schemaName)
 {
     qCDebug(dbLogs, "Database %s connected, setting up", dbName.toStdString().c_str());
 
     /// After db is connected, we can create database group
     ///
     db::Backend* backend = dynamic_cast<db::Backend*>(sender());
-    db::DbGroup::createGroup(dbName, *backend);
-
+    db::DbGroup::createGroup(dbName, schemaName, *backend);
 
     /// Next create and fill model
     ///
@@ -279,7 +283,13 @@ void ViewHandler::dbConnected(QString dbName)
     ///
     QStandardItem* item = new QStandardItem(dbName);
     item->setToolTip(icon); /// FIXME: this should be proper role in the model
-    panelModel.appendRow(item);
+//    panelModel.appendRow(item);
+
+    int position = panelModel.rowCount() - 1;
+    if (position < 0)
+        position = 0;
+
+    panelModel.insertRow(position, item);
 
     if (settings.contains(conf::Databases::currentPanel) &&
         settings.value(conf::Databases::currentPanel).toString() == dbName)
@@ -288,6 +298,12 @@ void ViewHandler::dbConnected(QString dbName)
 
 void ViewHandler::selectPanel(QString dbName)
 {
+    if (dbName == addDbText)
+    {
+        openDbConfig();
+        return;
+    }
+
     QQuickItem* tabSelectorPanel = qobject_cast<QQuickItem*>(
         qView->rootObject()->findChild<QObject*>("tabSelectorPanel"));
 
@@ -310,4 +326,14 @@ void ViewHandler::selectPanel(QString dbName)
 
     QSettings settings;
     settings.setValue(conf::Databases::currentPanel, dbName);
+}
+
+void ViewHandler::openDbConfig()
+{
+    QObject* confDbConnDialog = qView->rootObject()->
+        findChild<QObject*>("configureDbConnectionDialog");
+    if (!confDbConnDialog)
+        throw std::runtime_error("No configureDbConnectionDialog object found");
+
+    dbBack.configureDbConnection(confDbConnDialog, /*passMan.isEncryptionReady()*/ false);
 }

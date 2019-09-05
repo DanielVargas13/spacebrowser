@@ -43,7 +43,7 @@ Item {
             Item
             {
                 id: tabSelectorWrapper
-                
+
                 anchors.left: parent.left
                 anchors.top: parent.top
                 anchors.right: parent.right
@@ -100,7 +100,7 @@ Item {
             // and will be accessible from WebViewComponent.qml
             return tabSelector.createTab()
         }
-        
+
     }
 
     function setModel(model)
@@ -130,5 +130,10 @@ Item {
             scrollToBottom()
         else
             scrollView.contentItem.contentY = itemPosition - scrollView.contentItem.height / 2
+    }
+
+    function getCurrentPanel()
+    {
+        return panelSelector.getCurrentPanel()
     }
 }

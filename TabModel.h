@@ -28,25 +28,31 @@ public:
 public slots:
     /**
      * Create new QML WebEngineView object
+     * @param dbName name of database backend
      * @param parent optional id of parent tab
      * @param select if true, newly created tab will be selected
      * @param scroll if true, tabSelector will be repositioned, to show new tab
      * @return id of the newly created tab
      */
+    void createTab(QString _dbName, int parent = 0, bool select = false, bool scroll = false);
     int createTab(int parent = 0, bool select = false, bool scroll = false);
 
     /**
      * Removes tab entry from the database, destructs associated WebEngineView object,
      * fixes tab hierarchy and indentation. If the last tab is closed it automatically
      * creates new empty tab (call to createTab(0) )
+     * @param dbName name of db backend
      * @param viewId id of tab to be closed
      */
+    void closeTab(QString _dbName, int viewId);
     void closeTab(int viewId);
 
     /**
      * Sets the selected view as currently visible
+     * @param dbName name of db backend
      * @param viewId viewId id of tab / view
      */
+    void viewSelected(QString _dbName, int viewId);
     void viewSelected(int viewId);
 
     /**
@@ -72,12 +78,16 @@ public slots:
 
     /**
      * Switch to next tab
+     * @param dbName name of db backend
      */
+    void nextTab(QString _dbName);
     void nextTab();
 
     /**
      * Switcth to previous tab
+     * @param dbName name of db backend
      */
+    void prevTab(QString _dbName);
     void prevTab();
 
     /**
@@ -123,7 +133,7 @@ private:
 // FIXME: not sure if QQuickItems belong here
     QQuickItem* webViewContainer;             /// Pointer to WebViewContainer QML object
     QQuickItem* tabSelector;                  /// Pointer to TabSelector QML object
-    QQuickItem* tabSelectorPanel;             /// Pointer to TabSelectorPanel QML object 
+    QQuickItem* tabSelectorPanel;             /// Pointer to TabSelectorPanel QML object
 
 #else
 #endif

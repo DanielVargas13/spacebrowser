@@ -1,3 +1,4 @@
+import QtQml 2.12
 import QtQuick 2.7
 import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.11
@@ -23,6 +24,7 @@ Dialog
         encCheckBox.enabled = encReady
         root.dbData = dbData
         root.drivers = drivers
+        root.clearDialog()
         root.open()
     }
 
@@ -34,10 +36,11 @@ Dialog
         root.open()
     }
 
+    signal clearDialog()
     signal dbConfigured(var connData)
 
     onAccepted: {
-        var id = connNameCombo.currentId
+        var id = connNameCombo.currentIndex
         var item = connListModel.get(id)
 
         dbConfigured({
@@ -47,7 +50,8 @@ Dialog
             dbName: item.dbName,
             username: item.username,
             password: item.password,
-            isEncrypted: item.isEncrypted
+            isEncrypted: item.isEncrypted,
+            schemaName: item.schemaName
         })
     }
 
@@ -82,15 +86,13 @@ Dialog
                     {
                         connListModel.append({connName: connNameCombo.editText,
                                               driverType: driverTypeCombo.currentText,
-                                              hostname: "",
-                                              dbName: "",
-                                              username: "",
-                                              password: "",
-                                              isEncrypted: false})
-                        hostnameField.text = ""
-                        dbNameField.text = ""
-                        usernameField.text = ""
-                        passwordField.text = ""
+                                              hostname: hostnameField.text,
+                                              dbName: dbNameField.text,
+                                              schemaName: schemaNameField.text,
+                                              username: usernameField.text,
+                                              password: passwordField.text,
+                                              isEncrypted: encCheckBox.checked})
+                        connNameCombo.currentIndex = connListModel.count - 1
                     }
                 }
                 onActivated: {
@@ -109,6 +111,11 @@ Dialog
                         dbNameField.text = connListModel.get(id).dbName
                     else
                         dbNameField.text = ""
+
+                    if (currentItem.schemaName)
+                        schemaNameField.text = connListModel.get(id).schemaName
+                    else
+                        schemaNameField.text = ""
 
                     if (currentItem.username)
                         usernameField.text = connListModel.get(id).username
@@ -136,6 +143,14 @@ Dialog
                     connListModel.get(connNameCombo.currentIndex).driverType
                         = driverTypeCombo.currentText
                 }
+                Connections
+                {
+                    target: root
+                    onClearDialog:
+                    {
+                        driverTypeCombo.currentIndex = -1
+                    }
+                }
             }
 
             Label {
@@ -149,6 +164,14 @@ Dialog
                     if (hostnameField.text) {
                         connListModel.get(connNameCombo.currentIndex).hostname
                             = hostnameField.text
+                    }
+                }
+                Connections
+                {
+                    target: root
+                    onClearDialog:
+                    {
+                        hostnameField.text = ""
                     }
                 }
             }
@@ -166,6 +189,37 @@ Dialog
                             = dbNameField.text
                     }
                 }
+                Connections
+                {
+                    target: root
+                    onClearDialog:
+                    {
+                        dbNameField.text = ""
+                    }
+                }
+            }
+
+            Label {
+                text: "Schema name:"
+            }
+            TextField {
+                id: schemaNameField
+                Layout.fillWidth: true
+                enabled: connListModel.count != 0
+                onEditingFinished: {
+                    if (schemaNameField.text) {
+                        connListModel.get(connNameCombo.currentIndex).schemaName
+                            = schemaNameField.text
+                    }
+                }
+                Connections
+                {
+                    target: root
+                    onClearDialog:
+                    {
+                        schemaNameField.text = ""
+                    }
+                }
             }
 
             Label {
@@ -179,6 +233,14 @@ Dialog
                     if (usernameField.text) {
                         connListModel.get(connNameCombo.currentIndex).username
                             = usernameField.text
+                    }
+                }
+                Connections
+                {
+                    target: root
+                    onClearDialog:
+                    {
+                        usernameField.text = ""
                     }
                 }
             }
@@ -197,6 +259,14 @@ Dialog
                             = passwordField.text
                     }
                 }
+                Connections
+                {
+                    target: root
+                    onClearDialog:
+                    {
+                        passwordField.text = ""
+                    }
+                }
             }
 
             Label {
@@ -209,6 +279,15 @@ Dialog
                     connListModel.get(connNameCombo.currentIndex).isEncrypted
                         = checked
                 }
+                Connections
+                {
+                    target: root
+                    onClearDialog:
+                    {
+                        if (encCheckBox.enabled)
+                            checked = false
+                    }
+                }
             }
 
             Label {
@@ -220,6 +299,15 @@ Dialog
                 visible: contentLayout.showError
                 wrapMode: Text.Wrap
                 Layout.fillWidth: true
+
+                Connections
+                {
+                    target: root
+                    onClearDialog:
+                    {
+                        errorLabel.text = false
+                    }
+                }
             }
         }
     }

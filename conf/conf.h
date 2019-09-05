@@ -25,6 +25,7 @@ constexpr const char* username = "username";
 constexpr const char* password = "password";
 constexpr const char* isEncrypted = "isEncrypted";
 constexpr const char* connIcon = "connIcon";
+constexpr const char* schemaName = "schemaName";
 }
 }
 

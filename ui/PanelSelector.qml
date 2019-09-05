@@ -55,7 +55,8 @@ ScrollView
 
                 onClicked:
                 {
-                    panelList.currentIndex = index
+                    if (index < model.rowCount - 1)
+                        panelList.currentIndex = index
                     panelSelected(model.display)
                 }
             }
@@ -80,5 +81,13 @@ ScrollView
             if (data == dbName)
                 panelList.currentIndex = i
         }
+    }
+
+    function getCurrentPanel()
+    {
+        var index = panelList.model.index(panelList.currentIndex, 0)
+        var data = panelList.model.data(index)
+
+        return data
     }
 }

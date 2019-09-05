@@ -9,6 +9,7 @@ class ViewHandler_test;
 #endif
 
 #include <BasicDownloader.h>
+#include <db/Backend.h>
 #include <TabModel.h>
 #include <TreeToListProxyModel.h>
 
@@ -40,8 +41,9 @@ public:
     /**
      * Creates ViewHandler object
      * @param _qView shared pointer to the main window QQuickView object
+     * @param _dbBack reference to database backend object
      */
-    ViewHandler(std::shared_ptr<QQuickView> _qView);
+    ViewHandler(std::shared_ptr<QQuickView> _qView, db::Backend& _dbBack);
 
     virtual ~ViewHandler();
 
@@ -53,6 +55,11 @@ public slots:
      * new database connection is established, or some connection was lost.
      */
     bool init();
+
+    /**
+     * Show database configuration dialog
+     */
+    void openDbConfig();
 
     /**
      * Show view allowing modification of script blocking rules for site opened
@@ -72,7 +79,7 @@ public slots:
      * Creates DbGroup, tab models and adds new panel
      * @param dbName name of database backend
      */
-    void dbConnected(QString dbName);
+    void dbConnected(QString dbName, QString schemaName);
 
     /**
      * Select panel by name of database backend
@@ -84,6 +91,7 @@ public slots:
     void historyUpdated(int _viewId, QQuickWebEngineHistory* navHistory);
 
 private:
+    const QString addDbText = "Add DB";
 #ifndef TEST_BUILD
     QQuickItem* scriptBlockingView;      /// Pointer to ScriptBlockingView QML object
     QQuickItem* webViewContainer;        /// Pointer to WebViewContainer QML object
@@ -98,7 +106,7 @@ private:
 #endif
 
     std::shared_ptr<QQuickView> qView;                       /// Smart pointer to main window object
-
+    db::Backend& dbBack;                                     /// Reference to database backend object
     std::map<QString, std::shared_ptr<TabModel>> tabsModels; /// Tree model for holding tab related data
                                                              /// (no TreeView yet available)
     std::map<QString, std::shared_ptr<QQuickWebEngineProfile>> webProfiles;/// Each db backend needs separate

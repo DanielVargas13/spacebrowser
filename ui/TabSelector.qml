@@ -8,8 +8,8 @@ TabView
 {
     id: root
 
-    signal viewSelected(int viewId)
-    signal closeTab(int viewId)
+    signal viewSelected(string dbName, int viewId)
+    signal closeTab(string dbName, int viewId)
     signal openScriptBlockingView(string dbName, int viewId)
 
     //height: Style.tabSelector.entry.height * visualModel.count
@@ -32,13 +32,13 @@ TabView
             anchors.leftMargin: (model.indent+1) * Style.margin
 
             onClose: {
-                root.closeTab(viewId)
+                root.closeTab(dbName, viewId)
             }
 
             onSelected: {
                 console.log("selected: " + index + " viewId: " + viewId)
                 tabSelectorView.currentIndex = index
-                root.viewSelected(viewId)
+                root.viewSelected(dbName, viewId)
             }
             Component.onCompleted: {
 //                console.log("------------------------------------------_")

@@ -12,11 +12,11 @@ Rectangle
 
     property bool isFullscreen: false
 
-    signal createTab(int parent, bool select, bool scroll)
-    signal closeTab(int viewId)
+    signal createTab(string dbName, int parent, bool select, bool scroll)
+    signal closeTab(string dbName, int viewId)
     signal loadSucceeded(var webView)
-    signal nextTab()
-    signal prevTab()
+    signal nextTab(string dbName)
+    signal prevTab(string dbName)
     signal printRequest(var webView)
     signal savePasswordAccepted(string url, bool accepted)
     signal showFullscreen(bool toggleOn)
@@ -122,7 +122,7 @@ Rectangle
 
         onNewTabRequested:
         {
-            mainWindow.createTab(0, true, true)
+            mainWindow.createTab(tabSelectorPanel.getCurrentPanel(), 0, true, true)
             addressBar.focus = true
         }
     }
@@ -218,11 +218,11 @@ Rectangle
 
     Shortcut {
         sequence: "Ctrl+Tab"
-        onActivated: nextTab();
+        onActivated: nextTab(tabSelectorPanel.getCurrentPanel());
     }
     Shortcut {
         sequence: "Ctrl+Shift+Tab"
-        onActivated: prevTab();
+        onActivated: prevTab(tabSelectorPanel.getCurrentPanel());
     }
     Shortcut {
         sequence: StandardKey.ZoomIn//"Ctrl++"
@@ -239,14 +239,14 @@ Rectangle
     Shortcut {
         sequence: "Ctrl+t"
         onActivated: {
-            mainWindow.createTab(0, true, true)
+            mainWindow.createTab(tabSelectorPanel.getCurrentPanel(), 0, true, true)
             addressBar.focus = true
         }
     }
     Shortcut {
         sequence: "Ctrl+w"
         onActivated: {
-            closeTab(webViewContainer.currentView.myViewId)
+            closeTab(tabSelectorPanel.getCurrentPanel(), webViewContainer.currentView.myViewId)
         }
     }
     Shortcut { // test shorcut
@@ -306,6 +306,9 @@ Rectangle
         onActivated: {
             if (findBar.visible) {
                 findBar.searchBackward()
+            }
+            else {
+                mainWindow.printRequest(webViewContainer.currentView)
             }
         }
     }

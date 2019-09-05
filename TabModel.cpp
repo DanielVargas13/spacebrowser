@@ -13,26 +13,26 @@ TabModel::TabModel(std::shared_ptr<QQuickView> _qView, QString _dbName,
     dbName(_dbName), webProfile(_webProfile)
 {
 #ifndef TEST_BUILD
-    QObject::connect(qView->rootObject(), SIGNAL(createTab(int, bool, bool)),
-                     this, SLOT(createTab(int, bool, bool)));
-    QObject::connect(qView->rootObject(), SIGNAL(closeTab(int)),
-                     this, SLOT(closeTab(int)));
-    QObject::connect(qView->rootObject(), SIGNAL(nextTab()),
-                     this, SLOT(nextTab()));
-    QObject::connect(qView->rootObject(), SIGNAL(prevTab()),
-                     this, SLOT(prevTab()));
+    QObject::connect(qView->rootObject(), SIGNAL(createTab(QString, int, bool, bool)),
+                     this, SLOT(createTab(QString, int, bool, bool)));
+    QObject::connect(qView->rootObject(), SIGNAL(closeTab(QString, int)),
+                     this, SLOT(closeTab(QString, int)));
+    QObject::connect(qView->rootObject(), SIGNAL(nextTab(QString)),
+                     this, SLOT(nextTab(QString)));
+    QObject::connect(qView->rootObject(), SIGNAL(prevTab(QString)),
+                     this, SLOT(prevTab(QString)));
 
     webViewContainer = qobject_cast<QQuickItem*>(
         qView->rootObject()->findChild<QObject*>("webViewContainer"));
     if (!webViewContainer)
         throw std::runtime_error("No webViewContainer object found");
 
-    QObject::connect(webViewContainer, SIGNAL(titleChanged(int, QString)),
-                     this, SLOT(titleChanged(int, QString)));
-    QObject::connect(webViewContainer, SIGNAL(iconChanged(int, QString)),
-                     this, SLOT(iconChanged(int, QString)));
-    QObject::connect(webViewContainer, SIGNAL(urlChanged(int, QString)),
-                     this, SLOT(urlChanged(int, QString)));
+//    QObject::connect(webViewContainer, SIGNAL(titleChanged(int, QString)),
+//                     this, SLOT(titleChanged(int, QString)));
+//    QObject::connect(webViewContainer, SIGNAL(iconChanged(int, QString)),
+//                     this, SLOT(iconChanged(int, QString)));
+//    QObject::connect(webViewContainer, SIGNAL(urlChanged(int, QString)),
+//                     this, SLOT(urlChanged(int, QString)));
 
     tabSelector = qobject_cast<QQuickItem*>(
         qView->rootObject()->findChild<QObject*>("tabSelector"));
@@ -46,8 +46,8 @@ TabModel::TabModel(std::shared_ptr<QQuickView> _qView, QString _dbName,
         throw std::runtime_error("No tabSelectorPanel object found");
 
     // FIXME: multiple tab selectors for multiple db backends
-    QObject::connect(tabSelector, SIGNAL(viewSelected(int)), this, SLOT(viewSelected(int)));
-    QObject::connect(tabSelector, SIGNAL(closeTab(int)), this, SLOT(closeTab(int)));
+    QObject::connect(tabSelector, SIGNAL(viewSelected(QString, int)), this, SLOT(viewSelected(QString, int)));
+    QObject::connect(tabSelector, SIGNAL(closeTab(QString, int)), this, SLOT(closeTab(QString, int)));
 
 #else
 #endif
@@ -56,6 +56,12 @@ TabModel::TabModel(std::shared_ptr<QQuickView> _qView, QString _dbName,
 TabModel::~TabModel()
 {
 
+}
+
+void TabModel::createTab(QString _dbName, int parent, bool select, bool scroll)
+{
+    if (_dbName == dbName)
+        createTab(parent, select, scroll);
 }
 
 int TabModel::createTab(int parent, bool select, bool scroll)
@@ -72,12 +78,21 @@ int TabModel::createTab(int parent, bool select, bool scroll)
     dbg->tabs.setParent(viewId, parent);
 
     QMetaObject::invokeMethod(webViewContainer, "createViewObject",
-        Q_RETURN_ARG(QVariant, newView),
-        Q_ARG(QVariant, viewId));
+                              Q_RETURN_ARG(QVariant, newView),
+                              Q_ARG(QVariant, viewId));
 
-    QObject* v = qvariant_cast<QObject *>(newView);
+    QObject* v = qvariant_cast<QObject *>(newView);  // newView / v is WebViewComponent
     v->setProperty("tabModel", QVariant::fromValue<QObject*>(this));
     v->setProperty("profile", QVariant::fromValue<QObject*>(webProfile.get()));
+    v->setProperty("dbName", dbName);
+
+    QObject::connect(v, SIGNAL(updateTitle(int, QString)),
+                     this, SLOT(titleChanged(int, QString)));
+    QObject::connect(v, SIGNAL(updateIcon(int, QString)),
+                     this, SLOT(iconChanged(int, QString)));
+    QObject::connect(v, SIGNAL(updateUrl(int, QString)),
+                     this, SLOT(urlChanged(int, QString)));
+
 
     struct viewData& vd = views2[viewId];
 
@@ -110,10 +125,10 @@ int TabModel::createTab(int parent, bool select, bool scroll)
     vd.tabData->setView(newView);
 
     qCDebug(tabModelLog, "Tab created: %i", viewId);
-    
+
     if (select)
         selectTab(viewId);
-    
+
     if (scroll)
     {
         QMetaObject::invokeMethod(tabSelectorPanel, "scrollToCurrent",
@@ -121,6 +136,12 @@ int TabModel::createTab(int parent, bool select, bool scroll)
     }
 
     return viewId;
+}
+
+void TabModel::closeTab(QString _dbName, int viewId)
+{
+    if (_dbName == dbName)
+        closeTab(viewId);
 }
 
 void TabModel::closeTab(int viewId)
@@ -178,7 +199,7 @@ void TabModel::closeTab(int viewId)
     ///
     if (views2.empty())
         viewSelected(createTab());
-    /// or select 
+    /// or select
     else if (dbg->config.getProperty("currentTab").toInt() == viewId)
     {
         Tab* item;
@@ -193,7 +214,7 @@ void TabModel::closeTab(int viewId)
 
         selectTab(item->getId());
         QMetaObject::invokeMethod(tabSelectorPanel, "scrollToCurrent",
-                                  Qt::ConnectionType::QueuedConnection);        
+                                  Qt::ConnectionType::QueuedConnection);
     }
 }
 
@@ -204,10 +225,14 @@ QVariant TabModel::getView(int viewId)
     return views2.at(viewId).tabData->getView();
 }
 
+void TabModel::viewSelected(QString _dbName, int viewId)
+{
+    if (dbName == _dbName)
+        viewSelected(viewId);
+}
+
 void TabModel::viewSelected(int viewId)
 {
-    qCDebug(tabModelLog, "Selecting tab: %i", viewId);
-
     std::lock_guard<std::recursive_mutex> lock(views2Mutex);
     struct viewData& vd = views2[viewId];
 
@@ -226,6 +251,14 @@ void TabModel::viewSelected(int viewId)
         v->setProperty("targetUrl", td->getUrl());
         v->setProperty("tabModel", QVariant::fromValue<QObject*>(this));
         v->setProperty("profile", QVariant::fromValue<QObject*>(webProfile.get()));
+        v->setProperty("dbName", dbName);
+
+        QObject::connect(v, SIGNAL(updateTitle(int, QString)),
+                         this, SLOT(titleChanged(int, QString)));
+        QObject::connect(v, SIGNAL(updateIcon(int, QString)),
+                         this, SLOT(iconChanged(int, QString)));
+        QObject::connect(v, SIGNAL(updateUrl(int, QString)),
+                         this, SLOT(urlChanged(int, QString)));
 
         vd.tabData->setView(newView);
     }
@@ -356,6 +389,12 @@ void TabModel::selectCurrentTab()
                               Qt::ConnectionType::QueuedConnection);
 }
 
+void TabModel::nextTab(QString _dbName)
+{
+    if (_dbName == dbName)
+        nextTab();
+}
+
 void TabModel::nextTab()
 {
     auto dbg = db::DbGroup::getGroup(dbName);
@@ -378,6 +417,12 @@ void TabModel::nextTab()
 
         selectTab(nextTab->getId());
     }
+}
+
+void TabModel::prevTab(QString _dbName)
+{
+    if (_dbName == dbName)
+        prevTab();
 }
 
 void TabModel::prevTab()

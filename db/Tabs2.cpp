@@ -137,7 +137,7 @@ std::map<int, Tabs2::TabInfo> Tabs2::getAllTabsMap()
                                   "FROM %1.%2 ORDER BY id")
                           .arg(dbClient.getSchemaName())
                           .arg(tableName));
-            
+
             if (!query.exec())
             {
                 qCCritical(dbLogs, "(dbName=%s): failed to fetch tabs",
@@ -236,14 +236,14 @@ void Tabs2::setTitle(int tabId, QString title)
         [this, tabId, title]()->Backend::funRet_t
         {
             QSqlQuery query(QSqlDatabase::database(dbClient.getDbName()));
-            
+
             query.prepare(QString("UPDATE %1.%2 "
                                   "SET title=:title WHERE id = :tab_id")
                           .arg(dbClient.getSchemaName())
                           .arg(tableName));
             query.bindValue(":tab_id", tabId);
             query.bindValue(":title", title);
-            
+
             if (!query.exec())
             {
                 qCCritical(dbLogs, "(dbName=%s, tabId=%i, title=%s): "
@@ -264,7 +264,7 @@ void Tabs2::setIcon(int tabId, QString icon)
         [this, tabId, icon]()->Backend::funRet_t
         {
             QSqlQuery query(QSqlDatabase::database(dbClient.getDbName()));
-            
+
             query.prepare(QString("UPDATE %1.%2 "
                                   "SET icon=:icon WHERE id = :tab_id")
                           .arg(dbClient.getSchemaName())
