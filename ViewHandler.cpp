@@ -12,7 +12,8 @@
 #endif
 
 #include <QAbstractListModel>
-#include <QGuiApplication>
+#include <QFileDialog>
+#include <QApplication>
 #include <QIcon>
 #include <QJSEngine>
 #include <QJSValue>
@@ -20,6 +21,7 @@
 #include <QSettings>
 #include <QSqlDatabase>
 #include <QStandardItem>
+#include <QStandardPaths>
 
 //#include <QtWebEngine/5.9.1/QtWebEngine/private/qquickwebenginehistory_p.h>
 
@@ -41,6 +43,17 @@ ViewHandler::ViewHandler(std::shared_ptr<QQuickView> _qView, db::Backend& _dbBac
         qView->rootObject()->findChild<QObject*>("scriptBlockingView"));
     if (!scriptBlockingView)
         throw std::runtime_error("No scriptBlockingView object found");
+
+    QObject* confDbConnDialog = qView->rootObject()->
+        findChild<QObject*>("configureDbConnectionDialog");
+    if (!confDbConnDialog)
+        throw std::runtime_error("No configureDbConnectionDialog object found");
+
+    QObject::connect(confDbConnDialog, SIGNAL(selectIcon()),
+                     this, SLOT(iconRequestedDialog()));
+    QObject::connect(this, SIGNAL(iconSelected(QVariant)),
+                     confDbConnDialog, SLOT(iconSelected(QVariant)));
+
 #else
     webViewContainer = new QQuickItem_mock();
     tabSelector = new QQuickItem_mock();
@@ -70,9 +83,11 @@ bool ViewHandler::init()
 
     QObject::connect(panelSelector, SIGNAL(panelSelected(QString)),
                      this, SLOT(selectPanel(QString)));
+    QObject::connect(&dbBack, SIGNAL(iconUpdated(QString, QString)),
+                     this, SLOT(updatePanelIcon(QString, QString)));
 
     QStandardItem* item = new QStandardItem(addDbText);
-    item->setToolTip("qrc://ui/icons/plus.svg"); /// FIXME: this should be proper role in the model
+    item->setToolTip("qrc:/ui/icons/plus_line.svg"); /// FIXME: this should be proper role in the model
     panelModel.appendRow(item);
 
     return true;
@@ -321,7 +336,7 @@ void ViewHandler::selectPanel(QString dbName)
                               Qt::ConnectionType::QueuedConnection,
                               Q_ARG(QVariant, dbName));
 
-    QGuiApplication::processEvents();
+    QApplication::processEvents();
     tabsModel->selectCurrentTab();
 
     QSettings settings;
@@ -336,4 +351,38 @@ void ViewHandler::openDbConfig()
         throw std::runtime_error("No configureDbConnectionDialog object found");
 
     dbBack.configureDbConnection(confDbConnDialog, /*passMan.isEncryptionReady()*/ false);
+}
+
+void ViewHandler::iconRequestedDialog()
+{
+    /// Set-up and show QFileDialog
+    ///
+    QFileDialog qfd;
+    qfd.setFileMode(QFileDialog::ExistingFile);
+    qfd.setAcceptMode(QFileDialog::AcceptOpen);
+    qfd.setNameFilter("Image files (*.png *.xpm *.jpg *.svg *.ico)");
+
+//    qfd.selectFile(QStandardPaths::writableLocation(QStandardPaths::HomeLocation));
+
+    bool accepted = qfd.exec() == QDialog::Accepted;
+
+    /// Set target path and filename for the accepted download
+    ///
+    if (accepted)
+    {
+        emit iconSelected("file://" + qfd.selectedFiles().first());
+    }
+
+}
+
+void ViewHandler::updatePanelIcon(QString dbName, QString iconPath)
+{
+    for (int i = 0; i < panelModel.rowCount(); ++i)
+    {
+        QModelIndex index = panelModel.index(i, 0);
+        if (index.data(Qt::DisplayRole).toString() != dbName)
+            continue;
+
+        panelModel.setData(index, iconPath, Qt::ToolTipRole);
+    }
 }

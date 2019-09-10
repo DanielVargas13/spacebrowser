@@ -13,7 +13,6 @@ class ViewHandler_test;
 #include <TabModel.h>
 #include <TreeToListProxyModel.h>
 
-#include <QGuiApplication>
 #include <QLoggingCategory>
 #include <QObject>
 #include <QQuickItem>
@@ -87,8 +86,25 @@ public slots:
      */
     void selectPanel(QString dbName);
 
+    /**
+     * Updates icon displayed on panel selection button
+     * @param dbName name of database backend
+     * @param iconPath path to the icon file
+     */
+    void updatePanelIcon(QString dbName, QString iconPath);
+    /**
+     * Opens icon selection dialog. Emits iconSelected signal when accepted.
+     */
+    void iconRequestedDialog();
+
     // deprecated, does not work
     void historyUpdated(int _viewId, QQuickWebEngineHistory* navHistory);
+
+signals:
+    /**
+     * Emitted after icon is selected through iconRequestDialog()
+     */
+    void iconSelected(QVariant icon);
 
 private:
     const QString addDbText = "Add DB";

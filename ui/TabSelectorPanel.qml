@@ -90,14 +90,8 @@ Item {
             tabSelector.createNewTab(obj, insertAfter)
         }
 
-//        function setModel(model)
-//        {
-//            tabSelector.setModel(model)
-//        }
-
         function createTab()
-        {// FIXME: this is better than signal, easier to decide on which tabSelector to call it
-            // and will be accessible from WebViewComponent.qml
+        {
             return tabSelector.createTab()
         }
 

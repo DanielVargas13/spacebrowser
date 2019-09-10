@@ -74,6 +74,8 @@ void Backend::configureDbConnection(QObject* dialog, bool encReady)
         QVariant schemaName = settings.value(conf::Databases::array::schemaName);
         QVariant username = settings.value(conf::Databases::array::username);
         QVariant isEncrypted = settings.value(conf::Databases::array::isEncrypted);
+        QVariant connIcon = settings.value(conf::Databases::array::connIcon);
+        QVariant port = settings.value(conf::Databases::array::port);
 
         QJsonObject obj;
         obj.insert(conf::Databases::array::connName, connName.toString());
@@ -84,6 +86,8 @@ void Backend::configureDbConnection(QObject* dialog, bool encReady)
         obj.insert(conf::Databases::array::username, username.toString());
         obj.insert(conf::Databases::array::password, "");
         obj.insert(conf::Databases::array::isEncrypted, isEncrypted.toBool());
+        obj.insert(conf::Databases::array::connIcon, connIcon.toString());
+        obj.insert(conf::Databases::array::port, port.toInt());
 
         dbData.append(obj);
     }
@@ -110,47 +114,40 @@ void Backend::dbConfigured(QVariant connData)
     QVariantMap cd = qvariant_cast<QVariantMap>(
         qvariant_cast<QJSValue>(connData).toVariant());
 
-    QString connName = cd.value(conf::Databases::array::connName).toString();
-    QString driverType = cd.value(conf::Databases::array::driverType).toString();
-//    QSqlDatabase db = QSqlDatabase::addDatabase(driverType, connName);
-
-    QString hostname = cd.value(conf::Databases::array::hostname).toString();
-    QString dbName = cd.value(conf::Databases::array::dbName).toString();
-    QString schemaName = cd.value(conf::Databases::array::schemaName).toString();
-    QString username = cd.value(conf::Databases::array::username).toString();
-    QString password = cd.value(conf::Databases::array::password).toString();
-    bool isEncrypted = cd.value(conf::Databases::array::isEncrypted).toBool();
-
-//    db.setHostName(hostname);
-//    db.setDatabaseName(dbName);
-//    db.setUserName(username);
-//    db.setPassword(password);
-
     struct connData_t newEntry;
-    newEntry.connName = connName;
-    newEntry.driverType = driverType;
-    newEntry.hostname = hostname;
-    newEntry.dbName = dbName;
-    newEntry.schemaName = schemaName;
-    newEntry.username = username;
+    newEntry.connName = cd.value(conf::Databases::array::connName).toString();
+    newEntry.driverType = cd.value(conf::Databases::array::driverType).toString();
+    newEntry.hostname = cd.value(conf::Databases::array::hostname).toString();
+    newEntry.dbName = cd.value(conf::Databases::array::dbName).toString();
+    newEntry.schemaName = cd.value(conf::Databases::array::schemaName).toString();
+    newEntry.username = cd.value(conf::Databases::array::username).toString();
+    newEntry.isEncrypted = cd.value(conf::Databases::array::isEncrypted).toBool();
+    newEntry.password = cd.value(conf::Databases::array::password).toString();
+    newEntry.connIcon = cd.value(conf::Databases::array::connIcon).toString();
+    newEntry.port = cd.value(conf::Databases::array::port).toUInt();
 
-    if (isEncrypted) {
+    if (newEntry.isEncrypted) {
         // FIXME: encrypt
         // refactor PasswordManager, extract encryption to
         // EncryptionManager or sth.
         qCDebug(dbLogs) << "Encryption requested";
     }
-    else
-        newEntry.password = password;
 
     QSettings settings;
     auto connections = readAllConnectionEntries(settings);
+    struct connData_t oldEntry = newEntry;
+    bool shouldConnect = false;
 
     connections.erase(std::remove_if(connections.begin(), connections.end(),
-            [&connName](const struct connData_t& e)
+        [&newEntry, &oldEntry, &shouldConnect](const struct connData_t& e)
             {
-                if (e.connName == connName)
+                if (e.connName == newEntry.connName)
+                {
+                    qCDebug(dbLogs, "Found entry to be replaced");
+                    oldEntry = e;
+                    shouldConnect = true;
                     return true;
+                }
 
                 return false;
             }), connections.end());
@@ -158,12 +155,28 @@ void Backend::dbConfigured(QVariant connData)
     connections.push_back(newEntry);
     writeAllConnectionEntries(settings, connections);
 
-    performQuery(
-        [newEntry, this]()->funRet_t
+
+    shouldConnect = Backend::shouldReconnect(oldEntry, newEntry);
+
+    if (shouldConnect)
+    {
+        // FIXME: if connection already exists it should be disconnected and removed first
+        performQuery(
+            [newEntry, this]()->funRet_t
+            {
+                connectDb(newEntry);
+                return true;
+            });
+    }
+    else
+    {
+        if (oldEntry.connIcon != newEntry.connIcon)
         {
-            connectDb(newEntry);
-            return true;
-        });
+            qCDebug(dbLogs, "emitting iconUpdated");
+            emit iconUpdated(newEntry.connName, newEntry.connIcon);
+        }
+    }
+
 }
 
 bool Backend::connectDatabases()
@@ -251,15 +264,21 @@ void Backend::connectDb(const struct connData_t& cd)
     if (!cd.username.isEmpty())
         db.setUserName(cd.username);
 
-    if (cd.isEncrypted)
+    if (!cd.password.isEmpty())
     {
-        QString decrypted;
-        // FIXME: decrypt
+        if (cd.isEncrypted)
+        {
+            QString decrypted;
+            // FIXME: decrypt
 
-        db.setPassword(decrypted);
+            db.setPassword(decrypted);
+        }
+        else
+            db.setPassword(cd.password);
     }
-    else
-        db.setPassword(cd.password);
+
+    if (cd.port != 0)
+        db.setPort(cd.port);
 
     qCDebug(dbLogs) << "Connecting to: "
                     << cd.connName.toStdString().c_str();
@@ -283,6 +302,7 @@ void Backend::writeConnectionEntry(QSettings& settings,
     settings.setValue(conf::Databases::array::isEncrypted, connData.isEncrypted);
     settings.setValue(conf::Databases::array::connIcon, connData.connIcon);
     settings.setValue(conf::Databases::array::schemaName, connData.schemaName);
+    settings.setValue(conf::Databases::array::port, connData.port);
 }
 
 struct Backend::connData_t Backend::readConnectionEntry(QSettings& settings)
@@ -298,6 +318,7 @@ struct Backend::connData_t Backend::readConnectionEntry(QSettings& settings)
     QVariant password = settings.value(conf::Databases::array::password);
     QVariant isEncrypted = settings.value(conf::Databases::array::isEncrypted);
     QVariant connIcon = settings.value(conf::Databases::array::connIcon);
+    QVariant port = settings.value(conf::Databases::array::port);
 
     if (connName.isValid())
         result.connName = connName.toString();
@@ -317,6 +338,8 @@ struct Backend::connData_t Backend::readConnectionEntry(QSettings& settings)
         result.isEncrypted = isEncrypted.toBool();
     if (connIcon.isValid())
         result.connIcon = connIcon.toString();
+    if (port.isValid())
+        result.port = port.toInt();
 
     return result;
 }
@@ -352,6 +375,18 @@ void Backend::writeAllConnectionEntries(QSettings& settings,
     }
 
     settings.endArray();
+}
+
+bool Backend::shouldReconnect(const struct connData_t& oldConn, const struct connData_t& newConn)
+{
+    if ((oldConn.dbName != newConn.dbName) ||
+        (oldConn.driverType != newConn.driverType) ||
+        (oldConn.hostname != newConn.hostname) ||
+        (oldConn.schemaName != newConn.schemaName) ||
+        (oldConn.username != newConn.username))
+        return true;
+
+    return false;
 }
 
 }

@@ -36,8 +36,14 @@ Dialog
         root.open()
     }
 
+    function iconSelected(icon)
+    {
+        iconView.source = icon
+    }
+
     signal clearDialog()
     signal dbConfigured(var connData)
+    signal selectIcon()
 
     onAccepted: {
         var id = connNameCombo.currentIndex
@@ -51,7 +57,9 @@ Dialog
             username: item.username,
             password: item.password,
             isEncrypted: item.isEncrypted,
-            schemaName: item.schemaName
+            schemaName: item.schemaName,
+            connIcon: item.connIcon,
+            port: item.port
         })
     }
 
@@ -91,6 +99,7 @@ Dialog
                                               schemaName: schemaNameField.text,
                                               username: usernameField.text,
                                               password: passwordField.text,
+                                              port: parseInt(portField.text),
                                               isEncrypted: encCheckBox.checked})
                         connNameCombo.currentIndex = connListModel.count - 1
                     }
@@ -126,6 +135,11 @@ Dialog
                         passwordField.text = connListModel.get(id).password
                     else
                         passwordField.text = ""
+
+                    if (currentItem.port)
+                        portField.text = connListModel.get(id).password
+                    else
+                        portField.text = ""
 
                     encCheckBox.checked = connListModel.get(id).isEncrypted
                 }
@@ -252,6 +266,7 @@ Dialog
                 id: passwordField
                 Layout.fillWidth: true
                 echoMode: TextInput.Password
+                inputMethodHints: Qt.ImhSensitiveData
                 enabled: connListModel.count != 0
                 onEditingFinished: {
                     if (passwordField.text) {
@@ -270,10 +285,36 @@ Dialog
             }
 
             Label {
+                text: "Port:"
+            }
+            TextField {
+                id: portField
+                Layout.fillWidth: true
+                inputMethodHints: Qt.ImhDigitsOnly
+                enabled: connListModel.count != 0
+                onEditingFinished: {
+                    if (portField.text) {
+                        connListModel.get(connNameCombo.currentIndex).port
+                            = parseInt(portField.text)
+                    }
+                }
+                Connections
+                {
+                    target: root
+                    onClearDialog:
+                    {
+                        portField.text = ""
+                    }
+                }
+            }
+
+            Label {
                 text: "Encrypt password:"
             }
             CheckBox {
                 id: encCheckBox
+//                Layout.fillWidth: true
+//                Layout.alignment: Qt.AlignLeft
                 checked: false
                 onCheckStateChanged: {
                     connListModel.get(connNameCombo.currentIndex).isEncrypted
@@ -286,6 +327,32 @@ Dialog
                     {
                         if (encCheckBox.enabled)
                             checked = false
+                    }
+                }
+            }
+
+            Label {
+                text: "Panel icon:"
+            }
+            Image {
+                id: iconView
+                Layout.preferredWidth: 50
+                Layout.preferredHeight: 50
+                fillMode: Image.PreserveAspectFit
+                source: "qrc:/ui/icons/home.svg"
+
+                onSourceChanged: {
+                    connListModel.get(connNameCombo.currentIndex).connIcon
+                        = source
+                }
+
+                MouseArea
+                {
+                    anchors.fill: parent
+
+                    onClicked:
+                    {
+                        root.selectIcon()
                     }
                 }
             }
@@ -311,4 +378,6 @@ Dialog
             }
         }
     }
+
+
 }

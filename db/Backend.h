@@ -37,6 +37,7 @@ public:
         bool isEncrypted = false;
         QString connIcon;
         QString schemaName;
+        unsigned int port = 0;
     };
 
     Backend();
@@ -52,6 +53,7 @@ public:
 
 signals:
     void dbConnected(QString dbName, QString schemaName);
+    void iconUpdated(QString dbName, QString iconPath);
 
 public slots:
     void configureDbConnection(QObject* dialog, bool encReady);
@@ -62,6 +64,7 @@ public slots:
 
 
 private:
+    static bool shouldReconnect(const struct connData_t& oldConn, const struct connData_t& newConn);
     void writeConnectionEntry(QSettings& settings, const struct connData_t& connData);
     static struct connData_t readConnectionEntry(QSettings& settings);
     void writeAllConnectionEntries(QSettings& settings,

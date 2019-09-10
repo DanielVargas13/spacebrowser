@@ -33,6 +33,7 @@ ScrollView
                     anchors.topMargin: Style.margin
                     anchors.bottom: buttonText.top
                     anchors.horizontalCenter: parent.horizontalCenter
+                    width: Style.panelSelector.entry.width
 
                     fillMode: Image.PreserveAspectFit
                     source: model.toolTip
@@ -40,7 +41,7 @@ ScrollView
                 Text
                 {
                     id: buttonText
-                    height: parent.height / 4
+                    height: parent.height / 4.3
                     font.pixelSize: height
                     anchors.bottom: parent.bottom
                     anchors.bottomMargin: Style.margin
@@ -57,6 +58,7 @@ ScrollView
                 {
                     if (index < model.rowCount - 1)
                         panelList.currentIndex = index
+
                     panelSelected(model.display)
                 }
             }

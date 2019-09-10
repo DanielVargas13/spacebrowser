@@ -7,7 +7,7 @@
 #include <db/DbGroup.h>
 #include <conf/conf.h>
 
-#include <QGuiApplication>
+#include <QApplication>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QLoggingCategory>
@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
 
     /// Create and setup QApplication
     ///
-    QGuiApplication app(argc, argv);
+    QApplication app(argc, argv);
     app.setOrganizationName("SpaceFoundation");
     app.setApplicationName("SpaceBrowser");
     //FIXME: test this
