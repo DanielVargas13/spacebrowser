@@ -136,7 +136,7 @@ void Backend::dbConfigured(QVariant connData)
     QSettings settings;
     auto connections = readAllConnectionEntries(settings);
     struct connData_t oldEntry = newEntry;
-    bool shouldConnect = false;
+    bool shouldConnect = true;
 
     connections.erase(std::remove_if(connections.begin(), connections.end(),
         [&newEntry, &oldEntry, &shouldConnect](const struct connData_t& e)
@@ -145,7 +145,7 @@ void Backend::dbConfigured(QVariant connData)
                 {
                     qCDebug(dbLogs, "Found entry to be replaced");
                     oldEntry = e;
-                    shouldConnect = true;
+                    shouldConnect = Backend::shouldReconnect(oldEntry, newEntry);
                     return true;
                 }
 
@@ -154,9 +154,6 @@ void Backend::dbConfigured(QVariant connData)
 
     connections.push_back(newEntry);
     writeAllConnectionEntries(settings, connections);
-
-
-    shouldConnect = Backend::shouldReconnect(oldEntry, newEntry);
 
     if (shouldConnect)
     {
