@@ -117,18 +117,31 @@ bool DbClient::createSchemaIfNotExists()
 {
 //FIXME: test this with sqlite as it will 99% NOT WORK
 
-    QSqlQuery query = backend.performQuery(
-        dbName, "CREATE SCHEMA IF NOT EXISTS " + schemaName).get();
-    bool result = query.isActive();
+//    QSqlQuery query = backend.performQuery(
+//        dbName, "CREATE SCHEMA IF NOT EXISTS " + schemaName).get();
+    Backend::funRet_t result = backend.performQuery(
+        [this]()->Backend::funRet_t
+        {
+            QSqlQuery query(QSqlDatabase::database(dbName));
+            query.exec("CREATE SCHEMA IF NOT EXISTS " + schemaName);
 
-    if (!result)
+            bool active = query.isActive();
+
+            if (!active)
+                logError(query);
+
+            return active;
+        }).get();
+
+//    bool result = query.isActive();
+
+    if (!std::holds_alternative<bool>(result) || !std::get<bool>(result))
     {
         QString msg = QString("(dbname=%1): failed to create schema").arg(dbName);
         qCCritical(dbLogs) << msg.toStdString().c_str();
-        logError(query);
     }
 
-    return result;
+    return std::get<bool>(result);
 }
 
 void DbClient::logError(const QSqlQuery& query)

@@ -88,4 +88,8 @@ private:
 
 } /* namespace db */
 
+Q_DECLARE_METATYPE(std::vector<db::Tabs2::TabInfo>)
+typedef std::map<int, db::Tabs2::TabInfo> tabMap_t;
+Q_DECLARE_METATYPE(tabMap_t)
+
 #endif /* DB_TABS2_H_ */

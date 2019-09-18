@@ -31,6 +31,7 @@ Backend::~Backend()
     connThread.join();
 }
 
+/*
 std::future<QSqlQuery> Backend::performQuery(QString dbName, QString queryStr)
 {
     std::lock_guard<std::mutex> lock(mQueries);
@@ -43,6 +44,7 @@ std::future<QSqlQuery> Backend::performQuery(QString dbName, QString queryStr)
 
     return f;
 }
+*/
 
 std::future<Backend::funRet_t> Backend::performQuery(std::function<funRet_t()> fun)
 {
@@ -215,7 +217,7 @@ bool Backend::connectDatabases()
 
                 vquery_t& vq = queries.front();
 
-                if (std::holds_alternative<strQuery_t>(vq))
+                /*if (std::holds_alternative<strQuery_t>(vq))
                 {
                     strQuery_t& q = std::get<strQuery_t>(vq);
                     QString& dbName = std::get<0>(q);
@@ -227,7 +229,7 @@ bool Backend::connectDatabases()
                     query.exec(queryString);
                     prom.set_value(std::move(query));
                 }
-                else if (std::holds_alternative<funQuery_t>(vq))
+                else*/ if (std::holds_alternative<funQuery_t>(vq))
                 {
                     funQuery_t& q = std::get<funQuery_t>(vq);
                     std::function<funRet_t()>& fun = q.first;

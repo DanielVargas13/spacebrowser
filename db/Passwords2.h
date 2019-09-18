@@ -44,4 +44,6 @@ private:
 
 }
 
+Q_DECLARE_METATYPE(db::Passwords2::entry_t)
+
 #endif

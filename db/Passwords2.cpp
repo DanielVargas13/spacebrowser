@@ -27,7 +27,7 @@ Passwords2::SaveState Passwords2::isSaved(entry_t pwd)
                                   "WHERE host=:host AND path=:path AND login=:login")
                           .arg(dbClient.getSchemaName())
                           .arg(tableName));
-            
+
             query.bindValue(":host", pwd.host);
             query.bindValue(":path", pwd.path);
             query.bindValue(":login", pwd.login);
@@ -43,12 +43,14 @@ Passwords2::SaveState Passwords2::isSaved(entry_t pwd)
                 throw std::runtime_error("Passwords::isSaved(): failed to check if password was saved");
             }
 
-            return std::move(query);
+            return query.value(0);
+            //return std::move(query);
         }).get();
 
-    QSqlQuery query = std::get<QSqlQuery>(result);
+//    QSqlQuery query = std::get<QSqlQuery>(result);
+    QVariant var = std::get<QVariant>(result);
 
-    switch(query.value(0).toInt())
+    switch(var.toInt())
     {
         case 0: return SaveState::Absent;
         case 1: return SaveState::Outdated;
@@ -56,7 +58,7 @@ Passwords2::SaveState Passwords2::isSaved(entry_t pwd)
         //         if saved password is current without decrypting it first
         default: throw std::runtime_error(QString("Passwords::isSaved(): "
                                                   "password count returned: %i")
-                                          .arg(query.value(0).toInt()).toStdString());
+                                          .arg(var.toInt()).toStdString());
     }
 }
 
@@ -71,12 +73,12 @@ int Passwords2::countSavedCredentials(QString host, QString path)
         [this, host, path]()->Backend::funRet_t
         {
             QSqlQuery query(QSqlDatabase::database(dbClient.getDbName()));
-            
+
             query.prepare(QString("SELECT COUNT(password) FROM %1.%2 "
                                   "WHERE host=:host AND path=:path")
                           .arg(dbClient.getSchemaName())
                           .arg(tableName));
-            
+
             query.bindValue(":host", host);
             query.bindValue(":path", path);
 
@@ -90,31 +92,31 @@ int Passwords2::countSavedCredentials(QString host, QString path)
                 throw std::runtime_error("Passwords::isSaved(): failed to check password count");
             }
 
-            return std::move(query);
+            return query.value(0);
+            //return std::move(query);
         }).get();
 
-    QSqlQuery query = std::get<QSqlQuery>(result);
+//    QSqlQuery query = std::get<QSqlQuery>(result);
+    QVariant var = std::get<QVariant>(result);
 
-    return query.value(0).toInt();
+    return var.toInt();
 }
 
 std::vector<Passwords2::entry_t> Passwords2::getCredentials(QString host, QString path)
 {
-    std::vector<entry_t> r;
-
     Backend::funRet_t result = backend.performQuery(
         [this, host, path]()->Backend::funRet_t
         {
             QSqlQuery query(QSqlDatabase::database(dbClient.getDbName()));
-            
+
             query.prepare(QString("SELECT (login, password, key_fp) FROM %1.%2 "
                                   "WHERE host=:host AND path=:path")
                           .arg(dbClient.getSchemaName())
                           .arg(tableName));
-            
+
             query.bindValue(":host", host);
             query.bindValue(":path", path);
-            
+
             if (!query.exec())
             {
                 qCCritical(dbLogs, "(dbName=%s): failed to fetch credentials (%s%s)",
@@ -123,25 +125,28 @@ std::vector<Passwords2::entry_t> Passwords2::getCredentials(QString host, QStrin
                            path.toStdString().c_str());
                 dbClient.logError(query);
             }
-            
-            return std::move(query);
+
+            std::vector<entry_t> r;
+            while(query.next())
+            {
+                entry_t e;
+                e.host = host;
+                e.path = path;
+                e.login = query.value("login").toString();
+                e.password = query.value("password").toString();
+                e.fingerprint = query.value("key_fp").toString();
+
+                r.push_back(e);
+            }
+
+            return QVariant::fromValue<std::vector<entry_t>>(std::move(r));
+            //return std::move(query);
         }).get();
 
-    QSqlQuery query = std::get<QSqlQuery>(result);
+    //QSqlQuery query = std::get<QSqlQuery>(result);
+    QVariant var = std::get<QVariant>(result);
 
-    while(query.next())
-    {
-        entry_t e;
-        e.host = host;
-        e.path = path;
-        e.login = query.value("login").toString();
-        e.password = query.value("password").toString();
-        e.fingerprint = query.value("key_fp").toString();
-        
-        r.push_back(e);
-    }
-    
-    return r;
+    return var.value<std::vector<entry_t>>();
 }
 
 bool Passwords2::saveOrUpdate(entry_t pwd)
@@ -150,20 +155,20 @@ bool Passwords2::saveOrUpdate(entry_t pwd)
         [this, pwd]()->Backend::funRet_t
         {
             QSqlQuery query(QSqlDatabase::database(dbClient.getDbName()));
-            
+
             query.prepare(QString("INSERT INTO %1.%2 "
                                   "VALUES (:host :path :login :pass :fp) "
                                   "ON CONFLICT (host, path, login) "
                                   "DO UPDATE SET (password, key_fp) = :pass :fp")
                           .arg(dbClient.getSchemaName())
                           .arg(tableName));
-            
+
             query.bindValue(":host", pwd.host);
             query.bindValue(":path", pwd.path);
             query.bindValue(":login", pwd.login);
             query.bindValue(":pass", pwd.password);
             query.bindValue(":fp", pwd.fingerprint);
-            
+
             if (!query.exec())
             {
                 qCCritical(dbLogs, "(dbName=%s): failed to fetch credentials (%s%s)",

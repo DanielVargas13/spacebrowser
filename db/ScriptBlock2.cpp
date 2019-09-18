@@ -28,13 +28,13 @@ ScriptBlock2::State ScriptBlock2::isAllowed(const QString& site,
         [this, url]()->Backend::funRet_t
         {
             QSqlQuery query(QSqlDatabase::database(dbClient.getDbName()));
-            
+
             query.prepare(QString("SELECT EXISTS(SELECT * FROM %1.%2 WHERE url=:url)")
                           .arg(dbClient.getSchemaName())
                           .arg(globalTableName));
-            
+
             query.bindValue(":url", url);
-            
+
             if (!query.exec())
             {
                 qCCritical(dbLogs, "(dbName=%s): failed to check entry existence %s",
@@ -43,16 +43,25 @@ ScriptBlock2::State ScriptBlock2::isAllowed(const QString& site,
                 dbClient.logError(query);
                 //return State::Blocked;
             }
-            
-            return std::move(query);
+
+            if (!query.next())
+                return QVariant();
+
+            return QVariant(query.value(0).toBool()); // need to return as QVariant,
+                                                      // we have three states to represent
+            //return std::move(query);
         }).get();
 
-    QSqlQuery query = std::get<QSqlQuery>(result);
+//    QSqlQuery query = std::get<QSqlQuery>(result);
 
-    if (!query.next())
+    //if (!query.next())
+
+    QVariant var = std::get<QVariant>(result);
+    if (!var.isValid())
         return State::Blocked;
 
-    bool allowedGlobally = query.value(0).toBool();
+//    bool allowedGlobally = query.value(0).toBool();
+    bool allowedGlobally = var.toBool();
 
     if (earlyReturn && allowedGlobally)
         return State::AllowedGlobally;
@@ -67,10 +76,10 @@ ScriptBlock2::State ScriptBlock2::isAllowed(const QString& site,
                                   "WHERE site_url=:surl AND url=:url)")
                           .arg(dbClient.getSchemaName())
                           .arg(localTableName));
-            
+
             query.bindValue(":surl", site);
             query.bindValue(":url", url);
-            
+
 
             if (!query.exec())
             {
@@ -81,15 +90,23 @@ ScriptBlock2::State ScriptBlock2::isAllowed(const QString& site,
                 //return State::Blocked;
             }
 
-            return std::move(query);
+            if (!query.first())
+                return QVariant();
+
+            return QVariant(query.value(0).toBool());
+//            return std::move(query);
         }).get();
 
-    query = std::get<QSqlQuery>(result);
+//    query = std::get<QSqlQuery>(result);
 
-    if (!query.first())
+//    if (!query.first())
+
+    var = std::get<QVariant>(result);
+    if (!var.isValid())
         return State::Blocked;
 
-    bool allowedLocally = query.value(0).toBool();
+//    bool allowedLocally = query.value(0).toBool();
+    bool allowedLocally = var.toBool();
 
     if (allowedGlobally && allowedLocally)
         return State::AllowedBoth;
@@ -112,7 +129,7 @@ void ScriptBlock2::whitelistLocal(const QString& site, const QString& url)
                                   "ON CONFLICT (url) DO NOTHING")
                           .arg(dbClient.getSchemaName())
                           .arg(siteTableName));
-            
+
             query.bindValue(":site", site);
 
             if (!query.exec())
@@ -128,10 +145,10 @@ void ScriptBlock2::whitelistLocal(const QString& site, const QString& url)
             query.prepare(QString("INSERT INTO %1.%2 (site_url, url) VALUES (:site, :url) ")
                           .arg(dbClient.getSchemaName())
                           .arg(localTableName));
-            
+
             query.bindValue(":site", site);
             query.bindValue(":url", url);
-            
+
             if (!query.exec())
             {
                 qCCritical(dbLogs, "(dbName=%s): failed to add to local whitelist %s",
@@ -156,9 +173,9 @@ void ScriptBlock2::whitelistGlobal(const QString& url)
                                   "ON CONFLICT (url) DO NOTHING")
                           .arg(dbClient.getSchemaName())
                           .arg(globalTableName));
-            
+
             query.bindValue(":url", url);
-            
+
             if (!query.exec())
             {
                 qCCritical(dbLogs, "(dbName=%s): failed to whitelist globally %s",
@@ -178,15 +195,15 @@ void ScriptBlock2::removeLocal(const QString& site, const QString& url)
         [this, site, url]()->Backend::funRet_t
         {
             QSqlQuery query(QSqlDatabase::database(dbClient.getDbName()));
-            
+
             query.prepare(QString("DELETE FROM %1.%2 "
                                   "WHERE site_url=:surl AND url=:url")
                           .arg(dbClient.getSchemaName())
                           .arg(localTableName));
-            
+
             query.bindValue(":surl", site);
             query.bindValue(":url", url);
-            
+
             if (!query.exec())
             {
                 qCCritical(dbLogs, "(dbName=%s): failed to remove from local whitelist %s",
@@ -211,7 +228,7 @@ void ScriptBlock2::removeGlobal(const QString& url)
                                   "WHERE url=:url")
                           .arg(dbClient.getSchemaName())
                           .arg(globalTableName));
-            
+
             query.bindValue(":url", url);
 
             if (!query.exec())

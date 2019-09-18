@@ -43,13 +43,15 @@ int32_t Tabs2::createTab()
                 dbClient.logError(query);
             }
 
-            return std::move(query);
+//            return std::move(query);
+            return query.value("id");
         }).get();
 
     /// Retrieve id of newly created tab entry
     ///
-    QSqlQuery query = std::get<QSqlQuery>(result);
-    QVariant id = query.value("id");
+    //QSqlQuery query = std::get<QSqlQuery>(result);
+    //QVariant id = query.value("id");
+    QVariant id = std::get<QVariant>(result);
     bool ok = false;
     if (id.isValid() && id.toInt(&ok) >= 0 && ok)
         return id.toInt();
@@ -104,13 +106,29 @@ std::vector<Tabs2::TabInfo> Tabs2::getAllTabs()
                 throw std::runtime_error("Failed to fetch tabs");
             }
 
-            return std::move(query);
+            //return std::move(query);
+
+            std::vector<TabInfo> tabs;
+            while (query.next())
+            {
+                TabInfo tab;
+                tab.id = query.value("id").toInt();
+                tab.parent = query.value("parent").toInt();
+                tab.url = query.value("url").toString();
+                tab.title = query.value("title").toString();
+                tab.icon = query.value("icon").toString();
+
+                tabs.push_back(tab);
+            }
+
+            return QVariant::fromValue<std::vector<TabInfo>>(std::move(tabs));
+
         }).get();
 
-    std::vector<TabInfo> tabs;
+//    std::vector<TabInfo> tabs;
 
-    QSqlQuery query = std::get<QSqlQuery>(result);
-
+//    QSqlQuery query = std::get<QSqlQuery>(result);
+/*
     while (query.next())
     {
         TabInfo tab;
@@ -121,7 +139,9 @@ std::vector<Tabs2::TabInfo> Tabs2::getAllTabs()
         tab.icon = query.value("icon").toString();
 
         tabs.push_back(tab);
-    }
+        }*/
+    QVariant res = std::get<QVariant>(result);
+    std::vector<TabInfo> tabs = res.value<std::vector<TabInfo>>();
 
     return tabs;
 }
@@ -146,27 +166,31 @@ std::map<int, Tabs2::TabInfo> Tabs2::getAllTabsMap()
                 throw std::runtime_error("Failed to fetch tabs");
             }
 
-            return std::move(query);
+            std::map<int, TabInfo> tabs;
+
+            while (query.next())
+            {
+                TabInfo tab;
+                tab.id = query.value("id").toInt();
+                tab.parent = query.value("parent").toInt();
+                tab.url = query.value("url").toString();
+                tab.title = query.value("title").toString();
+                tab.icon = query.value("icon").toString();
+
+                tabs[tab.id] = tab;
+            }
+
+            for (auto& tab: tabs)
+                tabs[tab.second.parent].children.push_back(tab.second.id);
+
+            //return std::move(query);
+
+            return QVariant::fromValue<tabMap_t>(std::move(tabs));
         }).get();
 
-    QSqlQuery query = std::get<QSqlQuery>(result);
-
-    std::map<int, TabInfo> tabs;
-
-    while (query.next())
-    {
-        TabInfo tab;
-        tab.id = query.value("id").toInt();
-        tab.parent = query.value("parent").toInt();
-        tab.url = query.value("url").toString();
-        tab.title = query.value("title").toString();
-        tab.icon = query.value("icon").toString();
-
-        tabs[tab.id] = tab;
-    }
-
-    for (auto& tab: tabs)
-        tabs[tab.second.parent].children.push_back(tab.second.id);
+//    QSqlQuery query = std::get<QSqlQuery>(result);
+    QVariant res = std::get<QVariant>(result);
+    std::map<int, Tabs2::TabInfo> tabs = res.value<std::map<int, Tabs2::TabInfo>>();
 
 
     qCDebug(dbLogs, "(dbName=%s): loaded %lu tabs from db",

@@ -29,7 +29,7 @@ bool Keys2::addKey(std::string keyFingerprint, bool def)
                                   "VALUES (:keyfp, :def) ")
                           .arg(dbClient.getSchemaName())
                           .arg(tableName));
-            
+
             query.bindValue(":keyfp", keyFingerprint.c_str());
             query.bindValue(":def", def);
 
@@ -41,7 +41,7 @@ bool Keys2::addKey(std::string keyFingerprint, bool def)
                 dbClient.logError(query);
                 return false;
             }
-            
+
             return true;
         }).get();
 
@@ -54,12 +54,12 @@ QString Keys2::getDefaultKey()
         [this]()->Backend::funRet_t
         {
             QSqlQuery query(QSqlDatabase::database(dbClient.getDbName()));
-            
+
             query.prepare(QString("SELECT fingerprint FROM %1.%2 "
                                   "WHERE def=:def")
                           .arg(dbClient.getSchemaName())
                           .arg(tableName));
-            
+
             query.bindValue(":def", true);
 
             if (!query.exec())
@@ -70,15 +70,21 @@ QString Keys2::getDefaultKey()
 //                return "";
             }
 
-            return std::move(query);
+            if (!query.next())
+                return QVariant(QString(""));
+
+            return query.value("fingerprint");
+            //return std::move(query);
         }).get();
 
-    QSqlQuery query = std::get<QSqlQuery>(result);
+//    QSqlQuery query = std::get<QSqlQuery>(result);
+    QVariant var = std::get<QVariant>(result);
+    return var.toString();
+//    if (!query.next())
+//    if (!var.isValid())
+//        return "";
 
-    if (!query.next())
-        return "";
-
-    return query.value("fingerprint").toString();
+//    return query.value("fingerprint").toString();
 }
 
 }
