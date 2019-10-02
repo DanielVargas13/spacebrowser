@@ -24,16 +24,51 @@ ScriptBlock2::State ScriptBlock2::isAllowed(const QString& site,
                                             const QString& url,
                                             bool earlyReturn)
 {
+    qCDebug(dbLogs, "ScriptBlock2::isAllowed(dbName=%s): start", dbClient.getDbName().toStdString().c_str());
+    auto start = std::chrono::system_clock::now();
+
+    /// This is a little hack, to print timing debug on function exit,
+    /// since there are multiple return statements, this seems to be the cleanest way
+    std::shared_ptr<int> callOnExit(new int,
+                                    [this, &start](auto p)
+                                    {
+                                        delete p;
+
+                                        auto end = std::chrono::system_clock::now();
+                                        std::chrono::duration<double> total = end-start;
+                                        qCDebug(dbLogs, "(dbName=%s) setParent: end; time: %lli ms",
+                                                dbClient.getDbName().toStdString().c_str(),
+                                                std::chrono::duration_cast<std::chrono::milliseconds>(total));
+                                    });
+
+
     Backend::funRet_t result = backend.performQuery(
-        [this, url]()->Backend::funRet_t
+        [this, &url, &site, &earlyReturn]()->Backend::funRet_t
         {
+
             QSqlQuery query(QSqlDatabase::database(dbClient.getDbName()));
 
-            query.prepare(QString("SELECT EXISTS(SELECT * FROM %1.%2 WHERE url=:url)")
-                          .arg(dbClient.getSchemaName())
-                          .arg(globalTableName));
+            /// With early return we are only interested if script should be blocked,
+            /// details about type of allowance are not important
+            if (earlyReturn)
+            {
+                query.prepare(QString("SELECT EXISTS(SELECT * FROM %1.%2 WHERE url=:url) "
+                                      "OR EXISTS(SELECT * FROM %1.%3 WHERE site_url=:surl AND url=:url)")
+                              .arg(dbClient.getSchemaName())
+                              .arg(globalTableName)
+                              .arg(localTableName));
 
-            query.bindValue(":url", url);
+                query.bindValue(":url", url);
+                query.bindValue(":surl", site);
+            }
+            else
+            {
+                query.prepare(QString("SELECT EXISTS(SELECT * FROM %1.%2 WHERE url=:url)")
+                              .arg(dbClient.getSchemaName())
+                              .arg(globalTableName));
+
+                query.bindValue(":url", url);
+            }
 
             if (!query.exec())
             {
@@ -41,7 +76,6 @@ ScriptBlock2::State ScriptBlock2::isAllowed(const QString& site,
                            dbClient.getDbName().toStdString().c_str(),
                            url.toStdString().c_str());
                 dbClient.logError(query);
-                //return State::Blocked;
             }
 
             if (!query.next())
@@ -49,22 +83,21 @@ ScriptBlock2::State ScriptBlock2::isAllowed(const QString& site,
 
             return QVariant(query.value(0).toBool()); // need to return as QVariant,
                                                       // we have three states to represent
-            //return std::move(query);
         }).get();
-
-//    QSqlQuery query = std::get<QSqlQuery>(result);
-
-    //if (!query.next())
 
     QVariant var = std::get<QVariant>(result);
     if (!var.isValid())
         return State::Blocked;
 
-//    bool allowedGlobally = query.value(0).toBool();
     bool allowedGlobally = var.toBool();
 
-    if (earlyReturn && allowedGlobally)
-        return State::AllowedGlobally;
+    /// Local table was already checked in earlyReturn case, see above
+    if (earlyReturn)
+    {
+        if (allowedGlobally)
+            return State::AllowedGlobally;
+        return State::Blocked;
+    }
 
 
     result = backend.performQuery(
@@ -87,25 +120,18 @@ ScriptBlock2::State ScriptBlock2::isAllowed(const QString& site,
                            dbClient.getDbName().toStdString().c_str(),
                            url.toStdString().c_str());
                 dbClient.logError(query);
-                //return State::Blocked;
             }
 
             if (!query.first())
                 return QVariant();
 
             return QVariant(query.value(0).toBool());
-//            return std::move(query);
         }).get();
-
-//    query = std::get<QSqlQuery>(result);
-
-//    if (!query.first())
 
     var = std::get<QVariant>(result);
     if (!var.isValid())
         return State::Blocked;
 
-//    bool allowedLocally = query.value(0).toBool();
     bool allowedLocally = var.toBool();
 
     if (allowedGlobally && allowedLocally)

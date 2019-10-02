@@ -49,6 +49,8 @@ public:
 
     typedef std::variant<bool, /*QSqlQuery,*/ QVariant> funRet_t;
     std::future<funRet_t> performQuery(std::function<funRet_t()> fun);
+    void performQueryNR(std::function<void()> fun);
+
     static std::vector<struct connData_t> readAllConnectionEntries(QSettings& settings);
 
 signals:
@@ -75,7 +77,8 @@ private:
 //    typedef std::pair<QSqlQuery*, std::promise<bool>> query_t;
     typedef std::tuple<QString, QString, std::promise<QSqlQuery>> strQuery_t; // dbName, sqlString
     typedef std::pair<std::function<funRet_t()>, std::promise<funRet_t>> funQuery_t;
-    typedef std::variant</*query_t, strQuery_t,*/ funQuery_t> vquery_t;
+    typedef std::function<void()> funQueryNR_t;
+    typedef std::variant<funQueryNR_t, funQuery_t> vquery_t;
     std::deque<vquery_t> queries;
     std::mutex mQueries;
     std::condition_variable cv;

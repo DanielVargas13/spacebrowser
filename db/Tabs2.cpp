@@ -6,6 +6,7 @@
 #include <QStringList>
 #include <QVariant>
 
+#include <chrono>
 #include <future>
 
 namespace db
@@ -64,9 +65,13 @@ int32_t Tabs2::createTab()
 
 void Tabs2::closeTab(int tabId)
 {
-    Backend::funRet_t result = backend.performQuery(
-        [this, tabId]()->Backend::funRet_t
+    //Backend::funRet_t result = backend.performQuery(
+    backend.performQueryNR(
+        [this, tabId]()->void //Backend::funRet_t
         {
+            qCDebug(dbLogs, "(dbName=%s) closeTab: start", dbClient.getDbName().toStdString().c_str());
+            auto start = std::chrono::system_clock::now();
+
             QSqlQuery query(QSqlDatabase::database(dbClient.getDbName()));
 
             query.prepare(QString("DELETE FROM %1.%2 WHERE id = :tab_id")
@@ -79,11 +84,16 @@ void Tabs2::closeTab(int tabId)
                 qCCritical(dbLogs, "(dbName=%s, tabId=%i): failed to remove tab",
                            dbClient.getDbName().toStdString().c_str(), tabId);
                 dbClient.logError(query);
-                return false;
+                //return false;
             }
+            auto end = std::chrono::system_clock::now();
+            std::chrono::duration<double> total = end-start;
+            qCDebug(dbLogs, "(dbName=%s) closeTab: end; time: %lli ms",
+                    dbClient.getDbName().toStdString().c_str(),
+                    std::chrono::duration_cast<std::chrono::milliseconds>(total));
 
-            return true;
-        }).get();
+            //return true;
+        }); //.get();
 }
 
 std::vector<Tabs2::TabInfo> Tabs2::getAllTabs()
@@ -202,9 +212,13 @@ std::map<int, Tabs2::TabInfo> Tabs2::getAllTabsMap()
 
 void Tabs2::setParent(int tabId, int parentId)
 {
-    Backend::funRet_t result = backend.performQuery(
-        [this, tabId, parentId]()->Backend::funRet_t
+    //Backend::funRet_t result = backend.performQuery(
+    backend.performQueryNR(
+        [this, tabId, parentId]()->void //Backend::funRet_t
         {
+            qCDebug(dbLogs, "(dbName=%s) setParent: start", dbClient.getDbName().toStdString().c_str());
+            auto start = std::chrono::system_clock::now();
+
             QSqlQuery query(QSqlDatabase::database(dbClient.getDbName()));
 
             query.prepare(QString("UPDATE %1.%2 "
@@ -220,18 +234,27 @@ void Tabs2::setParent(int tabId, int parentId)
                            "failed to set parent", dbClient.getDbName().toStdString().c_str(),
                            tabId, parentId);
                 dbClient.logError(query);
-                return false;
+                //return false;
             }
+            auto end = std::chrono::system_clock::now();
+            std::chrono::duration<double> total = end-start;
+            qCDebug(dbLogs, "(dbName=%s) setParent: end; time: %lli ms",
+                    dbClient.getDbName().toStdString().c_str(),
+                    std::chrono::duration_cast<std::chrono::milliseconds>(total));
 
-            return true;
-        }).get();
+            //return true;
+        }); //.get();
 }
 
 void Tabs2::setUrl(int tabId, QString url)
 {
-    Backend::funRet_t result = backend.performQuery(
-        [this, tabId, url]()->Backend::funRet_t
+//    Backend::funRet_t result = backend.performQuery(
+    backend.performQueryNR(
+        [this, tabId, url]()->void //Backend::funRet_t
         {
+            qCDebug(dbLogs, "(dbName=%s) setUrl: start", dbClient.getDbName().toStdString().c_str());
+            auto start = std::chrono::system_clock::now();
+
             QSqlQuery query(QSqlDatabase::database(dbClient.getDbName()));
 
             query.prepare(QString("UPDATE %1.%2 "
@@ -247,18 +270,27 @@ void Tabs2::setUrl(int tabId, QString url)
                            "failed to set url", dbClient.getDbName().toStdString().c_str(),
                            tabId, url.toStdString().c_str());
                 dbClient.logError(query);
-                return false;
+                //return false;
             }
 
-            return true;
-        }).get();
+            auto end = std::chrono::system_clock::now();
+            std::chrono::duration<double> total = end-start;
+            qCDebug(dbLogs, "(dbName=%s) setUrl: end; time: %lli ms",
+                    dbClient.getDbName().toStdString().c_str(),
+                    std::chrono::duration_cast<std::chrono::milliseconds>(total));
+            //return true;
+        }); //.get();
 }
 
 void Tabs2::setTitle(int tabId, QString title)
 {
-    Backend::funRet_t result = backend.performQuery(
-        [this, tabId, title]()->Backend::funRet_t
+//    Backend::funRet_t result = backend.performQuery(
+    backend.performQueryNR(
+        [this, tabId, title]()->void //Backend::funRet_t
         {
+            qCDebug(dbLogs, "(dbName=%s) setTitle: start", dbClient.getDbName().toStdString().c_str());
+            auto start = std::chrono::system_clock::now();
+
             QSqlQuery query(QSqlDatabase::database(dbClient.getDbName()));
 
             query.prepare(QString("UPDATE %1.%2 "
@@ -274,19 +306,28 @@ void Tabs2::setTitle(int tabId, QString title)
                            "failed to set title", dbClient.getDbName().toStdString().c_str(),
                            tabId, title.toStdString().c_str());
                 dbClient.logError(query);
-                return false;
+                //return false;
             }
+            auto end = std::chrono::system_clock::now();
+            std::chrono::duration<double> total = end-start;
+            qCDebug(dbLogs, "(dbName=%s) setTitle: end; time: %lli ms",
+                    dbClient.getDbName().toStdString().c_str(),
+                    std::chrono::duration_cast<std::chrono::milliseconds>(total));
 
-            return true;
-        }).get();
+            //return true;
+        }); //.get();
 }
 
 
 void Tabs2::setIcon(int tabId, QString icon)
 {
-    Backend::funRet_t result = backend.performQuery(
-        [this, tabId, icon]()->Backend::funRet_t
+//    Backend::funRet_t result = backend.performQuery(
+    backend.performQueryNR(
+        [this, tabId, icon]()->void //Backend::funRet_t
         {
+            qCDebug(dbLogs, "(dbName=%s) setIcon: start", dbClient.getDbName().toStdString().c_str());
+            auto start = std::chrono::system_clock::now();
+
             QSqlQuery query(QSqlDatabase::database(dbClient.getDbName()));
 
             query.prepare(QString("UPDATE %1.%2 "
@@ -302,11 +343,16 @@ void Tabs2::setIcon(int tabId, QString icon)
                            "failed to set icon", dbClient.getDbName().toStdString().c_str(),
                            tabId, icon.toStdString().c_str());
                 dbClient.logError(query);
-                return false;
+                //return false;
             }
+            auto end = std::chrono::system_clock::now();
+            std::chrono::duration<double> total = end-start;
+            qCDebug(dbLogs, "(dbName=%s) setIcon: end; time: %lli ms",
+                    dbClient.getDbName().toStdString().c_str(),
+                    std::chrono::duration_cast<std::chrono::milliseconds>(total));
 
-            return true;
-        }).get();
+            //return true;
+        }); //.get();
 }
 
 }

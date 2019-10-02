@@ -31,21 +31,6 @@ Backend::~Backend()
     connThread.join();
 }
 
-/*
-std::future<QSqlQuery> Backend::performQuery(QString dbName, QString queryStr)
-{
-    std::lock_guard<std::mutex> lock(mQueries);
-    std::promise<QSqlQuery> p;
-    std::future<QSqlQuery> f = p.get_future();
-
-    queries.push_back(strQuery_t(dbName, queryStr, std::move(p)));
-
-    cv.notify_all();
-
-    return f;
-}
-*/
-
 std::future<Backend::funRet_t> Backend::performQuery(std::function<funRet_t()> fun)
 {
     std::lock_guard<std::mutex> lock(mQueries);
@@ -57,6 +42,16 @@ std::future<Backend::funRet_t> Backend::performQuery(std::function<funRet_t()> f
     cv.notify_all();
 
     return f;
+}
+
+void Backend::performQueryNR(std::function<void()> fun)
+{
+    std::lock_guard<std::mutex> lock(mQueries);
+
+    queries.push_back(funQueryNR_t(fun));
+    cv.notify_all();
+
+    return;
 }
 
 void Backend::configureDbConnection(QObject* dialog, bool encReady)
@@ -217,19 +212,7 @@ bool Backend::connectDatabases()
 
                 vquery_t& vq = queries.front();
 
-                /*if (std::holds_alternative<strQuery_t>(vq))
-                {
-                    strQuery_t& q = std::get<strQuery_t>(vq);
-                    QString& dbName = std::get<0>(q);
-                    QString& queryString = std::get<1>(q);
-                    std::promise<QSqlQuery>& prom = std::get<2>(q);
-
-                    QSqlQuery query(QSqlDatabase::database(dbName));
-
-                    query.exec(queryString);
-                    prom.set_value(std::move(query));
-                }
-                else*/ if (std::holds_alternative<funQuery_t>(vq))
+                if (std::holds_alternative<funQuery_t>(vq))
                 {
                     funQuery_t& q = std::get<funQuery_t>(vq);
                     std::function<funRet_t()>& fun = q.first;
@@ -237,7 +220,11 @@ bool Backend::connectDatabases()
 
                     prom.set_value(fun());
                 }
-
+                else if (std::holds_alternative<funQueryNR_t>(vq))
+                {
+                    funQueryNR_t& q = std::get<funQueryNR_t>(vq);
+                    q();
+                }
 
                 queries.pop_front();
             }
