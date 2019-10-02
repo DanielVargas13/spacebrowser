@@ -146,8 +146,9 @@ ScriptBlock2::State ScriptBlock2::isAllowed(const QString& site,
 
 void ScriptBlock2::whitelistLocal(const QString& site, const QString& url)
 {
-    Backend::funRet_t result = backend.performQuery(
-        [this, site, url]()->Backend::funRet_t
+    //Backend::funRet_t result = backend.performQuery(
+    backend.performQueryNR(
+        [this, site, url]()->void //Backend::funRet_t
         {
             QSqlQuery query(QSqlDatabase::database(dbClient.getDbName()));
 
@@ -164,7 +165,8 @@ void ScriptBlock2::whitelistLocal(const QString& site, const QString& url)
                            dbClient.getDbName().toStdString().c_str(),
                            url.toStdString().c_str());
                 dbClient.logError(query);
-                return false;
+                //return false;
+                return;
             }
 
             query.clear();
@@ -181,17 +183,18 @@ void ScriptBlock2::whitelistLocal(const QString& site, const QString& url)
                            dbClient.getDbName().toStdString().c_str(),
                            url.toStdString().c_str());
                 dbClient.logError(query);
-                return false;
+                //return false;
             }
 
-            return true;
-        }).get();
+            //return true;
+        }); //.get();
 }
 
 void ScriptBlock2::whitelistGlobal(const QString& url)
 {
-    Backend::funRet_t result = backend.performQuery(
-        [this, url]()->Backend::funRet_t
+    //Backend::funRet_t result = backend.performQuery(
+    backend.performQueryNR(
+        [this, url]()->void //Backend::funRet_t
         {
             QSqlQuery query(QSqlDatabase::database(dbClient.getDbName()));
 
@@ -208,17 +211,18 @@ void ScriptBlock2::whitelistGlobal(const QString& url)
                            dbClient.getDbName().toStdString().c_str(),
                            url.toStdString().c_str());
                 dbClient.logError(query);
-                return false;
+                //return false;
             }
 
-            return true;
-        }).get();
+            //return true;
+        }); //.get();
 }
 
 void ScriptBlock2::removeLocal(const QString& site, const QString& url)
 {
-    Backend::funRet_t result = backend.performQuery(
-        [this, site, url]()->Backend::funRet_t
+    //Backend::funRet_t result = backend.performQuery(
+    backend.performQueryNR(
+        [this, site, url]()->void //Backend::funRet_t
         {
             QSqlQuery query(QSqlDatabase::database(dbClient.getDbName()));
 
@@ -236,17 +240,18 @@ void ScriptBlock2::removeLocal(const QString& site, const QString& url)
                            dbClient.getDbName().toStdString().c_str(),
                            url.toStdString().c_str());
                 dbClient.logError(query);
-                return false;
+                //return false;
             }
 
-            return true;
-        }).get();
+            //return true;
+        }); //.get();
 }
 
 void ScriptBlock2::removeGlobal(const QString& url)
 {
-    Backend::funRet_t result = backend.performQuery(
-        [this, url]()->Backend::funRet_t
+    //Backend::funRet_t result = backend.performQuery(
+    backend.performQueryNR(
+        [this, url]()->void //Backend::funRet_t
         {
             QSqlQuery query(QSqlDatabase::database(dbClient.getDbName()));
 
@@ -263,11 +268,11 @@ void ScriptBlock2::removeGlobal(const QString& url)
                            dbClient.getDbName().toStdString().c_str(),
                            url.toStdString().c_str());
                 dbClient.logError(query);
-                return false;
+                //return false;
             }
 
-            return true;
-        }).get();
+            //return true;
+        }); //.get();
 }
 
 }
