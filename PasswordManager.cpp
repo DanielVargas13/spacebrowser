@@ -1,5 +1,8 @@
 #include <PasswordManager.h>
 
+#include <conf/conf.h>
+#include <db/DbGroup.h>
+
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonObject>
@@ -33,8 +36,8 @@ void PasswordManager::fillPassword(QVariant view)
 {
     QObject* v = qvariant_cast<QObject *>(view);
 
-    bool s = QMetaObject::invokeMethod(v, "runJavaScript",
-            Q_ARG(QString, formFiller));
+    QMetaObject::invokeMethod(v, "runJavaScript",
+                              Q_ARG(QString, formFiller));
 
 }
 
@@ -46,7 +49,12 @@ void PasswordManager::keySelected(QString id)
         std::cout << "PasswordManager::keySelected(id='" << id.toStdString() <<
             "'): invalid id format";
 
-    keys.addKey(parts[0].toStdString(), true);
+    auto dbh = getDefDbGroup();
+        
+    if (dbh)
+    {
+        dbh->keys.addKey(parts[0].toStdString(), true);
+    }
 }
 
 void PasswordManager::loadSucceeded(QVariant view)
@@ -69,14 +77,19 @@ void PasswordManager::loadSucceeded(QVariant view)
     QString host = url.host();
     QString path = url.path();
 
-    if (int passCount = pwds.countSavedCredentials(host, path) > 0)
+    auto dbh = getDefDbGroup();
+        
+    if (dbh)
     {
-        QMetaObject::invokeMethod(v, "passAvailable",
-                Q_ARG(QVariant, QVariant(passCount)));
-    }
+        if (int passCount = dbh->pwds.countSavedCredentials(host, path) > 0)
+        {
+            QMetaObject::invokeMethod(v, "passAvailable",
+                                      Q_ARG(QVariant, QVariant(passCount)));
+        }
 
-    s = QMetaObject::invokeMethod(v, "runJavaScript",
+        s = QMetaObject::invokeMethod(v, "runJavaScript",
             Q_ARG(QString, qWebChannel));
+    }
 }
 
 void PasswordManager::saveAccepted(QString url, bool accepted)
@@ -96,25 +109,34 @@ void PasswordManager::saveAccepted(QString url, bool accepted)
 
     const auto& entry = tempStore.at(url);
 
-    switch (pwds.isSaved(entry))
+    auto dbh = getDefDbGroup();
+        
+    if (dbh)
     {
-    case db::Passwords::SaveState::Outdated:
-    case db::Passwords::SaveState::Absent:
-    {
-        pwds.saveOrUpdate(entry);
-    } break;
-    default:
-    {
-        // nothing to be done
-    }
+        switch (dbh->pwds.isSaved(entry))
+        {
+            case db::Passwords2::SaveState::Outdated:
+            case db::Passwords2::SaveState::Absent:
+            {
+                dbh->pwds.saveOrUpdate(entry);
+            } break;
+            default:
+            {
+                // nothing to be done
+            }
+        }
     }
 }
 
 bool PasswordManager::savePassword(QVariant fields_qv)
 {
+    auto dbh = getDefDbGroup();
+    if (!dbh)
+        return false;
+
     QJsonArray f = fields_qv.toJsonArray();
 
-    db::Passwords::entry_t fields;
+    db::Passwords2::entry_t fields;
 
     for (const auto& field: f)
     {
@@ -127,8 +149,9 @@ bool PasswordManager::savePassword(QVariant fields_qv)
         else if (obj["type"] == "password" && !obj["value"].toString().isEmpty())
         {
             fields.password = encrypt(obj["value"].toString());
-            fields.fingerprint = keys.getDefaultKey().c_str();
-        } else if (obj["type"] == "host")
+            fields.fingerprint = dbh->keys.getDefaultKey();
+        }
+        else if (obj["type"] == "host")
             fields.host = obj["value"].toString();
         else if (obj["type"] == "path")
             fields.path = obj["value"].toString();
@@ -147,13 +170,13 @@ bool PasswordManager::savePassword(QVariant fields_qv)
 
     tempStore[fields.host + fields.path] = fields;
 
-    switch (pwds.isSaved(fields))
+    switch (dbh->pwds.isSaved(fields))
     {
-    case db::Passwords::SaveState::Outdated:
+    case db::Passwords2::SaveState::Outdated:
     {
         emit shouldBeUpdated(fields.host + fields.path, fields.login);
     } break;
-    case db::Passwords::SaveState::Absent:
+    case db::Passwords2::SaveState::Absent:
     {
         emit shouldBeSaved(fields.host + fields.path, fields.login);
     } break;
@@ -168,16 +191,20 @@ bool PasswordManager::savePassword(QVariant fields_qv)
 
 QString PasswordManager::encrypt(QString text)
 {
+    auto dbh = getDefDbGroup();
+    if (!dbh)
+        return QString();
+
     try
     {
         gnupgpp::GpgContext ctx = gpg.createContext();
         ctx.setArmor(true);
 
-        std::string keyFp = keys.getDefaultKey();
-        if (keyFp.empty())
+        QString keyFp = dbh->keys.getDefaultKey();
+        if (keyFp.isEmpty())
             return QString();
 
-        std::shared_ptr<gnupgpp::GpgKey> key = ctx.getKey(keyFp);
+        std::shared_ptr<gnupgpp::GpgKey> key = ctx.getKey(keyFp.toStdString());
 
         return QString(ctx.encrypt(text.toStdString(), key).c_str());
 
@@ -193,16 +220,21 @@ QString PasswordManager::encrypt(QString text)
 
 bool PasswordManager::isEncryptionReady()
 {
-    std::string keyFp = keys.getDefaultKey();
-    if (keyFp.empty())
+    auto dbh = getDefDbGroup();
+        
+    if (!dbh)
+        return false;
+
+    QString keyFp = dbh->keys.getDefaultKey();
+    if (keyFp.isEmpty())
         return false;
 
     gnupgpp::GpgContext ctx = gpg.createContext();
-    std::shared_ptr<gnupgpp::GpgKey> key = ctx.getKey(keyFp);
+    std::shared_ptr<gnupgpp::GpgKey> key = ctx.getKey(keyFp.toStdString());
     if (!key)
         return false;
 
-    std::shared_ptr<gnupgpp::GpgKey> sKey = ctx.getKey(keyFp, true);
+    std::shared_ptr<gnupgpp::GpgKey> sKey = ctx.getKey(keyFp.toStdString(), true);
     if (!sKey)
         return false;
 
@@ -259,7 +291,11 @@ QVariant PasswordManager::getCredentials(QVariant host, QVariant path) noexcept
 
     path.isValid() ? p = path.toString() : p = "";
 
-    auto creds = pwds.getCredentials(h, p);
+    auto dbh = getDefDbGroup();
+    if (!dbh)
+        return QJsonObject();
+
+    auto creds = dbh->pwds.getCredentials(h, p);
 
     switch (creds.size())
     {
@@ -292,4 +328,16 @@ QVariant PasswordManager::getCredentials(QVariant host, QVariant path) noexcept
     }
 
     return QJsonObject();
+}
+
+std::shared_ptr<db::DbGroup> PasswordManager::getDefDbGroup()
+{
+    QSettings settings;
+    if (settings.contains(conf::Databases::defPassManDb))
+    {
+        QString dbName = settings.value(conf::Databases::defPassManDb).toString();
+        return db::DbGroup::getGroup(dbName);
+    }        
+
+    return nullptr;
 }

@@ -12,9 +12,14 @@ Rectangle
 
     property bool isFullscreen: false
 
-    signal printRequest(var webView)
+    signal createTab(string dbName, int parent, bool select, bool scroll)
+    signal closeTab(string dbName, int viewId)
     signal loadSucceeded(var webView)
+    signal nextTab(string dbName)
+    signal prevTab(string dbName)
+    signal printRequest(var webView)
     signal savePasswordAccepted(string url, bool accepted)
+    signal showFullscreen(bool toggleOn)
 
     visible: true
     color: Style.background
@@ -105,6 +110,9 @@ Rectangle
     TabSelectorPanel
     {
         id: tabSelectorPanel
+        objectName: "tabSelectorPanel"
+
+        visible: true;
 
         anchors.top: addressBar.bottom
         anchors.topMargin: Style.margin
@@ -112,7 +120,11 @@ Rectangle
         anchors.bottom: mainWindow.bottom
         width: Style.tabSelector.width
 
-        onNewTabCreated: addressBar.focus = true
+        onNewTabRequested:
+        {
+            mainWindow.createTab(tabSelectorPanel.getCurrentPanel(), 0, true, true)
+            addressBar.focus = true
+        }
     }
 
     WebViewContainer
@@ -131,31 +143,13 @@ Rectangle
             tabSelectorPanel.visible = visible
         }
 
-        function createNewView(newViewId, _indent, insertAfter)
+        function createViewObject(newViewId)
         {
-            var obj = {title:"Empty", icon:"", viewId:newViewId, indent:_indent}
-
-            tabSelectorPanel.createNewTab(obj, insertAfter)
-
             var view = viewComp.createObject(webViewContainer);
             view.zoomFactor = 1.2 // FIXME: set in style or configuration
             view.myViewId = newViewId
 
-            return view
-        }
-
-        function updateTitle(viewId, title, updateModel)
-        {
-            tabSelectorPanel.updateTitle(viewId, title)
-            if (updateModel)
-                viewHandler.titleChanged(viewId, title)
-        }
-
-        function updateIcon(viewId, icon, updateModel)
-        {
-            tabSelectorPanel.updateIcon(viewId, icon)
-            if (updateModel)
-                viewHandler.iconChanged(viewId, icon.toString())
+            return view;
         }
 
         function updateAddressBar(url)
@@ -170,7 +164,7 @@ Rectangle
 
             onFullScreenRequested: function(request) {
                 mainWindow.isFullscreen = request.toggleOn
-                viewHandler.showFullscreen(request.toggleOn)
+                showFullscreen(request.toggleOn)
                 request.accept()
                 webViewContainer.currentView.parent = request.toggleOn ? mainWindow : webViewContainer
             }
@@ -203,7 +197,7 @@ Rectangle
             var flags = backward ? WebEngineView.FindBackward : 0
             if (caseSensitive)
                 flags = flags | WebEngineView.FindCaseSensitively
-            
+
             webViewContainer.currentView.findText(text, flags)
         }
     }
@@ -224,11 +218,11 @@ Rectangle
 
     Shortcut {
         sequence: "Ctrl+Tab"
-        onActivated: viewHandler.nextTab();
+        onActivated: nextTab(tabSelectorPanel.getCurrentPanel());
     }
     Shortcut {
         sequence: "Ctrl+Shift+Tab"
-        onActivated: viewHandler.prevTab();
+        onActivated: prevTab(tabSelectorPanel.getCurrentPanel());
     }
     Shortcut {
         sequence: StandardKey.ZoomIn//"Ctrl++"
@@ -245,21 +239,20 @@ Rectangle
     Shortcut {
         sequence: "Ctrl+t"
         onActivated: {
-            var id = viewHandler.createTab()
-            viewHandler.selectTab(id)
+            mainWindow.createTab(tabSelectorPanel.getCurrentPanel(), 0, true, true)
             addressBar.focus = true
         }
     }
     Shortcut {
         sequence: "Ctrl+w"
         onActivated: {
-            viewHandler.closeTab(webViewContainer.currentView.myViewId)
+            closeTab(tabSelectorPanel.getCurrentPanel(), webViewContainer.currentView.myViewId)
         }
     }
     Shortcut { // test shorcut
         sequence: "Ctrl+g"
         onActivated: {
-            console.log("abc");
+
         }
     }
     Shortcut {
@@ -283,7 +276,7 @@ Rectangle
         }
     }
     Shortcut {
-        sequence: "Ctrl+p"
+        sequence: "Ctrl+o"
         onActivated: {
             mainWindow.printRequest(webViewContainer.currentView)
         }
@@ -300,6 +293,26 @@ Rectangle
             devToolsView.visible = !devToolsView.visible
         }
     }
+    Shortcut {
+        sequence: "Ctrl+n"
+        onActivated: {
+            if (findBar.visible) {
+                findBar.searchForward()
+            }
+        }
+    }
+    Shortcut {
+        sequence: "Ctrl+p"
+        onActivated: {
+            if (findBar.visible) {
+                findBar.searchBackward()
+            }
+            else {
+                mainWindow.printRequest(webViewContainer.currentView)
+            }
+        }
+    }
+
 
     ScriptBlockingView
     {
@@ -386,6 +399,8 @@ Rectangle
         objectName: "encryptionKeyConfigDialog"
         title: "Configure encryption key"
         standardButtons: Dialog.Save | Dialog.Cancel
+        closePolicy: Popup.CloseOnEscape
+        modal: true
 
         signal keySelected(string id)
 
@@ -396,7 +411,6 @@ Rectangle
         y: parent.height / 2 - height / 2
 
         onAccepted: keySelected(encryptionKeyConfigDialogCB.currentText)
-        //onRejected:
 
         ComboBox {
             id: encryptionKeyConfigDialogCB
@@ -404,6 +418,19 @@ Rectangle
             width: encryptionKeyConfigDialog.width * 0.9
         }
     }
+
+    DbConnectionDialog
+    {
+        id: configureDbConnectionDialog
+        objectName: "configureDbConnectionDialog"
+
+        width: parent.width / 4
+
+        x: parent.width / 2 - width / 2
+        y: parent.height / 2 - height / 2
+
+    }
+
 
 //    MouseArea  // FIXME: this works, but unfortunately prevents WebView from changing cursor shape
 //    {

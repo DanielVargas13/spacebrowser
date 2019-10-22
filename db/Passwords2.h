@@ -1,20 +1,15 @@
-#ifndef DB_PASSWORDS_H_
-#define DB_PASSWORDS_H_
+#ifndef DB_PASSWORDS2_H_
+#define DB_PASSWORDS2_H_
 
-#include <pqxx/pqxx>
-
-#include <QString>
-
-#include <string>
-#include <vector>
+#include <db/Backend.h>
+#include <db/DbClient.h>
 
 namespace db
 {
 
-class Passwords
+class Passwords2
 {
 public:
-
     struct entry_t
     {
         QString host;
@@ -31,21 +26,24 @@ public:
         Absent
     };
 
-    Passwords();
-    virtual ~Passwords();
+    Passwords2(DbClient& _dbClient, Backend& _backend);
+    virtual ~Passwords2();
 
     SaveState isSaved(entry_t pwd);
     bool hasSavedCredentials(QString host, QString path);
     int countSavedCredentials(QString host, QString path);
     std::vector<entry_t> getCredentials(QString host, QString path);
 
-    void saveOrUpdate(entry_t pwd);
+    bool saveOrUpdate(entry_t pwd);
 
 private:
-    static std::string tableName;
-    pqxx::connection conn;
+    static QString tableName;
+    DbClient& dbClient;
+    Backend& backend;
 };
 
-} /* namespace db */
+}
 
-#endif /* DB_PASSWORDS_H_ */
+Q_DECLARE_METATYPE(db::Passwords2::entry_t)
+
+#endif

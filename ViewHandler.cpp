@@ -1,211 +1,112 @@
 #include <ViewHandler.h>
 
+#include <conf/conf.h>
+#include <db/Backend.h>
+#include <db/DbGroup.h>
+
+#ifndef TEST_BUILD
+#include <Tab.h>
 #include <misc/DebugHelpers.h>
+#else
+#include <test/ViewHandler_test.h>
+#endif
 
 #include <QAbstractListModel>
+#include <QFileDialog>
+#include <QApplication>
+#include <QIcon>
 #include <QJSEngine>
 #include <QJSValue>
 #include <QModelIndex>
+#include <QSettings>
+#include <QSqlDatabase>
+#include <QStandardItem>
+#include <QStandardPaths>
+
 //#include <QtWebEngine/5.9.1/QtWebEngine/private/qquickwebenginehistory_p.h>
 
+#include <chrono>
 #include <deque>
-#include <iostream>
 
-ViewHandler::ViewHandler(QQuickItem* _webViewContainer, QQuickItem* _tabSelector,
-        QQuickItem* _scriptBlockingView, ContentFilter& _cf, std::shared_ptr<QQuickView> _qView)
-    : webViewContainer(_webViewContainer), tabSelector(_tabSelector),
-      scriptBlockingView(_scriptBlockingView), cf(_cf), qView(_qView)
+Q_LOGGING_CATEGORY(vhLog, "viewHandler")
+
+ViewHandler::ViewHandler(std::shared_ptr<QQuickView> _qView, db::Backend& _dbBack) :
+    qView(_qView), dbBack(_dbBack), bd(_qView)
 {
-    //connect(webViewContainer, SIGNAL(viewSelected(int)), this, SLOT(viewSelected(int)));
-    //connect(webViewContainer, SIGNAL(historyUpdated(int)), this, SLOT(historyUpdated(int)));
+#ifndef TEST_BUILD
+    webViewContainer = qobject_cast<QQuickItem*>(
+        qView->rootObject()->findChild<QObject*>("webViewContainer"));
+    if (!webViewContainer)
+        throw std::runtime_error("No webViewContainer object found");
+
+    scriptBlockingView = qobject_cast<QQuickItem*>(
+        qView->rootObject()->findChild<QObject*>("scriptBlockingView"));
+    if (!scriptBlockingView)
+        throw std::runtime_error("No scriptBlockingView object found");
+
+    QObject* confDbConnDialog = qView->rootObject()->
+        findChild<QObject*>("configureDbConnectionDialog");
+    if (!confDbConnDialog)
+        throw std::runtime_error("No configureDbConnectionDialog object found");
+
+    QObject::connect(confDbConnDialog, SIGNAL(selectIcon()),
+                     this, SLOT(iconRequestedDialog()));
+    QObject::connect(this, SIGNAL(iconSelected(QVariant)),
+                     confDbConnDialog, SLOT(iconSelected(QVariant)));
+
+#else
+    webViewContainer = new QQuickItem_mock();
+    tabSelector = new QQuickItem_mock();
+    scriptBlockingView = new QQuickItem_mock();
+#endif
 }
 
 ViewHandler::~ViewHandler()
 {
-
+#ifndef TEST_BUILD
+#else
+    delete webViewContainer;
+    delete tabSelector;
+    delete scriptBlockingView;
+#endif
 }
 
-void ViewHandler::viewSelected(int viewId)
+bool ViewHandler::init()
 {
-    std::cout << "SELECTING: " << viewId << std::endl;
+    /// Configure model for Panel Selector
+    QQuickItem* panelSelector = qobject_cast<QQuickItem*>(
+        qView->rootObject()->findChild<QObject*>("panelSelector"));
+    QVariant pMod = QVariant::fromValue<QObject*>(&panelModel);
+    QMetaObject::invokeMethod(panelSelector, "setModel",
+                              Qt::ConnectionType::QueuedConnection,
+                              Q_ARG(QVariant, pMod));
 
-    std::lock_guard<std::recursive_mutex> lock(viewsMutex);
-    webViewContainer->setProperty("currentView", views.at(viewId).view);
-    configDb.setProperty("currentTab", std::to_string(viewId));
-}
+    QObject::connect(panelSelector, SIGNAL(panelSelected(QString)),
+                     this, SLOT(selectPanel(QString)));
+    QObject::connect(&dbBack, SIGNAL(iconUpdated(QString, QString)),
+                     this, SLOT(updatePanelIcon(QString, QString)));
 
-int ViewHandler::countAncestors(int parent) const
-{
-    if (parent < 0)
-        throw std::runtime_error("ViewHandler::countAncestors(): parent id cannot be negative");
+    QStandardItem* item = new QStandardItem(addDbText);
+    item->setToolTip("qrc:/ui/icons/plus_line.svg"); /// FIXME: this should be proper role in the model
+    panelModel.appendRow(item);
 
-    if (!parent)
-        return 0;
-
-    {
-        std::lock_guard<std::recursive_mutex> lock(viewsMutex);
-
-        int indentLevel = 1;
-
-        while (parent && views.count(parent) && views.at(parent).parent)
-        {
-            ++indentLevel;
-            parent = views.at(parent).parent;
-        }
-
-        return indentLevel;
-    }
-}
-
-int ViewHandler::createTab(int parent)
-{
-    std::lock_guard<std::recursive_mutex> lock(viewsMutex);
-
-    /// Call webViewContainer to create new QML Web View object and
-    /// create associated entry in tabSelectorModel
-    ///
-    QVariant newView;
-    int id = tabsDb.createTab();
-    tabsDb.setParent(id, parent);
-
-    int indent = countAncestors(parent);
-
-    QMetaObject::invokeMethod(webViewContainer, "createNewView",
-            Q_RETURN_ARG(QVariant, newView),
-            Q_ARG(QVariant, id),
-            Q_ARG(QVariant, indent),
-            Q_ARG(QVariant, parent));
-
-    /// Put the view in proper container, and if parent was defined
-    /// update it's children list
-    ///
-    views[id] = viewContainer{newView, parent};
-
-    if (parent)
-        views.at(parent).children.push_back(id);
-
-    return id;
-}
-
-QVariant ViewHandler::getView(int viewId)
-{
-    std::lock_guard<std::recursive_mutex> lock(viewsMutex);
-
-    return views.at(viewId).view;
-}
-
-void ViewHandler::fixHierarchy(int viewId)
-{
-    auto& thisView = views.at(viewId);
-
-    /// Fix parent entries for children of this view
-    ///
-    for (auto& child: thisView.children)
-    {
-        tabsDb.setParent(child, thisView.parent);
-        views.at(child).parent = thisView.parent;
-    }
-
-    /// Move children of this view to the parent's list of children
-    ///
-    if (thisView.parent)
-    {
-        auto& children = views.at(thisView.parent).children;
-        auto pos = std::find(children.begin(), children.end(), viewId);
-        children.insert(pos, thisView.children.begin(), thisView.children.end());
-        children.erase(std::remove(children.begin(), children.end(), viewId));
-    }
+    return true;
 }
 
 void ViewHandler::showFullscreen(bool fullscreen)
 {
-    std::cout << "showFullscreen called\n";
+    qCDebug(vhLog, "showFullscreen(fullscreen=%i)", fullscreen);
+
     if (fullscreen)
         qView->showFullScreen();
     else
         qView->showNormal();
 }
 
-void ViewHandler::fixIndentation(int viewId)
-{
-    std::deque<int> toReindent;
-    QVariant novalue;
-
-    auto& thisView = views.at(viewId);
-
-// FIXME: this can be refactored to include only one while loop
-
-    for (int childId : thisView.children)
-    {
-        views.at(childId).parent = thisView.parent;
-        toReindent.insert(toReindent.end(), views.at(childId).children.begin(),
-                views.at(childId).children.end());
-//        std::cout << "Children of " << childId << " added for reindentation:\n";
-//        std::cout << "Vector: ";
-        misc::DebugHelpers::printIntVector(views.at(childId).children);
-        int indent = countAncestors(views.at(childId).parent);
-        QMetaObject::invokeMethod(tabSelector, "fixIndentation",
-                Q_RETURN_ARG(QVariant, novalue),
-                Q_ARG(QVariant, childId),
-                Q_ARG(QVariant, indent));
-    }
-    //std::cout << "------\n";
-    while (!toReindent.empty())
-    {
-        int childId = toReindent.front();
-        toReindent.pop_front();
-        QVariant novalue1;
-        toReindent.insert(toReindent.end(), views.at(childId).children.begin(),
-                views.at(childId).children.end());
-//        std::cout << "Children of " << childId << " added for reindentation:\n";
-//        std::cout << "Vector: ";
-        misc::DebugHelpers::printIntVector(views.at(childId).children);
-        int indent = countAncestors(views.at(childId).parent);
-        QMetaObject::invokeMethod(tabSelector, "fixIndentation",
-                Q_RETURN_ARG(QVariant, novalue1),
-                Q_ARG(QVariant, childId),
-                Q_ARG(QVariant, indent));
-    }
-}
-
-void ViewHandler::closeTab(int viewId)
-{
-    std::cout << "CLOSE TAB ------------> " << viewId << std::endl;
-    std::lock_guard<std::recursive_mutex> lock(viewsMutex);
-
-    /// Remove tab entry from database and from tabSelector component
-    ///
-    tabsDb.closeTab(viewId);
-
-    QVariant novalue;
-    QMetaObject::invokeMethod(tabSelector, "removeTabEntry",
-            Q_RETURN_ARG(QVariant, novalue),
-            Q_ARG(QVariant, viewId));
-
-    /// Move tab's children to parent, fix parent entries, fix indentation levels
-    ///
-    fixHierarchy(viewId);
-    fixIndentation(viewId);
-
-    /// Destroy QML view object and erase entry from tabs / views structure
-    ///
-    auto& thisView = views.at(viewId);
-    QObject* qo = qvariant_cast<QObject *>(thisView.view);
-    QMetaObject::invokeMethod(webViewContainer, "destroyView",
-            Q_RETURN_ARG(QVariant, novalue),
-            Q_ARG(QVariant, thisView.view));
-
-    views.erase(viewId);
-
-    /// Optionally create new empty tab if last tab was closed
-    ///
-    if (views.empty())
-        viewSelected(createTab(0));
-}
 
 void ViewHandler::historyUpdated(int _viewId, QQuickWebEngineHistory* navHistory)
 {
-    std::cout << "\n\nhistory: " << _viewId << std::endl;
+//    std::cout << "\n\nhistory: " << _viewId << std::endl;
 
 
 //    QVariant items = navHistory->property("backItems");
@@ -276,155 +177,20 @@ void ViewHandler::historyUpdated(int _viewId, QQuickWebEngineHistory* navHistory
 }
 
 
-void ViewHandler::urlChanged(int viewId, QUrl url)
-{
-    tabsDb.setUrl(viewId, url.toString().toStdString());
-}
 
-void ViewHandler::titleChanged(int viewId, QString title)
-{
-    tabsDb.setTitle(viewId, title.toStdString());
-}
-
-void ViewHandler::iconChanged(int viewId, QUrl icon)
-{
-    tabsDb.setIcon(viewId, icon.toString().toStdString());
-}
-
-void ViewHandler::selectTab(int viewId)
-{
-    QVariant selected;
-    QMetaObject::invokeMethod(tabSelector, "selectView",
-            Q_RETURN_ARG(QVariant, selected), Q_ARG(QVariant, viewId));
-
-    if (selected.toInt() < 0)
-        return;
-
-    viewSelected(selected.toInt());
-}
-
-void ViewHandler::loadTabs()
-{
-    std::vector<db::Tabs::TabInfo> tabs = tabsDb.getAllTabs();
-
-    /// Open new empty tab if no tabs were retrieved from database
-    ///
-    if (tabs.empty())
-    {
-        viewSelected(createTab());
-        return;
-    }
-
-    {
-        std::lock_guard<std::recursive_mutex> lock(viewsMutex);
-
-        for (const auto& tab: tabs)
-        {
-            /// Call webViewContainer to create new QML Web View object and
-            /// create associated entry in tabSelectorModel
-            ///
-            int indent = countAncestors(tab.parent);
-
-            QVariant newView;
-            QMetaObject::invokeMethod(webViewContainer, "createNewView",
-                    Q_RETURN_ARG(QVariant, newView),
-                    Q_ARG(QVariant, tab.id),
-                    Q_ARG(QVariant, indent),
-                    Q_ARG(QVariant, tab.parent));
-
-            QObject* v = qvariant_cast<QObject *>(newView);
-
-            v->setProperty("targetTitle", tab.title.c_str());
-            v->setProperty("targetIcon", tab.icon.c_str());
-            v->setProperty("targetUrl", tab.url.c_str()); // FIXME: lazy page loading
-
-            /// Put the view in proper container, and if parent was defined
-            /// update it's children list
-            ///
-            views[tab.id] = viewContainer{newView, tab.parent};
-        }
-
-        /// We have to iterate again to fill in the children vector because
-        /// only now we can be sure, that all parents are there to begin with.
-        ///
-        for (const auto& view: views)
-        { // FIXME: this will not preserve order between restarts
-            if (int parent = view.second.parent)
-            {
-                views.at(parent).children.push_back(view.first);
-            }
-        }
-    }
-
-    /// Restore currentTab from previous session
-    ///
-    std::string currentTab = configDb.getProperty("currentTab");
-
-    if (!currentTab.empty())
-    {
-        int viewId = std::stoi(currentTab);
-
-        selectTab(viewId);
-    }
-}
-
-void ViewHandler::nextTab()
-{
-    std::string currentTab = configDb.getProperty("currentTab");
-
-    if (!currentTab.empty())
-    {
-        int viewId = std::stoi(currentTab);
-
-        QVariant nTab;
-        QMetaObject::invokeMethod(tabSelector, "getNextTab",
-                Q_RETURN_ARG(QVariant, nTab),
-                Q_ARG(QVariant, viewId));
-
-        if (!nTab.isValid())
-            return;
-
-        int nextId = nTab.toInt();
-
-        selectTab(nextId);
-    }
-}
-
-void ViewHandler::prevTab()
-{
-    std::string currentTab = configDb.getProperty("currentTab");
-
-    if (!currentTab.empty())
-    {
-        int viewId = std::stoi(currentTab);
-
-        QVariant pTab;
-        QMetaObject::invokeMethod(tabSelector, "getPrevTab",
-                Q_RETURN_ARG(QVariant, pTab),
-                Q_ARG(QVariant, viewId));
-
-        if (!pTab.isValid())
-            return;
-
-        int prevId = pTab.toInt();
-
-        selectTab(prevId);
-    }
-}
-
-void ViewHandler::openScriptBlockingView(int viewId)
+void ViewHandler::openScriptBlockingView(QString dbName, int viewId)
 {
     /// Find current url for viewId and fetch list of script source urls
     /// that were accessed while loading the view
     ///
+    QObject* view = qvariant_cast<QObject *>(tabsModels.at(dbName)->getView(viewId));
 
-    QObject* view = qvariant_cast<QObject *>(views.at(viewId).view);
     if (!view)
         throw std::runtime_error("ViewHandler::openScriptBlockingView(): there is no view "
                 "associated with this viewId: " + std::to_string(viewId));
 
     QString url = view->property("url").toUrl().host();
-    std::set<std::string> urls = cf.getUrlsFor(url.toStdString());
+    std::set<std::string> urls = contentFilters.at(dbName)->getUrlsFor(url.toStdString());
 
     QJSEngine engine;
 
@@ -434,11 +200,15 @@ void ViewHandler::openScriptBlockingView(int viewId)
     QMetaObject::invokeMethod(scriptBlockingView, "clearEntries",
             Q_RETURN_ARG(QVariant, noValue));
 
-    using bst = db::ScriptBlock::State;
+
+    std::shared_ptr<db::DbGroup> dbg;
+    dbg = db::DbGroup::getGroup(dbName);
+
+    using bst = db::ScriptBlock2::State;
     for (const std::string& u: urls)
     {
         QJSValue val = engine.newObject();
-        bst blockState = sBlockDb.isAllowed(url.toStdString(), u, false);
+        bst blockState = dbg->scb.isAllowed(url, u.c_str(), false);
 
         bool allowed = blockState == bst::AllowedBoth || blockState == bst::Allowed;
         bool gallowed = blockState == bst::AllowedBoth || blockState == bst::AllowedGlobally;
@@ -452,6 +222,14 @@ void ViewHandler::openScriptBlockingView(int viewId)
                 Q_ARG(QVariant, val.toVariant()));
     }
 
+    /// scriptBlockingView needs to propagate dbName with it's signals
+    /// so that content filters will be able to filter out which signals
+    /// are directed at them
+    ///
+    QMetaObject::invokeMethod(scriptBlockingView, "setDbName",
+            Q_RETURN_ARG(QVariant, noValue),
+            Q_ARG(QVariant, dbName));
+
     /// Show scriptBlockingView and hide webViewContainer and
     /// also TabSelector (which is hidden by webViewContainer
     ///
@@ -459,4 +237,152 @@ void ViewHandler::openScriptBlockingView(int viewId)
     scriptBlockingView->setProperty("visible", true);
     webViewContainer->setProperty("visible", false);
 
+}
+
+void ViewHandler::createWebProfile(QString dbName)
+{
+    contentFilters[dbName] = std::shared_ptr<ContentFilter>(new ContentFilter(dbName));
+    ContentFilter& cf = *contentFilters[dbName];
+
+    webProfiles[dbName] = std::shared_ptr<QQuickWebEngineProfile>(new QQuickWebEngineProfile());
+    webProfiles[dbName]->setStorageName(dbName);
+    webProfiles[dbName]->setRequestInterceptor(&cf);
+
+    QObject::connect(scriptBlockingView, SIGNAL(whitelistLocal(QString, QString, QString)),
+                     &cf, SLOT(whitelistLocal(QString, QString, QString)));
+    QObject::connect(scriptBlockingView, SIGNAL(whitelistGlobal(QString, QString)),
+                     &cf, SLOT(whitelistGlobal(QString, QString)));
+    QObject::connect(scriptBlockingView, SIGNAL(removeLocal(QString, QString, QString)),
+                     &cf, SLOT(removeLocal(QString, QString, QString)));
+    QObject::connect(scriptBlockingView, SIGNAL(removeGlobal(QString, QString)),
+                     &cf, SLOT(removeGlobal(QString, QString)));
+
+    bd.setupProfile(webProfiles[dbName]);
+}
+
+void ViewHandler::dbConnected(QString dbName, QString schemaName)
+{
+    qCDebug(dbLogs, "Database %s connected, setting up", dbName.toStdString().c_str());
+
+    /// After db is connected, we can create database group
+    ///
+    db::Backend* backend = dynamic_cast<db::Backend*>(sender());
+    db::DbGroup::createGroup(dbName, schemaName, *backend);
+
+    /// Next create and fill model
+    ///
+    QSettings settings;
+    auto dbConnData = db::Backend::readAllConnectionEntries(settings);
+
+    createWebProfile(dbName);
+
+    std::shared_ptr<TabModel> tabsModel(new TabModel(qView, dbName, webProfiles[dbName]));
+    tabsModels[dbName] = tabsModel;
+    tabsModel->loadTabs();
+
+    /// Find icon for connected database
+    ///
+    auto result = std::find_if(dbConnData.begin(), dbConnData.end(),
+                               [&dbName](const struct db::Backend::connData_t& cd)->bool
+                               {
+                                   if (dbName == cd.connName)
+                                       return true;
+
+                                   return false;
+                               });
+    QString icon;
+    if (result != dbConnData.end())
+        icon = result->connIcon;
+
+    /// Add row to panel model and select panel if it was the previously selected one
+    ///
+    QStandardItem* item = new QStandardItem(dbName);
+    item->setToolTip(icon); /// FIXME: this should be proper role in the model
+//    panelModel.appendRow(item);
+
+    int position = panelModel.rowCount() - 1;
+    if (position < 0)
+        position = 0;
+
+    panelModel.insertRow(position, item);
+
+    if (settings.contains(conf::Databases::currentPanel) &&
+        settings.value(conf::Databases::currentPanel).toString() == dbName)
+        selectPanel(dbName);
+}
+
+void ViewHandler::selectPanel(QString dbName)
+{
+    if (dbName == addDbText)
+    {
+        openDbConfig();
+        return;
+    }
+
+    QQuickItem* tabSelectorPanel = qobject_cast<QQuickItem*>(
+        qView->rootObject()->findChild<QObject*>("tabSelectorPanel"));
+
+    auto& tabsModel = tabsModels.at(dbName);
+
+    QVariant qv = QVariant::fromValue<QObject*>(tabsModel->getFlatModel());
+    QMetaObject::invokeMethod(tabSelectorPanel, "setModel",
+                              Qt::ConnectionType::QueuedConnection,
+                              Q_ARG(QVariant, qv));
+
+    QQuickItem* panelSelector = qobject_cast<QQuickItem*>(
+        qView->rootObject()->findChild<QObject*>("panelSelector"));
+
+    QMetaObject::invokeMethod(panelSelector, "setCurrentPanel",
+                              Qt::ConnectionType::QueuedConnection,
+                              Q_ARG(QVariant, dbName));
+
+    QApplication::processEvents();
+    tabsModel->selectCurrentTab();
+
+    QSettings settings;
+    settings.setValue(conf::Databases::currentPanel, dbName);
+}
+
+void ViewHandler::openDbConfig()
+{
+    QObject* confDbConnDialog = qView->rootObject()->
+        findChild<QObject*>("configureDbConnectionDialog");
+    if (!confDbConnDialog)
+        throw std::runtime_error("No configureDbConnectionDialog object found");
+
+    dbBack.configureDbConnection(confDbConnDialog, /*passMan.isEncryptionReady()*/ false);
+}
+
+void ViewHandler::iconRequestedDialog()
+{
+    /// Set-up and show QFileDialog
+    ///
+    QFileDialog qfd;
+    qfd.setFileMode(QFileDialog::ExistingFile);
+    qfd.setAcceptMode(QFileDialog::AcceptOpen);
+    qfd.setNameFilter("Image files (*.png *.xpm *.jpg *.svg *.ico)");
+
+//    qfd.selectFile(QStandardPaths::writableLocation(QStandardPaths::HomeLocation));
+
+    bool accepted = qfd.exec() == QDialog::Accepted;
+
+    /// Set target path and filename for the accepted download
+    ///
+    if (accepted)
+    {
+        emit iconSelected("file://" + qfd.selectedFiles().first());
+    }
+
+}
+
+void ViewHandler::updatePanelIcon(QString dbName, QString iconPath)
+{
+    for (int i = 0; i < panelModel.rowCount(); ++i)
+    {
+        QModelIndex index = panelModel.index(i, 0);
+        if (index.data(Qt::DisplayRole).toString() != dbName)
+            continue;
+
+        panelModel.setData(index, iconPath, Qt::ToolTipRole);
+    }
 }

@@ -3,57 +3,131 @@ import QtQuick.Controls 2.2
 
 import "."
 
-ScrollView
-{
+Item {
     id: root
 
-    clip: true
+    signal openScriptBlockingView(string dbName, int viewId)
+    signal newTabRequested()
 
-    signal newTabCreated()
-    
-    Item
+    PanelSelector
     {
-        id: tabSelectorItem
+        id: panelSelector
+        objectName: "panelSelector"
 
-        implicitWidth: Style.tabSelector.width
-        implicitHeight: tabSelector.height + newTabButton.height
+        height: Style.panelSelector.height
 
-        TabSelector
+        anchors.left: parent.left
+        anchors.leftMargin: Style.margin
+        anchors.top: parent.top
+        anchors.right: parent.right
+    }
+
+    ScrollView
+    {
+        id: scrollView
+
+        clip: true
+
+        anchors.left: parent.left
+        anchors.top: panelSelector.bottom
+        anchors.bottom: parent.bottom
+        anchors.right: parent.right
+
+        Item
         {
-            id: tabSelector
-            objectName: "tabSelector"
+            id: tabSelectorItem
 
-            anchors.left: parent.left
-            anchors.top: parent.top
-            anchors.right: parent.right
+            implicitWidth: Style.tabSelector.width
+            implicitHeight: tabSelector.height + newTabButton.height
+
+            Item
+            {
+                id: tabSelectorWrapper
+
+                anchors.left: parent.left
+                anchors.top: parent.top
+                anchors.right: parent.right
+                height: tabSelector.getHeight()
+                // children:
+                TabSelector
+                {
+                    id: tabSelector
+                    objectName: "tabSelector"
+
+                    anchors.fill: parent
+
+                    onOpenScriptBlockingView:
+                    {
+                        root.openScriptBlockingView(dbName, viewId)
+                    }
+                }
+            }
+
+            NewTabButton
+            {
+                id: newTabButton
+
+                anchors.top: tabSelectorWrapper.bottom
+                anchors.right: parent.right
+                anchors.left: parent.left
+                anchors.leftMargin: Style.margin
+                anchors.rightMargin: Style.margin
+
+                onNewTabRequested:
+                {
+                    root.newTabRequested()
+                }
+            }
         }
-        
-        NewTabButton
+
+        function getTabSelector()
         {
-            id: newTabButton
-
-            anchors.top: tabSelector.bottom
-            anchors.right: parent.right
-            anchors.left: parent.left
-            anchors.leftMargin: Style.margin
-            anchors.rightMargin: Style.margin
-            
-            onNewTabCreated: root.newTabCreated()
+            return tabSelectorWrapper.children
         }
+
+        function createNewTab(obj, insertAfter)
+        {
+            tabSelector.createNewTab(obj, insertAfter)
+        }
+
+        function createTab()
+        {
+            return tabSelector.createTab()
+        }
+
     }
-    
-    function createNewTab(obj, insertAfter)
+
+    function setModel(model)
     {
-        tabSelector.createNewTab(obj, insertAfter)
+        tabSelector.setModel(model)
     }
-    
-    function updateTitle(viewId, title)
+
+    function scrollToBottom()
     {
-        tabSelector.updateTitle(viewId, title)
+        if (tabSelectorItem.height - scrollView.contentItem.height < 0)
+            scrollView.contentItem.contentY = 0
+        else
+            scrollView.contentItem.contentY = tabSelectorItem.height - scrollView.contentItem.height
     }
-    
-    function updateIcon(viewId, icon)
+
+    function scrollToCurrent()
     {
-        tabSelector.updateIcon(viewId, icon)
+        var itemPosition = tabSelector.getCurrentItemPosition().y
+        var bottom = tabSelectorItem.height - scrollView.contentItem.height
+        var newPosition = itemPosition - (scrollView.contentItem.height / 2)
+
+        if (newPosition < 0)
+        {
+            scrollView.contentItem.contentY = 0
+        }
+        else if (newPosition >= bottom)
+            scrollToBottom()
+        else
+            scrollView.contentItem.contentY = itemPosition - scrollView.contentItem.height / 2
+    }
+
+    function getCurrentPanel()
+    {
+        return panelSelector.getCurrentPanel()
     }
 }

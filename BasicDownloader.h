@@ -3,9 +3,13 @@
 
 #include <QObject>
 #include <QQuickItem>
-#include <QQuickWebEngineProfile>
 
 #include <map>
+#include <memory>
+
+class QQuickView;
+class QQuickWebEngineDownloadItem;
+class QQuickWebEngineProfile;
 
 class BasicDownloader : public QObject
 {
@@ -23,7 +27,7 @@ public:
         QObject* dItem = nullptr;
     };
 
-    BasicDownloader();
+    BasicDownloader(std::shared_ptr<QQuickView> view);
     virtual ~BasicDownloader();
 
     /**
@@ -32,8 +36,9 @@ public:
      * @return return true if download was accepted and should proceed, false otherwise
      */
     bool downloadRequestedDialog(QObject* dItem);
-
     bool hasHistory() const;
+
+    void setupProfile(std::shared_ptr<QQuickWebEngineProfile> profile);
 
 signals:
     void progressUpdated(QVariant progress);

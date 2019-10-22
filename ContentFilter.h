@@ -1,19 +1,23 @@
 #ifndef CONTENTFILTER_H_
 #define CONTENTFILTER_H_
 
-#include <db/ScriptBlock.h>
-
 #include <QWebEngineUrlRequestInterceptor>
 
 #include <map>
+#include <memory>
 #include <set>
+
+namespace db
+{
+struct DbGroup;
+}
 
 class ContentFilter: public QWebEngineUrlRequestInterceptor
 {
     Q_OBJECT
 
 public:
-    ContentFilter();
+    ContentFilter(QString _dbName);
     virtual ~ContentFilter();
 
     void interceptRequest(QWebEngineUrlRequestInfo &info);
@@ -21,14 +25,14 @@ public:
     std::set<std::string> getUrlsFor(const std::string& url);
 
 public slots:
-    void whitelistLocal(const QString& site, const QString& url);
-    void whitelistGlobal(const QString& url);
-    void removeLocal(const QString& site, const QString& url);
-    void removeGlobal(const QString& url);
+    void whitelistLocal(QString _dbName, QString site, QString url);
+    void whitelistGlobal(QString _dbName, QString url);
+    void removeLocal(QString _dbName, QString site, QString url);
+    void removeGlobal(QString _dbName, QString url);
 
 private:
     std::map<std::string, std::set<std::string>> requestedScripts;
-    db::ScriptBlock sBlock;
+    QString dbName;
 
     void filterScripts(QWebEngineUrlRequestInfo& info);
 };

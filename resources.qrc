@@ -5,11 +5,13 @@
     <file>ui/BasicButton.qml</file>
     <file>ui/ContextMenuEntry.qml</file>
     <file>ui/CloseIcon.qml</file>
+    <file>ui/DbConnectionDialog.qml</file>
     <file>ui/DownloadHistoryListEntry.qml</file>
     <file>ui/DownloadHistoryView.qml</file>
     <file>ui/FindBar.qml</file>
     <file>ui/MainWindow.qml</file>
     <file>ui/NewTabButton.qml</file>
+    <file>ui/PanelSelector.qml</file>
     <file>ui/ProgressComponent.qml</file>
     <file>ui/qmldir</file>
     <file>ui/ScriptBlockingView.qml</file>
@@ -22,7 +24,10 @@
     <file>ui/WebViewContainer.qml</file>
     <file>ui/icons/close.svg</file>
     <file>ui/icons/download2.svg</file>
+    <file>ui/icons/home.svg</file>
     <file>ui/icons/lock.svg</file>
+    <file>ui/icons/plus.svg</file>
+    <file>ui/icons/plus_line.svg</file>
     <file>ui/icons/searchUp.svg</file>
     <file>ui/icons/searchDown.svg</file>
     <file>ui/icons/caseSensitive.svg</file>
@@ -30,7 +35,7 @@
     <file>js/formExtractor.js</file>
     <file>js/formFiller.js</file>
   </qresource>
-  <qresource prefix="Space">
+  <qresource prefix="Space"> <!-- these are style files -->
     <file alias="Menu.qml">ui/Space/Menu.qml</file>
     <file alias="MenuItem.qml">ui/Space/MenuItem.qml</file>
     <file alias="MenuSeparator.qml">ui/Space/MenuSeparator.qml</file>

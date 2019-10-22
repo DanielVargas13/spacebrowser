@@ -5,12 +5,56 @@
 #include <QJSEngine>
 #include <QJSValue>
 #include <QMetaObject>
+#include <QQuickView>
+#include <QQuickWebEngineProfile>
 
 #include <iostream>
 
-BasicDownloader::BasicDownloader()
+BasicDownloader::BasicDownloader(std::shared_ptr<QQuickView> view)
 {
+    /// Connect this downloader to visual components
+    /// FIXME: this will conflict in case downloads will run on several profiles at the same time
+    ///
+    QQuickItem* downloaderProgressBar = qobject_cast<QQuickItem*>(
+            view->rootObject()->findChild<QObject*>("downloadProgressBar"));
+    if (!downloaderProgressBar)
+        throw std::runtime_error("No downloaderProgressBar object found");
 
+    QObject::connect(this, SIGNAL(progressUpdated(QVariant)),
+            downloaderProgressBar, SLOT(updateProgress(QVariant)));
+    QQuickItem* downloadHistoryButton = qobject_cast<QQuickItem*>(
+            view->rootObject()->findChild<QObject*>("downloadHistoryButton"));
+    if (!downloadHistoryButton)
+        throw std::runtime_error("No downloadHistoryButton object found");
+
+    QObject::connect(this, &BasicDownloader::historyChanged,
+            downloadHistoryButton, &QQuickItem::setVisible);
+    QQuickItem* downloadHistoryView = qobject_cast<QQuickItem*>(
+            view->rootObject()->findChild<QObject*>("downloadHistoryView"));
+    if (!downloadHistoryView)
+        throw std::runtime_error("No downloadHistoryView object found");
+
+    QObject::connect(this, SIGNAL(downloadFinished(QVariant)),
+            downloadHistoryView, SLOT(downloadFinished(QVariant)));
+    QObject::connect(this, SIGNAL(newHistoryEntry(QVariant)),
+            downloadHistoryView, SLOT(addEntry(QVariant)));
+    QObject::connect(this, SIGNAL(progressUpdated(QVariant, QVariant, QVariant)),
+            downloadHistoryView,
+            SLOT(updateProgress(QVariant, QVariant, QVariant)));
+    QObject::connect(this, SIGNAL(downloadPaused(QVariant)), downloadHistoryView,
+            SLOT(downloadPaused(QVariant)));
+    QObject::connect(this, SIGNAL(downloadResumed(QVariant)),
+            downloadHistoryView, SLOT(downloadResumed(QVariant)));
+    QObject::connect(this, SIGNAL(downloadCanceled(QVariant)),
+            downloadHistoryView, SLOT(downloadCanceled(QVariant)));
+    QObject::connect(downloadHistoryView, SIGNAL(openUrl(QString)), this,
+            SLOT(openUrl(QString)));
+    QObject::connect(downloadHistoryView, SIGNAL(pause(int)), this,
+            SLOT(pause(int)));
+    QObject::connect(downloadHistoryView, SIGNAL(resume(int)), this,
+            SLOT(resume(int)));
+    QObject::connect(downloadHistoryView, SIGNAL(cancel(int)), this,
+            SLOT(cancel(int)));
 }
 
 BasicDownloader::~BasicDownloader()
@@ -196,4 +240,14 @@ void BasicDownloader::cancel(int id)
     QMetaObject::invokeMethod(md.dItem, "cancel", Qt::DirectConnection);
 
     emit downloadCanceled(id);
+}
+
+void BasicDownloader::setupProfile(std::shared_ptr<QQuickWebEngineProfile> profile)
+{
+    QObject::connect(profile.get(),
+                     SIGNAL(downloadRequested(QQuickWebEngineDownloadItem*)), this,
+                     SLOT(downloadRequested(QQuickWebEngineDownloadItem*)));
+    QObject::connect(profile.get(),
+                     SIGNAL(downloadFinished(QQuickWebEngineDownloadItem*)), this,
+                     SLOT(downloadFinished(QQuickWebEngineDownloadItem*)));
 }

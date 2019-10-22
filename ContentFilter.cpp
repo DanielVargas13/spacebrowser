@@ -1,7 +1,11 @@
 #include <ContentFilter.h>
-#include <db/ScriptBlock.h>
 
-ContentFilter::ContentFilter()
+#include <conf/conf.h>
+#include <db/DbGroup.h>
+
+#include <QSettings>
+
+ContentFilter::ContentFilter(QString _dbName) : dbName(_dbName)
 {
 
 }
@@ -47,7 +51,7 @@ void ContentFilter::filterScripts(QWebEngineUrlRequestInfo& info)
     if (requestUrl.size() >= firstParty.size())
     {
         bool accept = true;
-        for (unsigned int i = 1; i < firstParty.size(); ++i)
+        for (int i = 1; i < firstParty.size(); ++i)
         {
             if (firstParty[firstParty.size()-i] != requestUrl[requestUrl.size()-i])
             {
@@ -66,31 +70,58 @@ void ContentFilter::filterScripts(QWebEngineUrlRequestInfo& info)
 
     /// Check whitelists in database
     ///
-    db::ScriptBlock::State allowed = sBlock.isAllowed(firstPartyHost.toStdString(),
-            requestUrlHost.toStdString());
-
-    if (allowed == db::ScriptBlock::State::Blocked)
+    auto dbh = db::DbGroup::getGroup(dbName);
+    if (dbh)
+    {
+        db::ScriptBlock2::State allowed = dbh->scb.isAllowed(firstPartyHost,
+                                                             requestUrlHost);
+        
+        if (allowed == db::ScriptBlock2::State::Blocked)
+            info.block(true);
+    }
+    else
         info.block(true);
 
     return;
 }
 
-void ContentFilter::whitelistLocal(const QString& site, const QString& url)
+void ContentFilter::whitelistLocal(QString _dbName, QString site, QString url)
 {
-    sBlock.whitelistLocal(site.toStdString(), url.toStdString());
+    if (dbName != _dbName)
+        return;
+
+    auto dbh = db::DbGroup::getGroup(dbName);
+    if (dbh)
+        dbh->scb.whitelistLocal(site, url);
 }
 
-void ContentFilter::whitelistGlobal(const QString& url)
+void ContentFilter::whitelistGlobal(QString _dbName, QString url)
 {
-    sBlock.whitelistGlobal(url.toStdString());
+    if (dbName != _dbName)
+        return;
+
+    auto dbh = db::DbGroup::getGroup(dbName);
+    if (dbh)
+        dbh->scb.whitelistGlobal(url);
 }
 
-void ContentFilter::removeLocal(const QString& site, const QString& url)
+void ContentFilter::removeLocal(QString _dbName, QString site, QString url)
 {
-    sBlock.removeLocal(site.toStdString(), url.toStdString());
+    if (dbName != _dbName)
+        return;
+
+    auto dbh = db::DbGroup::getGroup(dbName);
+    if (dbh)
+        dbh->scb.removeLocal(site, url);
 }
 
-void ContentFilter::removeGlobal(const QString& url)
+void ContentFilter::removeGlobal(QString _dbName, QString url)
 {
-    sBlock.removeGlobal(url.toStdString());
+    if (dbName != _dbName)
+        return;
+
+    auto dbh = db::DbGroup::getGroup(dbName);
+    if (dbh)
+        dbh->scb.removeGlobal(url);
 }
+

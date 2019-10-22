@@ -8,12 +8,16 @@ WebEngineView
     id: root
 
     property int myViewId
+    property string dbName
     property var viewContainer
+    property var tabModel
 
     property var targetUrl // FIXME: these two are needed to handle lazy loading of webpages
-    property var targetTitle // it would be cleaner to handle this on qt level
-    property var targetIcon
     property int passCount: 0
+
+    signal updateTitle(int viewId, string title)
+    signal updateIcon(int viewId, string iconUri)
+    signal updateUrl(int viewId, string url)
 
     webChannel: WebChannel {
         id: webChan
@@ -22,33 +26,30 @@ WebEngineView
     anchors.fill: parent
 
     onTitleChanged: {
-        viewContainer.updateTitle(myViewId, title, true)
+        root.updateTitle(myViewId, title)
     }
 
     onIconChanged: {
-        viewContainer.updateIcon(myViewId, icon.toString(), true)
+        var iconUri = icon.toString().replace("image://favicon/", "")
+        root.updateIcon(myViewId, iconUri)
     }
 
     onNewViewRequested: function(request) {
-        var viewId = viewHandler.createTab(myViewId)
-        viewHandler.getView(viewId).visible = false
-        request.openIn(viewHandler.getView(viewId))
+        var viewId = tabModel.createTab(myViewId)
+        var view = tabModel.getView(viewId)
+        view.visible = false
+        request.openIn(view)
     }
 
     onUrlChanged: {
-        if (viewContainer.currentView && viewContainer.currentView.myViewId == myViewId)
+        if (viewContainer.currentView &&
+            viewContainer.currentView.myViewId == myViewId &&
+            viewContainer.currentView.dbName == dbName)
+        {
             viewContainer.updateAddressBar(url)
+        }
 
-        viewHandler.urlChanged(myViewId, url)
-    }
-
-    onTargetTitleChanged: {
-        viewContainer.updateTitle(myViewId, targetTitle, false)
-    }
-
-    onTargetIconChanged: {
-        var iconUri = targetIcon.toString().replace("image://favicon/", "")
-        viewContainer.updateIcon(myViewId, iconUri, false)
+        root.updateUrl(myViewId, url)
     }
 
     onContextMenuRequested: function(request) {
