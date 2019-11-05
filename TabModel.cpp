@@ -360,13 +360,6 @@ void TabModel::loadTabs()
     ///
     flatModel.setSourceModel(this);
 
-/*
-    QVariant qv = QVariant::fromValue<QObject*>(&flatModel);
-    QMetaObject::invokeMethod(tabSelectorPanel, "setModel",
-                              Qt::ConnectionType::QueuedConnection,
-                              Q_ARG(QVariant, qv));
-*/
-
     /// Log timing
     ///
     auto end = std::chrono::system_clock::now();
