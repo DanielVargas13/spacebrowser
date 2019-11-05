@@ -349,10 +349,10 @@ void TabModel::loadTabs()
             }
         }
 
-        if (views2.size() != tabsMap.size())
+        if (views2.size() != (tabsMap.size() - 1)) // -1 because tabsMap has dummy root item
         {
             qCCritical(tabModelLog, "There are %li orphaned tabs in the %s model!",
-                       tabsMap.size() - views2.size(), dbName.toStdString().c_str());
+                       tabsMap.size() - views2.size() - 1, dbName.toStdString().c_str());
         }
     }
 
