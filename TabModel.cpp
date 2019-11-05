@@ -483,3 +483,10 @@ QAbstractItemModel* TabModel::getFlatModel()
 {
     return &flatModel;
 }
+
+void TabModel::updateParent(const Tab& tab, int parentId)
+{
+    auto dbg = db::DbGroup::getGroup(dbName);
+
+    dbg->tabs.setParent(tab.getId(), parentId);
+}
