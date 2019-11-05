@@ -348,6 +348,12 @@ void TabModel::loadTabs()
                 toAdd.push_back(std::pair<int, QStandardItem*>(child, item));
             }
         }
+
+        if (views2.size() != tabsMap.size())
+        {
+            qCCritical(tabModelLog, "There are %li orphaned tabs in the %s model!",
+                       tabsMap.size() - views2.size(), dbName.toStdString().c_str());
+        }
     }
 
     /// Configure models
