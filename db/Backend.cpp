@@ -155,11 +155,10 @@ void Backend::dbConfigured(QVariant connData)
     if (shouldConnect)
     {
         // FIXME: if connection already exists it should be disconnected and removed first
-        performQuery(
-            [newEntry, this]()->funRet_t
+        performQueryNR(
+            [newEntry, this]()->void
             {
                 connectDb(newEntry);
-                return true;
             });
     }
     else

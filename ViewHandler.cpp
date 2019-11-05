@@ -298,7 +298,6 @@ void ViewHandler::dbConnected(QString dbName, QString schemaName)
     ///
     QStandardItem* item = new QStandardItem(dbName);
     item->setToolTip(icon); /// FIXME: this should be proper role in the model
-//    panelModel.appendRow(item);
 
     int position = panelModel.rowCount() - 1;
     if (position < 0)
