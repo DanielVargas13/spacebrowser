@@ -135,21 +135,6 @@ std::vector<Tabs2::TabInfo> Tabs2::getAllTabs()
 
         }).get();
 
-//    std::vector<TabInfo> tabs;
-
-//    QSqlQuery query = std::get<QSqlQuery>(result);
-/*
-    while (query.next())
-    {
-        TabInfo tab;
-        tab.id = query.value("id").toInt();
-        tab.parent = query.value("parent").toInt();
-        tab.url = query.value("url").toString();
-        tab.title = query.value("title").toString();
-        tab.icon = query.value("icon").toString();
-
-        tabs.push_back(tab);
-        }*/
     QVariant res = std::get<QVariant>(result);
     std::vector<TabInfo> tabs = res.value<std::vector<TabInfo>>();
 
@@ -193,12 +178,10 @@ std::map<int, Tabs2::TabInfo> Tabs2::getAllTabsMap()
             for (auto& tab: tabs)
                 tabs[tab.second.parent].children.push_back(tab.second.id);
 
-            //return std::move(query);
 
             return QVariant::fromValue<tabMap_t>(std::move(tabs));
         }).get();
 
-//    QSqlQuery query = std::get<QSqlQuery>(result);
     QVariant res = std::get<QVariant>(result);
     std::map<int, Tabs2::TabInfo> tabs = res.value<std::map<int, Tabs2::TabInfo>>();
 

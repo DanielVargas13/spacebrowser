@@ -27,12 +27,18 @@ bool TreeModel2::moveRows(const QModelIndex &srcParent, int srcRow, int count,
         rows.append(srcItem->takeRow(srcRow));
     }
 
-    /// Insert rows into new positions
+    /// Insert rows into new positions, update indentation and parent information
     ///
     for (int i = 0; i < count; ++i)
     {
         dstItem->insertRow(dstRow+i, rows[i]);
-        dynamic_cast<Tab*>(rows[i][0])->updateIndent();
+
+        Tab* item = dynamic_cast<Tab*>(rows[i][0]);
+        item->updateIndent();
+
+        Tab* parent = dynamic_cast<Tab*>(dstItem);
+        int parentId = parent ? parent->getId() : 0;
+        updateParent(*item, parentId);
     }
 
     return true;

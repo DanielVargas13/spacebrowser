@@ -128,6 +128,9 @@ public:
      */
     QAbstractItemModel* getFlatModel();
 
+protected:
+    virtual void updateParent(const Tab& tab, int parentId) override;
+
 private:
 #ifndef TEST_BUILD
 // FIXME: not sure if QQuickItems belong here

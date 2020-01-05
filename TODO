@@ -7,4 +7,4 @@
 #7. Fix db editing panel to allow adding more backends
 8. Make TabSelectorPanel read-only variant, for search results
 9. Add searching of tabs, display results in new TabSelectorPanel
-10. Fix reparenting bug
+#10. Fix reparenting bug

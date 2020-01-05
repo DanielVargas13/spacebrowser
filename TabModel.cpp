@@ -348,18 +348,17 @@ void TabModel::loadTabs()
                 toAdd.push_back(std::pair<int, QStandardItem*>(child, item));
             }
         }
+
+        if (views2.size() != (tabsMap.size() - 1)) // -1 because tabsMap has dummy root item
+        {
+            qCCritical(tabModelLog, "There are %li orphaned tabs in the %s model!",
+                       tabsMap.size() - views2.size() - 1, dbName.toStdString().c_str());
+        }
     }
 
     /// Configure models
     ///
     flatModel.setSourceModel(this);
-
-/*
-    QVariant qv = QVariant::fromValue<QObject*>(&flatModel);
-    QMetaObject::invokeMethod(tabSelectorPanel, "setModel",
-                              Qt::ConnectionType::QueuedConnection,
-                              Q_ARG(QVariant, qv));
-*/
 
     /// Log timing
     ///
@@ -482,4 +481,11 @@ int TabModel::getFlatModelId(int viewId) const
 QAbstractItemModel* TabModel::getFlatModel()
 {
     return &flatModel;
+}
+
+void TabModel::updateParent(const Tab& tab, int parentId)
+{
+    auto dbg = db::DbGroup::getGroup(dbName);
+
+    dbg->tabs.setParent(tab.getId(), parentId);
 }
