@@ -7,19 +7,21 @@
 #ifndef TEST_BUILD
 #include <Tab.h>
 #include <misc/DebugHelpers.h>
+
+#include <QApplication>
+#include <QFileDialog>
+#include <QQuickWebEngineProfile>
+#include <QSqlDatabase>
 #else
 #include <test/ViewHandler_test.h>
 #endif
 
 #include <QAbstractListModel>
-#include <QFileDialog>
-#include <QApplication>
 #include <QIcon>
 #include <QJSEngine>
 #include <QJSValue>
 #include <QModelIndex>
 #include <QSettings>
-#include <QSqlDatabase>
 #include <QStandardItem>
 #include <QStandardPaths>
 
@@ -241,6 +243,7 @@ void ViewHandler::openScriptBlockingView(QString dbName, int viewId)
 
 void ViewHandler::createWebProfile(QString dbName)
 {
+#ifndef TEST_BUILD
     contentFilters[dbName] = std::shared_ptr<ContentFilter>(new ContentFilter(dbName));
     ContentFilter& cf = *contentFilters[dbName];
 
@@ -258,6 +261,37 @@ void ViewHandler::createWebProfile(QString dbName)
                      &cf, SLOT(removeGlobal(QString, QString)));
 
     bd.setupProfile(webProfiles[dbName]);
+#endif
+}
+
+std::shared_ptr<TabModel> ViewHandler::createTabModel(QString dbName)
+{
+    QQuickItem* tabSelector = qobject_cast<QQuickItem*>(
+        qView->rootObject()->findChild<QObject*>("tabSelector"));
+
+    QQuickItem* tabSelectorPanel = qobject_cast<QQuickItem*>(
+        qView->rootObject()->findChild<QObject*>("tabSelectorPanel"));
+
+    auto model = std::make_shared<TabModel>(dbName, tabSelector, tabSelectorPanel, webViewContainer,
+                                            webProfiles[dbName], db::DbGroup::getGroup(dbName));
+
+    QObject::connect(qView->rootObject(), SIGNAL(createTab(QString, int, bool, bool)),
+                     model.get(), SLOT(createTab(QString, int, bool, bool)));
+    QObject::connect(qView->rootObject(), SIGNAL(closeTab(QString, int)),
+                     model.get(), SLOT(closeTab(QString, int)));
+    QObject::connect(qView->rootObject(), SIGNAL(nextTab(QString)),
+                     model.get(), SLOT(nextTab(QString)));
+    QObject::connect(qView->rootObject(), SIGNAL(prevTab(QString)),
+                     model.get(), SLOT(prevTab(QString)));
+
+
+    QObject::connect(tabSelector, SIGNAL(viewSelected(QString, int)),
+                     model.get(), SLOT(viewSelected(QString, int)));
+    QObject::connect(tabSelector, SIGNAL(closeTab(QString, int)),
+                     model.get(), SLOT(closeTab(QString, int)));
+
+    return model;
+
 }
 
 void ViewHandler::dbConnected(QString dbName, QString schemaName)
@@ -276,7 +310,8 @@ void ViewHandler::dbConnected(QString dbName, QString schemaName)
 
     createWebProfile(dbName);
 
-    std::shared_ptr<TabModel> tabsModel(new TabModel(qView, dbName, webProfiles[dbName]));
+    std::shared_ptr<TabModel> tabsModel = createTabModel(dbName);
+
     tabsModels[dbName] = tabsModel;
     tabsModel->loadTabs();
 
@@ -312,7 +347,7 @@ void ViewHandler::dbConnected(QString dbName, QString schemaName)
 
 void ViewHandler::selectPanel(QString dbName)
 {
-    if (dbName == addDbText)
+    if (dbName == addDbText) // FIXME: check and perhaps do this in a cleaner way
     {
         openDbConfig();
         return;
@@ -334,8 +369,9 @@ void ViewHandler::selectPanel(QString dbName)
     QMetaObject::invokeMethod(panelSelector, "setCurrentPanel",
                               Qt::ConnectionType::QueuedConnection,
                               Q_ARG(QVariant, dbName));
-
+#ifndef TEST_BUILD
     QApplication::processEvents();
+#endif
     tabsModel->selectCurrentTab();
 
     QSettings settings;
@@ -349,11 +385,14 @@ void ViewHandler::openDbConfig()
     if (!confDbConnDialog)
         throw std::runtime_error("No configureDbConnectionDialog object found");
 
+#ifndef TEST_BUILD
     dbBack.configureDbConnection(confDbConnDialog, /*passMan.isEncryptionReady()*/ false);
+#endif
 }
 
 void ViewHandler::iconRequestedDialog()
 {
+#ifndef TEST_BUILD
     /// Set-up and show QFileDialog
     ///
     QFileDialog qfd;
@@ -371,7 +410,7 @@ void ViewHandler::iconRequestedDialog()
     {
         emit iconSelected("file://" + qfd.selectedFiles().first());
     }
-
+#endif
 }
 
 void ViewHandler::updatePanelIcon(QString dbName, QString iconPath)

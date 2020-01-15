@@ -3,7 +3,12 @@
 
 #include <TreeModel2.h>
 #include <TreeToListProxyModel.h>
+
+#ifndef TEST_BUILD
 #include <db/DbGroup.h>
+#else
+#include <test/ViewHandler_test_mock.h>
+#endif
 
 #include <QObject>
 #include <QQuickItem>
@@ -21,8 +26,12 @@ class TabModel: public TreeModel2
 
 public:
 // FIXME: qView doesnt belong here, rip it out
-    TabModel(std::shared_ptr<QQuickView> _qView, QString _dbName,
-             std::shared_ptr<QQuickWebEngineProfile> _webProfile);
+    TabModel(QString _dbName,
+             QQuickItem* _tabSelector,
+             QQuickItem* _tabSelectorPanel,
+             QQuickItem* _webViewContainer,
+             std::shared_ptr<QQuickWebEngineProfile> _webProfile,
+             std::shared_ptr<db::DbGroup> _dbGroup);
     virtual ~TabModel();
 
 public slots:
@@ -126,21 +135,12 @@ public:
     /**
      * Returns flat representation of model
      */
-    QAbstractItemModel* getFlatModel();
+    TreeToListProxyModel* getFlatModel();
 
 protected:
     virtual void updateParent(const Tab& tab, int parentId) override;
 
 private:
-#ifndef TEST_BUILD
-// FIXME: not sure if QQuickItems belong here
-    QQuickItem* webViewContainer;             /// Pointer to WebViewContainer QML object
-    QQuickItem* tabSelector;                  /// Pointer to TabSelector QML object
-    QQuickItem* tabSelectorPanel;             /// Pointer to TabSelectorPanel QML object
-
-#else
-#endif
-    std::shared_ptr<QQuickView> qView;        /// Smart pointer to main window object
     QString dbName;                           /// Name of db backend to be used
     std::shared_ptr<QQuickWebEngineProfile> webProfile; /// Profile to be set upon creating view
 
@@ -152,6 +152,23 @@ private:
     std::map<int, viewData> views2;           /// viewId to Tab item mapping
     mutable std::recursive_mutex views2Mutex;
     TreeToListProxyModel flatModel;           /// List model for ListView
+
+#ifdef TEST_BUILD
+public:
+    friend class TabModel_test;
+#else
+
+#endif
+
+private:
+// FIXME: not sure if QQuickItems belong here
+    QQuickItem* tabSelector;                  /// Pointer to TabSelector QML object
+    QQuickItem* tabSelectorPanel;             /// Pointer to TabSelectorPanel QML object
+    QQuickItem* webViewContainer;             /// Pointer to WebViewContainer QML object
+
+    std::shared_ptr<db::DbGroup> dbg;
+
+
 };
 
 #endif

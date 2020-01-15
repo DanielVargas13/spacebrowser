@@ -3,54 +3,23 @@
 #include <Tab.h>
 
 #include <QLoggingCategory>
+
 #include <QQuickWebEngineProfile>
 
 Q_LOGGING_CATEGORY(tabModelLog, "tabModelLog")
 
 
-TabModel::TabModel(std::shared_ptr<QQuickView> _qView, QString _dbName,
-                   std::shared_ptr<QQuickWebEngineProfile> _webProfile) : qView(_qView),
-    dbName(_dbName), webProfile(_webProfile)
+TabModel::TabModel(QString _dbName,
+                   QQuickItem* _tabSelector,
+                   QQuickItem* _tabSelectorPanel,
+                   QQuickItem* _webViewContainer,
+                   std::shared_ptr<QQuickWebEngineProfile> _webProfile,
+                   std::shared_ptr<db::DbGroup> _dbGroup
+    ) :
+    dbName(_dbName), webProfile(_webProfile), tabSelector(_tabSelector), tabSelectorPanel(_tabSelectorPanel),
+    webViewContainer(_webViewContainer), dbg(_dbGroup)
 {
-#ifndef TEST_BUILD
-    QObject::connect(qView->rootObject(), SIGNAL(createTab(QString, int, bool, bool)),
-                     this, SLOT(createTab(QString, int, bool, bool)));
-    QObject::connect(qView->rootObject(), SIGNAL(closeTab(QString, int)),
-                     this, SLOT(closeTab(QString, int)));
-    QObject::connect(qView->rootObject(), SIGNAL(nextTab(QString)),
-                     this, SLOT(nextTab(QString)));
-    QObject::connect(qView->rootObject(), SIGNAL(prevTab(QString)),
-                     this, SLOT(prevTab(QString)));
 
-    webViewContainer = qobject_cast<QQuickItem*>(
-        qView->rootObject()->findChild<QObject*>("webViewContainer"));
-    if (!webViewContainer)
-        throw std::runtime_error("No webViewContainer object found");
-
-//    QObject::connect(webViewContainer, SIGNAL(titleChanged(int, QString)),
-//                     this, SLOT(titleChanged(int, QString)));
-//    QObject::connect(webViewContainer, SIGNAL(iconChanged(int, QString)),
-//                     this, SLOT(iconChanged(int, QString)));
-//    QObject::connect(webViewContainer, SIGNAL(urlChanged(int, QString)),
-//                     this, SLOT(urlChanged(int, QString)));
-
-    tabSelector = qobject_cast<QQuickItem*>(
-        qView->rootObject()->findChild<QObject*>("tabSelector"));
-    if (!tabSelector)
-        throw std::runtime_error("No tabSelector object found");
-
-    tabSelectorPanel = qobject_cast<QQuickItem*>(
-        qView->rootObject()->findChild<QObject*>("tabSelectorPanel"));
-
-    if (!tabSelector)
-        throw std::runtime_error("No tabSelectorPanel object found");
-
-    // FIXME: multiple tab selectors for multiple db backends
-    QObject::connect(tabSelector, SIGNAL(viewSelected(QString, int)), this, SLOT(viewSelected(QString, int)));
-    QObject::connect(tabSelector, SIGNAL(closeTab(QString, int)), this, SLOT(closeTab(QString, int)));
-
-#else
-#endif
 }
 
 TabModel::~TabModel()
@@ -71,8 +40,6 @@ int TabModel::createTab(int parent, bool select, bool scroll)
     /// Call webViewContainer to create new QML Web View object and
     /// create associated entry in tabSelectorModel
     ///
-    auto dbg = db::DbGroup::getGroup(dbName);
-
     QVariant newView;
     int viewId = dbg->tabs.createTab();
     dbg->tabs.setParent(viewId, parent);
@@ -157,8 +124,6 @@ void TabModel::closeTab(int viewId)
 
     /// Remove tab entry from database and from tabSelector component
     ///
-    auto dbg = db::DbGroup::getGroup(dbName);
-
     dbg->tabs.closeTab(viewId);
 
     struct viewData toClose = views2.at(viewId);
@@ -274,22 +239,18 @@ void TabModel::viewSelected(int viewId)
 
     /// Update properties and db
     ///
-    auto dbg = db::DbGroup::getGroup(dbName);
-
     webViewContainer->setProperty("currentView", vd.tabData->getView());
     dbg->config.setProperty("currentTab", viewId);
 }
 
 void TabModel::urlChanged(int viewId, QString url)
 {
-    auto dbg = db::DbGroup::getGroup(dbName);
     dbg->tabs.setUrl(viewId, url);
 }
 
 void TabModel::titleChanged(int viewId, QString title)
 {
     std::lock_guard<std::recursive_mutex> lock(views2Mutex);
-    auto dbg = db::DbGroup::getGroup(dbName);
     dbg->tabs.setTitle(viewId, title);
     views2.at(viewId).tabData->setTitle(title);
 }
@@ -297,7 +258,6 @@ void TabModel::titleChanged(int viewId, QString title)
 void TabModel::iconChanged(int viewId, QString icon)
 {
     std::lock_guard<std::recursive_mutex> lock(views2Mutex);
-    auto dbg = db::DbGroup::getGroup(dbName);
     dbg->tabs.setIcon(viewId, icon);
     views2.at(viewId).tabData->setIcon(icon);
 }
@@ -305,7 +265,6 @@ void TabModel::iconChanged(int viewId, QString icon)
 void TabModel::loadTabs()
 {
     auto start = std::chrono::system_clock::now();
-    auto dbg = db::DbGroup::getGroup(dbName);
     std::map<int, db::Tabs2::TabInfo> tabsMap = dbg->tabs.getAllTabsMap();
 
     /// Open new empty tab if no tabs were retrieved from database
@@ -373,8 +332,6 @@ void TabModel::loadTabs()
 
 void TabModel::selectCurrentTab()
 {
-    auto dbg = db::DbGroup::getGroup(dbName);
-
     QVariant currentTab = dbg->config.getProperty("currentTab");
 
     if (currentTab.isValid())
@@ -396,8 +353,6 @@ void TabModel::nextTab(QString _dbName)
 
 void TabModel::nextTab()
 {
-    auto dbg = db::DbGroup::getGroup(dbName);
-
     QVariant currentTab = dbg->config.getProperty("currentTab");
 
     if (currentTab.isValid())
@@ -426,8 +381,6 @@ void TabModel::prevTab(QString _dbName)
 
 void TabModel::prevTab()
 {
-    auto dbg = db::DbGroup::getGroup(dbName);
-
     QVariant currentTab = dbg->config.getProperty("currentTab");
 
     if (currentTab.isValid())
@@ -450,7 +403,6 @@ void TabModel::prevTab()
 
 void TabModel::selectTab(int viewId)
 {
-    QVariant selected;
     int modelId;
     try
     {
@@ -467,9 +419,6 @@ void TabModel::selectTab(int viewId)
     QMetaObject::invokeMethod(tabSelector, "selectView",
             Q_ARG(QVariant, modelId));
 
-    if (selected.toInt() < 0)
-        return;
-
     viewSelected(viewId);
 }
 
@@ -478,14 +427,12 @@ int TabModel::getFlatModelId(int viewId) const
     return flatModel.getModelId(viewId);
 }
 
-QAbstractItemModel* TabModel::getFlatModel()
+TreeToListProxyModel* TabModel::getFlatModel()
 {
     return &flatModel;
 }
 
 void TabModel::updateParent(const Tab& tab, int parentId)
 {
-    auto dbg = db::DbGroup::getGroup(dbName);
-
     dbg->tabs.setParent(tab.getId(), parentId);
 }

@@ -1,5 +1,7 @@
 #include <db/Config2.h>
 
+#include <QSqlDatabase>
+#include <QSqlQuery>
 #include <QSqlRecord>
 
 namespace db

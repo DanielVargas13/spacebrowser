@@ -2,13 +2,14 @@
 #define VIEWHANDLER_TEST_MOCK_H_
 
 #include <QQuickItem>
+#include <QString>
 #include <QVariant>
 
-//#include <db/Config.h>
-#include <db/Tabs.h>
-#include <db/ScriptBlock.h>
+#include <db/Tabs2.h>
+#include <db/ScriptBlock2.h>
 
 #include <gmock/gmock.h>
+
 
 class ContentFilter
 {
@@ -16,50 +17,86 @@ public:
     MOCK_METHOD1(getUrlsFor, std::set<std::string>(const std::string& url));
 };
 
+
 class QQuickItem_mock : public QQuickItem
 {
     Q_OBJECT
 
 public:
-    MOCK_METHOD2(setProperty, void(const std::string& name, const QVariant& value));
+    // Mock of setProperty will not work as it is not virtual in QObject
+    //MOCK_METHOD2(setProperty, bool(const char* name, const QVariant& value));
+
+signals:
+    void updateTitle(int, QString);
+    void updateIcon(int, QString);
+    void updateUrl(int, QString);
 
 public slots:
     Q_INVOKABLE QVariant createViewObject(QVariant obj)
     {
-        return QVariant::fromValue<QObject*>(new QObject());
+        return QVariant::fromValue<QObject*>(new QQuickItem_mock());
     }
+
+    // These definitions are necessary to suppress
+    // "No such method" warnings from QMetaObject::invokeMethod
+    Q_INVOKABLE QVariant destroyView(QVariant viewId) { return QVariant(); };
+    Q_INVOKABLE void scrollToCurrent() { };
+    Q_INVOKABLE void selectView(QVariant viewId) { };
+
 
 };
 
+
 namespace db
 {
+
 class Tabs_mock
 {
 public:
 
     MOCK_METHOD0(createTab, int32_t());
     MOCK_METHOD1(closeTab, void(int viewId));
-    MOCK_METHOD0(getAllTabs, std::vector<Tabs::TabInfo>());
-    MOCK_METHOD0(getAllTabsMap, std::map<int, Tabs::TabInfo>());
+    MOCK_METHOD0(getAllTabs, std::vector<Tabs2::TabInfo>());
+    MOCK_METHOD0(getAllTabsMap, std::map<int, Tabs2::TabInfo>());
     MOCK_METHOD2(setParent, void(int viewId, int parentId));
-    MOCK_METHOD2(setUrl, void(int viewId, std::string url));
-    MOCK_METHOD2(setTitle, void(int viewId, std::string title));
-    MOCK_METHOD2(setIcon, void(int viewId, std::string icon));
+    MOCK_METHOD2(setUrl, void(int viewId, QString url));
+    MOCK_METHOD2(setTitle, void(int viewId, QString title));
+    MOCK_METHOD2(setIcon, void(int viewId, QString icon));
 };
 
 class Config_mock
 {
 public:
-    MOCK_METHOD2(setProperty, void(const std::string& name, const std::string& value));
-    MOCK_METHOD1(getProperty, std::string(const std::string& name));
+    MOCK_METHOD2(setProperty, bool(QString name, QVariant value));
+    MOCK_METHOD1(getProperty, QVariant(QString name));
 };
 
 class ScriptBlock_mock
 {
 public:
-    MOCK_METHOD3(isAllowed, db::ScriptBlock::State(const std::string& site,
+    MOCK_METHOD3(isAllowed, db::ScriptBlock2::State(const std::string& site,
             const std::string& url, bool earlyReturn));
 };
+
+struct DbGroup
+{
+    //db::Backend& backend;
+    //db::DbClient dbc;
+    Config_mock config;
+    //db::Keys2 keys;
+    //db::Passwords2 pwds;
+    ScriptBlock_mock scb;
+    Tabs_mock tabs;
+
+    //static void createGroup(QString dbName, QString schemaName, Backend& backend);
+    //static std::shared_ptr<DbGroup> getGroup(QString dbName);
+
+private:
+    //static std::map<QString, std::shared_ptr<DbGroup>> groups;
+
+    //DbGroup(QString dbName, QString schemaName, Backend& _backend);
+};
+
 
 }
 

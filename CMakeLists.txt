@@ -79,17 +79,32 @@ include(CPack)
 LINK_DIRECTORIES(gtest/lib)
 LINK_DIRECTORIES(gtest/lib64)
 
-ADD_EXECUTABLE(ViewHandler_test
-  test/ViewHandler_test.cpp
-  test/ViewHandler_test_mock.h
-  ViewHandler.cpp
+#ADD_EXECUTABLE(ViewHandler_test
+#  test/ViewHandler_test.cpp
+#  test/ViewHandler_test_mock.h
+#  ViewHandler.cpp
+#  TreeToListProxyModel.cpp
+#  TreeModel2.cpp
+#  Tab.cpp)
+#TARGET_INCLUDE_DIRECTORIES(ViewHandler_test PUBLIC gtest/include)
+##TARGET_LINK_DIRECTORIES(ViewHandler_test PUBLIC gtest/lib)
+#TARGET_COMPILE_DEFINITIONS(ViewHandler_test PUBLIC TEST_BUILD)
+#TARGET_LINK_LIBRARIES(ViewHandler_test gtest gmock Qt5::Core Qt5::Quick Qt5::Test pthread)
+
+
+ADD_EXECUTABLE(TabModel_test
+  test/TabModel_test.cpp
+  test/ViewHandler_test_mock.cpp
+  TabModel.cpp
   TreeToListProxyModel.cpp
   TreeModel2.cpp
-  Tab.cpp)
-TARGET_INCLUDE_DIRECTORIES(ViewHandler_test PUBLIC gtest/include)
+  Tab.cpp
+)
+TARGET_INCLUDE_DIRECTORIES(TabModel_test PUBLIC gtest/include)
 #TARGET_LINK_DIRECTORIES(ViewHandler_test PUBLIC gtest/lib)
-TARGET_COMPILE_DEFINITIONS(ViewHandler_test PUBLIC TEST_BUILD)
-TARGET_LINK_LIBRARIES(ViewHandler_test gtest gmock Qt5::Core Qt5::Quick Qt5::Test pthread)
+TARGET_COMPILE_DEFINITIONS(TabModel_test PUBLIC TEST_BUILD)
+TARGET_LINK_LIBRARIES(TabModel_test gtest gmock Qt5::Core Qt5::Quick Qt5::Test Qt5::WebEngine pthread)
+
 
 enable_testing()
 ADD_TEST(NAME ViewHandler_test COMMAND ViewHandler_test)

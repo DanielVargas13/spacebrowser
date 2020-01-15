@@ -5,10 +5,6 @@
 #include <QIdentityProxyModel>
 #include <QStandardItemModel>
 
-#ifdef TEST_BUILD
-class ViewHandler_test;
-#endif
-
 class TreeToListProxyModel : public QAbstractProxyModel
 {
     Q_OBJECT
@@ -49,7 +45,7 @@ private:
     QString dbName;
 
 #ifdef TEST_BUILD
-    friend ViewHandler_test;
+    friend class TabModel_test;
 #endif
 
 };

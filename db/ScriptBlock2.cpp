@@ -1,5 +1,7 @@
 #include <db/ScriptBlock2.h>
 
+#include <QSqlDatabase>
+#include <QSqlQuery>
 #include <QVariant>
 
 namespace db

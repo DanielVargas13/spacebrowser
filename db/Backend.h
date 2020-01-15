@@ -3,7 +3,6 @@
 
 #include <QObject>
 #include <QSettings>
-#include <QSqlQuery>
 #include <QString>
 #include <QVariant>
 
@@ -14,6 +13,8 @@
 #include <thread>
 #include <utility>
 #include <variant>
+
+class QSqlQuery;
 
 namespace db
 {
@@ -43,11 +44,7 @@ public:
     Backend();
     ~Backend();
 
-//    std::future<bool> performQuery(QSqlQuery* query);// FIXME: remove
-
-//    std::future<QSqlQuery> performQuery(QString dbName, QString queryStr);
-
-    typedef std::variant<bool, /*QSqlQuery,*/ QVariant> funRet_t;
+    typedef std::variant<bool, QVariant> funRet_t;
     std::future<funRet_t> performQuery(std::function<funRet_t()> fun);
     void performQueryNR(std::function<void()> fun);
 
@@ -74,7 +71,6 @@ private:
 
 private:
     std::thread connThread;
-//    typedef std::pair<QSqlQuery*, std::promise<bool>> query_t;
     typedef std::tuple<QString, QString, std::promise<QSqlQuery>> strQuery_t; // dbName, sqlString
     typedef std::pair<std::function<funRet_t()>, std::promise<funRet_t>> funQuery_t;
     typedef std::function<void()> funQueryNR_t;

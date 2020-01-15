@@ -17,7 +17,6 @@ class ViewHandler_test;
 #include <QObject>
 #include <QQuickItem>
 #include <QQuickView>
-#include <QQuickWebEngineProfile>
 #include <QStandardItemModel>
 
 #include <map>
@@ -27,6 +26,7 @@ class ViewHandler_test;
 
 class Tab;
 class QQuickWebEngineHistory;
+class QQuickWebEnginePofile;
 
 /**
  * Class that handles tab tree structure and WebEngineView objects associated with tabs
@@ -113,12 +113,8 @@ private:
     QQuickItem* webViewContainer;        /// Pointer to WebViewContainer QML object
 #else
     friend ViewHandler_test;
-    db::Tabs_mock tabsDb;
-    db::Config_mock configDb;
-    db::ScriptBlock_mock sBlockDb;
-    QQuickItem_mock* webViewContainer;
-    QQuickItem_mock* tabSelector;
     QQuickItem_mock* scriptBlockingView;
+    QQuickItem_mock* webViewContainer;
 #endif
 
     std::shared_ptr<QQuickView> qView;                       /// Smart pointer to main window object
@@ -134,6 +130,7 @@ private:
 
 
     void createWebProfile(QString dbName);                   /// Creates profile object, sets up content filter on it
+    std::shared_ptr<TabModel> createTabModel(QString dbName); /// Create and setup TabModel object
 };
 
 #endif /* VIEWHANDLER_H_ */

@@ -1,5 +1,8 @@
 #include <db/Passwords2.h>
 
+#include <QSqlDatabase>
+#include <QSqlQuery>
+
 namespace db
 {
 

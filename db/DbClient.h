@@ -2,7 +2,6 @@
 #define DB_DBCLIENT_H_
 
 #include <QLoggingCategory>
-#include <QSqlQuery>
 #include <QString>
 
 #include <db/Backend.h>
@@ -10,6 +9,9 @@
 #include <vector>
 
 Q_DECLARE_LOGGING_CATEGORY(dbLogs)
+
+class QSqlQuery;
+class QSqlError;
 
 namespace db
 {
