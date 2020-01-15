@@ -25,20 +25,22 @@ public:
     virtual ~PasswordManager();
 
 
-    bool isEncryptionReady();
+    bool isEncryptionReady(QString dbName);
     QStringList keysList() const;
 
 signals:
-    void shouldBeSaved(QVariant url, QVariant login);
-    void shouldBeUpdated(QVariant url, QVariant login);
+    void encryptionReady(QVariant dbName, QVariant ready);
+    void shouldBeSaved(QVariant dbName, QVariant url, QVariant login);
+    void shouldBeUpdated(QVariant dbName, QVariant url, QVariant login);
 
 public slots:
+    void checkIfEncryptionReady(QString dbName);
     void fillPassword(QVariant view);
-    void keySelected(QString id);
+    void keySelected(QString id, QString dbName);
     void loadSucceeded(QVariant view);
-    void saveAccepted(QString url, bool accepted);
-    bool savePassword(QVariant fields);
-    QVariant getCredentials(QVariant host, QVariant path) noexcept;
+    void saveAccepted(QString dbName, QString url, bool accepted);
+    bool savePassword(QString dbName, QVariant fields);
+    QVariant getCredentials(QString dbName, QVariant host, QVariant path) noexcept;
 
 private:
     gnupgpp::GnupgPP gpg;
@@ -48,8 +50,9 @@ private:
     QString formFiller;
     QString qWebChannel;
 
-    QString encrypt(QString text);
-    std::shared_ptr<db::DbGroup> getDefDbGroup();
+    std::map<QString, std::shared_ptr<QObject>> dbNameCache;
+
+    QString encrypt(QString dbName, QString text);
 };
 
 #endif /* PASSWORDMANAGER_H_ */

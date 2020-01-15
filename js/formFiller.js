@@ -5,6 +5,7 @@
          if (typeof window.pwManager !== 'undefined')
          {
              window.pwManager.getCredentials(
+                 channel.objects.dbName.objectName,
                  window.location.host, window.location.pathname,
                  function(retVal) {
                      loginInput.value = retVal.login

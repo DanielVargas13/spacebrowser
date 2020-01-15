@@ -78,7 +78,7 @@ public slots:
      * Creates DbGroup, tab models and adds new panel
      * @param dbName name of database backend
      */
-    void dbConnected(QString dbName, QString schemaName);
+    void dbReady(QString dbName, QString schemaName);
 
     /**
      * Select panel by name of database backend
@@ -105,6 +105,11 @@ signals:
      * Emitted after icon is selected through iconRequestDialog()
      */
     void iconSelected(QVariant icon);
+
+    /**
+     * Emitted after panel selection process is finished
+     */
+    void panelSelected(QString dbName);
 
 private:
     const QString addDbText = "Add DB";

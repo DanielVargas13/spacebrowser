@@ -112,7 +112,7 @@ std::vector<Passwords2::entry_t> Passwords2::getCredentials(QString host, QStrin
         {
             QSqlQuery query(QSqlDatabase::database(dbClient.getDbName()));
 
-            query.prepare(QString("SELECT (login, password, key_fp) FROM %1.%2 "
+            query.prepare(QString("SELECT login, password, key_fp FROM %1.%2 "
                                   "WHERE host=:host AND path=:path")
                           .arg(dbClient.getSchemaName())
                           .arg(tableName));
@@ -160,9 +160,9 @@ bool Passwords2::saveOrUpdate(entry_t pwd)
             QSqlQuery query(QSqlDatabase::database(dbClient.getDbName()));
 
             query.prepare(QString("INSERT INTO %1.%2 "
-                                  "VALUES (:host :path :login :pass :fp) "
+                                  "VALUES (:host, :path, :login, :pass, :fp) "
                                   "ON CONFLICT (host, path, login) "
-                                  "DO UPDATE SET (password, key_fp) = :pass :fp")
+                                  "DO UPDATE SET (password, key_fp) = (:pass, :fp)")
                           .arg(dbClient.getSchemaName())
                           .arg(tableName));
 

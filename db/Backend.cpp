@@ -22,7 +22,7 @@ namespace db
 
 Backend::Backend()
 {
-
+    connect(this, &Backend::dbConnected, this, &Backend::createDbGroup);
 }
 
 Backend::~Backend()
@@ -183,6 +183,7 @@ bool Backend::connectDatabases()
         QSettings settings;
         unsigned int dbCount = settings.beginReadArray(conf::Databases::dbArray);
 
+        /// Connect databases
         for (unsigned int i = 0; i < dbCount; ++i)
         {
             settings.setArrayIndex(i);
@@ -198,10 +199,9 @@ bool Backend::connectDatabases()
         }
         settings.endArray();
 
-
+        /// Process incoming db queries
         while (!terminate)
         {
-            /// Process prepared QSqlQuery
             while (!queries.empty())
             {
                 std::lock_guard<std::mutex> lock(mQueries);
@@ -273,6 +273,15 @@ void Backend::connectDb(const struct connData_t& cd)
     {
         emit dbConnected(cd.connName, cd.schemaName);
     }
+}
+
+void Backend::createDbGroup(QString dbName, QString schemaName)
+{
+    /// After db is connected, we can create database group
+    ///
+    db::DbGroup::createGroup(dbName, schemaName, *this);
+
+    emit dbReady(dbName, schemaName);
 }
 
 void Backend::writeConnectionEntry(QSettings& settings,

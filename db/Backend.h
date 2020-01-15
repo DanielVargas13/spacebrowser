@@ -52,6 +52,7 @@ public:
 
 signals:
     void dbConnected(QString dbName, QString schemaName);
+    void dbReady(QString dbName, QString schemaName);
     void iconUpdated(QString dbName, QString iconPath);
 
 public slots:
@@ -68,6 +69,9 @@ private:
     static struct connData_t readConnectionEntry(QSettings& settings);
     void writeAllConnectionEntries(QSettings& settings,
         const std::vector<struct connData_t>& connData);
+
+private slots:
+    void createDbGroup(QString dbName, QString schemaName);
 
 private:
     std::thread connThread;

@@ -16,6 +16,8 @@ namespace db
 
 struct DbGroup
 {
+    using GroupMap = std::map<QString, std::shared_ptr<DbGroup>>;
+
     db::Backend& backend;
     db::DbClient dbc;
     db::Config2 config;
@@ -23,12 +25,13 @@ struct DbGroup
     db::Passwords2 pwds;
     db::ScriptBlock2 scb;
     db::Tabs2 tabs;
-    
+
     static void createGroup(QString dbName, QString schemaName, Backend& backend);
     static std::shared_ptr<DbGroup> getGroup(QString dbName);
-    
+    static GroupMap& getGroupMap();
+
 private:
-    static std::map<QString, std::shared_ptr<DbGroup>> groups;
+    static GroupMap groups;
 
     DbGroup(QString dbName, QString schemaName, Backend& _backend);
 };

@@ -75,7 +75,6 @@ WebEngineView
     }
 
     function passAvailable(passCount) {
-        console.log("HAS PASS COUNT: " + passCount)
         root.passCount = passCount
     }
 

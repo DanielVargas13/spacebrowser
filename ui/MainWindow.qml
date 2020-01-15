@@ -1,5 +1,6 @@
 import QtQuick 2.7
 import QtQuick.Controls 2.2
+import QtQuick.Layouts 1.12
 import QtWebEngine 1.7
 
 import "."
@@ -18,7 +19,7 @@ Rectangle
     signal nextTab(string dbName)
     signal prevTab(string dbName)
     signal printRequest(var webView)
-    signal savePasswordAccepted(string url, bool accepted)
+    signal savePasswordAccepted(string dbName, string url, bool accepted)
     signal showFullscreen(bool toggleOn)
 
     visible: true
@@ -37,9 +38,7 @@ Rectangle
 
         anchors.left: parent.left
         anchors.leftMargin: Style.margin
-        anchors.right: passwordManagerButton.visible ?
-            passwordManagerButton.left : downloadHistoryButton.visible ?
-            downloadHistoryButton.left : parent.right
+        anchors.right: buttonLayout.left
         anchors.rightMargin: Style.margin
 
         placeholderText: "https://"
@@ -64,47 +63,67 @@ Rectangle
         }
     }
 
-    // FIXME: put those buttons in some (invisible) container
-    BasicButton
+    RowLayout
     {
-        id: passwordManagerButton
-        objectName: "passwordManagerButton"
-
-        signal passwordFillRequest(var webView)
-
-        anchors.right: downloadHistoryButton.visible ?
-            downloadHistoryButton.left : parent.right
-        anchors.rightMargin: Style.margin
-
-        source: "qrc:/ui/icons/lock.svg"
-        visible: webViewContainer.currentView ?
-            webViewContainer.currentView.passCount > 0 : false
-
-        MouseArea
-        {
-            anchors.fill: passwordManagerButton
-            onClicked: passwordManagerButton.passwordFillRequest(webViewContainer.currentView)
-        }
-    }
-
-    BasicButton
-    {
-        id: downloadHistoryButton
-        objectName: "downloadHistoryButton"
+        id: buttonLayout
 
         anchors.right: parent.right
         anchors.rightMargin: Style.margin
 
-        source: "qrc:/ui/icons/download2.svg"
-
-        MouseArea
+        BasicButton
         {
-            anchors.fill: downloadHistoryButton
-            onClicked:
+            id: configurePasswordManagerButton
+            objectName: "configurePasswordManagerButton"
+
+            property bool encReady: false
+            signal openPassManConfigDialog()
+
+            visible: true
+
+            source: encReady ? "qrc:/ui/icons/key_gold.svg" : "qrc:/ui/icons/key_red_gold.svg"
+
+            MouseArea
             {
-                downloadHistoryView.visible = !downloadHistoryView.visible
+                anchors.fill: configurePasswordManagerButton
+                onClicked: configurePasswordManagerButton.openPassManConfigDialog()
             }
         }
+
+        BasicButton
+        {
+            id: passwordManagerButton
+            objectName: "passwordManagerButton"
+
+            signal passwordFillRequest(var webView)
+
+            source: "qrc:/ui/icons/lock.svg"
+            visible: webViewContainer.currentView ?
+                webViewContainer.currentView.passCount > 0 : false
+
+            MouseArea
+            {
+                anchors.fill: passwordManagerButton
+                onClicked: passwordManagerButton.passwordFillRequest(webViewContainer.currentView)
+            }
+        }
+
+        BasicButton
+        {
+            id: downloadHistoryButton
+            objectName: "downloadHistoryButton"
+
+            source: "qrc:/ui/icons/download2.svg"
+
+            MouseArea
+            {
+                anchors.fill: downloadHistoryButton
+                onClicked:
+                {
+                    downloadHistoryView.visible = !downloadHistoryView.visible
+                }
+            }
+        }
+
     }
 
     TabSelectorPanel
@@ -350,15 +369,21 @@ Rectangle
         }
     }
 
-    function shouldBeSaved(url, login)
+    function shouldBeSaved(dbName, url, login)
     {
+        console.log("should be saved")
+        savePasswordDialog.update = false
+        savePasswordDialog.dbName = dbName
         savePasswordDialog.url = url
         savePasswordDialog.login = login
         savePasswordDialog.open()
     }
 
-    function shouldBeUpdated(url, login)
+    function shouldBeUpdated(dbName, url, login)
     {
+        console.log("should be updated")
+        savePasswordDialog.update = true
+        savePasswordDialog.dbName = dbName
         savePasswordDialog.url = url
         savePasswordDialog.login = login
         savePasswordDialog.open()
@@ -370,21 +395,30 @@ Rectangle
         title: update ? "Update password?" : "Save password?"
         standardButtons: Dialog.Save | Dialog.Cancel
 
+        property string dbName
         property string url
         property string login
         property bool update: false
 
-        onAccepted: mainWindow.savePasswordAccepted(url, true)
-        onRejected: mainWindow.savePasswordAccepted(url, false)
+        onAccepted: mainWindow.savePasswordAccepted(dbName, url, true)
+        onRejected: mainWindow.savePasswordAccepted(dbName, url, false)
 
         Label {
-            text: update ? ("Do you want to update password for site \"" +
-                    savePasswordDialog.url + "\" for user \"" +
-                    savePasswordDialog.login + "\"?") :
-                        ("Do you want to save password for site \"" +
-                                savePasswordDialog.url + "\" for user \"" +
-                                savePasswordDialog.login + "\"?");
+            text: savePasswordDialog.update ?
+                ("Do you want to update password in \"" + savePasswordDialog.dbName +
+                 "\" for site \"" + savePasswordDialog.url +
+                 "\" for user \"" + savePasswordDialog.login +
+                 "\"?") :
+                ("Do you want to save password in \"" + savePasswordDialog.dbName +
+                 "\" for site \"" + savePasswordDialog.url +
+                 "\" for user \"" + savePasswordDialog.login +
+                 "\"?");
         }
+    }
+
+    function encryptionStatus(dbName, status)
+    {
+        configurePasswordManagerButton.encReady = status
     }
 
     function configureEncryption(model)
@@ -402,7 +436,9 @@ Rectangle
         closePolicy: Popup.CloseOnEscape
         modal: true
 
-        signal keySelected(string id)
+        property string dbName
+
+        signal keySelected(string id, string dbName)
 
         width: parent.width / 2
         height: parent.height / 2
@@ -410,7 +446,7 @@ Rectangle
         x: parent.width / 2 - width / 2
         y: parent.height / 2 - height / 2
 
-        onAccepted: keySelected(encryptionKeyConfigDialogCB.currentText)
+        onAccepted: keySelected(encryptionKeyConfigDialogCB.currentText, dbName)
 
         ComboBox {
             id: encryptionKeyConfigDialogCB

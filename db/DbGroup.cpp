@@ -28,5 +28,9 @@ std::shared_ptr<DbGroup> DbGroup::getGroup(QString dbName)
     return groups.at(dbName);
 }
 
+DbGroup::GroupMap& DbGroup::getGroupMap()
+{
+    return groups;
+}
 
 }

@@ -12,7 +12,6 @@ constexpr const char* geometry = "MainWindow/geometry";
 namespace Databases
 {
 constexpr const char* dbArray = "Databases/array";
-constexpr const char* defPassManDb = "Databases/passwordManagerDb";
 constexpr const char* currentPanel = "Databases/currentPanel";
 
 namespace array

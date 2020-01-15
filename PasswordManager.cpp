@@ -6,11 +6,13 @@
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QLoggingCategory>
 #include <QMetaObject>
 #include <QString>
 #include <QUrl>
 #include <QVariantMap>
-#include <iostream>
+
+Q_LOGGING_CATEGORY(passManLog, "passManLog")
 
 PasswordManager::PasswordManager()
 {
@@ -25,75 +27,121 @@ PasswordManager::PasswordManager()
     QFile file3(":/js/formFiller.js");
     file3.open(QIODevice::ReadOnly);
     formFiller = file3.readAll();
+
+    qCDebug(passManLog, "PasswordManager initialized");
 }
 
 PasswordManager::~PasswordManager()
 {
-
+    qCDebug(passManLog, "PasswordManager destroyed");
 }
 
 void PasswordManager::fillPassword(QVariant view)
 {
+    qCDebug(passManLog, "fillPassword");
     QObject* v = qvariant_cast<QObject *>(view);
 
-    QMetaObject::invokeMethod(v, "runJavaScript",
-                              Q_ARG(QString, formFiller));
+    bool ok = QMetaObject::invokeMethod(v, "runJavaScript",
+                                        Q_ARG(QString, formFiller));
 
+    if (!ok)
+    {
+        qCWarning(passManLog, "Failed to run formFiller script");
+    }
 }
 
-void PasswordManager::keySelected(QString id)
+void PasswordManager::keySelected(QString id, QString dbName)
 {
+    qCDebug(passManLog, "keySelected(id=%s, dbName=%s)",
+            id.toStdString().c_str(), dbName.toStdString().c_str());
     QStringList parts = id.split(' ');
 
     if (parts.size() < 1)
-        std::cout << "PasswordManager::keySelected(id='" << id.toStdString() <<
-            "'): invalid id format";
-
-    auto dbh = getDefDbGroup();
-        
-    if (dbh)
     {
-        dbh->keys.addKey(parts[0].toStdString(), true);
+        qCWarning(passManLog, "keySelected(id='%s'): invalid id format",
+                id.toStdString().c_str());
+        return;
+    }
+
+    auto dbg = db::DbGroup::getGroup(dbName);
+
+    if (dbg)
+    {
+        dbg->keys.addKey(parts[0].toStdString(), true);
     }
 }
 
 void PasswordManager::loadSucceeded(QVariant view)
 {
+    qCDebug(passManLog, "loadSucceeded");
     QObject* v = qvariant_cast<QObject *>(view);
-
-    QVariantMap objects;
-    objects.insert("pwManager", QVariant(QMetaType::QObjectStar, this));
-
 
     QObject* wc = qvariant_cast<QObject *>(v->property("webChannel"));
 
-    QMetaObject::invokeMethod(wc, "registerObject",
-            Q_ARG(QString, "pwManager"), Q_ARG(QObject*, this));
+    bool ok = QMetaObject::invokeMethod(wc, "registerObject",
+                                        Q_ARG(QString, "pwManager"), Q_ARG(QObject*, this));
+    if (!ok)
+    {
+        qCCritical(passManLog, "Failed to register pwManager");
+    }
 
-    bool s = QMetaObject::invokeMethod(v, "runJavaScript",
-            Q_ARG(QString, formExtractor));
+    QVariant dbv = v->property("dbName");
+    QString dbName = dbv.toString();
+    std::shared_ptr<QObject> name(new QObject());
+    name->setObjectName(dbName);
+
+    if (dbNameCache.count(dbName) == 0)
+        dbNameCache[dbName] = name;
+
+    ok = QMetaObject::invokeMethod(wc, "registerObject",
+                                  Q_ARG(QString, "dbName"),
+                                  Q_ARG(QObject*, dbNameCache.at(dbName).get()));
+    if (!ok)
+    {
+        qCCritical(passManLog, "Failed to register dbName");
+    }
+
+    ok = QMetaObject::invokeMethod(v, "runJavaScript", Q_ARG(QString, formExtractor));
+    if (!ok)
+    {
+        qCCritical(passManLog, "Failed to run formExtractor");
+    }
 
     QUrl url = v->property("url").toUrl();
     QString host = url.host();
     QString path = url.path();
 
-    auto dbh = getDefDbGroup();
-        
-    if (dbh)
-    {
-        if (int passCount = dbh->pwds.countSavedCredentials(host, path) > 0)
-        {
-            QMetaObject::invokeMethod(v, "passAvailable",
-                                      Q_ARG(QVariant, QVariant(passCount)));
-        }
+    auto groups = db::DbGroup::getGroupMap();
 
-        s = QMetaObject::invokeMethod(v, "runJavaScript",
-            Q_ARG(QString, qWebChannel));
+    int passCount = 0;
+    for (auto& grp: groups)
+    {
+        if (grp.second)
+            passCount += grp.second->pwds.countSavedCredentials(host, path);
     }
+
+    qCDebug(passManLog, "%i passwords available", passCount);
+    ok = QMetaObject::invokeMethod(v, "passAvailable", Q_ARG(QVariant, QVariant(passCount)));
+    if (!ok)
+    {
+        qCCritical(passManLog, "Failed to propagate available passwords count");
+    }
+
+// FIXME: is this necessary? If so, comment what for
+    ok = QMetaObject::invokeMethod(v, "runJavaScript", Q_ARG(QString, qWebChannel));
+    if (!ok)
+    {
+        qCCritical(passManLog, "Failed to run qWebChannel");
+    }
+
+    qCDebug(passManLog, "loadSucceeded finished");
 }
 
-void PasswordManager::saveAccepted(QString url, bool accepted)
+void PasswordManager::saveAccepted(QString dbName, QString url, bool accepted)
 {
+    qCDebug(passManLog, "saveAccepted(dbName=%s, url=%s, accepted=%i)",
+            dbName.toStdString().c_str(), url.toStdString().c_str(), accepted);
+
     if (!accepted)
     {
         if (tempStore.count(url))
@@ -103,22 +151,22 @@ void PasswordManager::saveAccepted(QString url, bool accepted)
 
     if (tempStore.count(url) == 0)
     {
-        std::cout << "ERROR: password not found in tempStore\n";
+        qCCritical(passManLog(), "Password not found in tempStore");
         return;
     }
 
     const auto& entry = tempStore.at(url);
 
-    auto dbh = getDefDbGroup();
-        
-    if (dbh)
+    auto dbg = db::DbGroup::getGroup(dbName);
+
+    if (dbg)
     {
-        switch (dbh->pwds.isSaved(entry))
+        switch (dbg->pwds.isSaved(entry))
         {
             case db::Passwords2::SaveState::Outdated:
             case db::Passwords2::SaveState::Absent:
             {
-                dbh->pwds.saveOrUpdate(entry);
+                dbg->pwds.saveOrUpdate(entry);
             } break;
             default:
             {
@@ -128,10 +176,13 @@ void PasswordManager::saveAccepted(QString url, bool accepted)
     }
 }
 
-bool PasswordManager::savePassword(QVariant fields_qv)
+bool PasswordManager::savePassword(QString dbName, QVariant fields_qv)
 {
-    auto dbh = getDefDbGroup();
-    if (!dbh)
+    qCDebug(passManLog, "savePassword(dbName=%s)", dbName.toStdString().c_str());
+
+    std::shared_ptr<db::DbGroup> dbg = db::DbGroup::getGroup(dbName);
+
+    if (!dbg)
         return false;
 
     QJsonArray f = fields_qv.toJsonArray();
@@ -148,8 +199,8 @@ bool PasswordManager::savePassword(QVariant fields_qv)
             fields.login = obj["value"].toString();
         else if (obj["type"] == "password" && !obj["value"].toString().isEmpty())
         {
-            fields.password = encrypt(obj["value"].toString());
-            fields.fingerprint = dbh->keys.getDefaultKey();
+            fields.password = encrypt(dbName, obj["value"].toString());
+            fields.fingerprint = dbg->keys.getDefaultKey();
         }
         else if (obj["type"] == "host")
             fields.host = obj["value"].toString();
@@ -159,26 +210,29 @@ bool PasswordManager::savePassword(QVariant fields_qv)
 
     if (fields.login.isEmpty() || fields.password.isEmpty() || fields.host.isEmpty())
     {
-        std::cout << "PasswordManager::savePassword(): one of the fields was empty\n";
-        std::cout << "PasswordManager::savePassword(): login: " << fields.login.toStdString() << std::endl;
-        std::cout << "PasswordManager::savePassword(): pass_len: " << fields.password.length() << std::endl;
-        std::cout << "PasswordManager::savePassword(): url: " << fields.host.toStdString()
-                << fields.path.toStdString() << std::endl;
+        qCCritical(passManLog, "Failed to save password");
+        qCDebug(passManLog, "savePassword(): one of the fields was empty");
+        qCDebug(passManLog, "login: %s", fields.login.toStdString().c_str());
+        qCDebug(passManLog, "pass_len: %i", fields.password.length());
+        qCDebug(passManLog, "url: %s%s",fields.host.toStdString().c_str(),
+                fields.path.toStdString().c_str());
 
         return false;
     }
 
     tempStore[fields.host + fields.path] = fields;
 
-    switch (dbh->pwds.isSaved(fields))
+    switch (dbg->pwds.isSaved(fields))
     {
     case db::Passwords2::SaveState::Outdated:
     {
-        emit shouldBeUpdated(fields.host + fields.path, fields.login);
+        qCDebug(passManLog, "emit shouldBeUpdated");
+        emit shouldBeUpdated(dbName, fields.host + fields.path, fields.login);
     } break;
     case db::Passwords2::SaveState::Absent:
     {
-        emit shouldBeSaved(fields.host + fields.path, fields.login);
+        qCDebug(passManLog, "emit shouldBeSaved");
+        emit shouldBeSaved(dbName, fields.host + fields.path, fields.login);
     } break;
     default:
     {
@@ -189,10 +243,11 @@ bool PasswordManager::savePassword(QVariant fields_qv)
     return true;
 }
 
-QString PasswordManager::encrypt(QString text)
+QString PasswordManager::encrypt(QString dbName, QString text)
 {
-    auto dbh = getDefDbGroup();
-    if (!dbh)
+    qCDebug(passManLog, "encrypt(dbName=%s)", dbName.toStdString().c_str());
+    auto dbg = db::DbGroup::getGroup(dbName);
+    if (!dbg)
         return QString();
 
     try
@@ -200,32 +255,40 @@ QString PasswordManager::encrypt(QString text)
         gnupgpp::GpgContext ctx = gpg.createContext();
         ctx.setArmor(true);
 
-        QString keyFp = dbh->keys.getDefaultKey();
+        QString keyFp = dbg->keys.getDefaultKey();
         if (keyFp.isEmpty())
             return QString();
 
         std::shared_ptr<gnupgpp::GpgKey> key = ctx.getKey(keyFp.toStdString());
+        if (!key)
+        {
+            qCWarning(passManLog, "Failed to fetch GPG key");
+            return QString();
+        }
 
         return QString(ctx.encrypt(text.toStdString(), key).c_str());
 
     }
     catch (std::exception& e)
     {
-        std::cout << "PasswordManager::encrypt(): caught exception: " << e.what()
-                  << std::endl;
+        qCCritical(passManLog, "caught exception: %s", e.what());
+        qCCritical(passManLog, "If error above is 'unusable public key', check trust level "
+                   "set for the selected key in GPG");
     }
 
     return QString();
 }
 
-bool PasswordManager::isEncryptionReady()
+bool PasswordManager::isEncryptionReady(QString dbName)
 {
-    auto dbh = getDefDbGroup();
-        
-    if (!dbh)
+    qCDebug(passManLog, "isEncryptionReady(dbName=%s)", dbName.toStdString().c_str());
+    std::shared_ptr<db::DbGroup> dbg;
+    dbg = db::DbGroup::getGroup(dbName);
+
+    if (!dbg)
         return false;
 
-    QString keyFp = dbh->keys.getDefaultKey();
+    QString keyFp = dbg->keys.getDefaultKey();
     if (keyFp.isEmpty())
         return false;
 
@@ -238,11 +301,22 @@ bool PasswordManager::isEncryptionReady()
     if (!sKey)
         return false;
 
+    qCDebug(passManLog, "isEncryptionReady(dbName=%s): ready", dbName.toStdString().c_str());
     return true;
+}
+
+void PasswordManager::checkIfEncryptionReady(QString dbName)
+{
+    qCDebug(passManLog, "checkIfEncryptionReady(dbName=%s)", dbName.toStdString().c_str());
+    if (isEncryptionReady(dbName))
+        emit encryptionReady(dbName, true);
+    else
+        emit encryptionReady(dbName, false);
 }
 
 QStringList PasswordManager::keysList() const
 {
+    qCDebug(passManLog, "keysList");
     QStringList result;
 
     auto ctx = gpg.createContext();
@@ -281,8 +355,12 @@ QStringList PasswordManager::keysList() const
     return result;
 }
 
-QVariant PasswordManager::getCredentials(QVariant host, QVariant path) noexcept
+QVariant PasswordManager::getCredentials(QString dbName, QVariant host, QVariant path) noexcept
 {
+    qCDebug(passManLog, "getCredentials(dbName=%s, host=%s, path=%s)",
+            dbName.toStdString().c_str(), host.toString().toStdString().c_str(),
+            path.toString().toStdString().c_str());
+
     if (!host.isValid())
         return QVariant();
 
@@ -291,18 +369,18 @@ QVariant PasswordManager::getCredentials(QVariant host, QVariant path) noexcept
 
     path.isValid() ? p = path.toString() : p = "";
 
-    auto dbh = getDefDbGroup();
-    if (!dbh)
+    auto dbg = db::DbGroup::getGroup(dbName);
+    if (!dbg)
         return QJsonObject();
 
-    auto creds = dbh->pwds.getCredentials(h, p);
+    auto creds = dbg->pwds.getCredentials(h, p);
 
     switch (creds.size())
     {
     case 0:
     {
-        std::cout << "PasswordManager::getCredentials(host='" << h.toStdString()
-                  << "' path='" << p.toStdString() << "'): no credentials found\n";
+        qCDebug(passManLog, "getCredentials(host=%s, path=%s): no credentials found",
+                h.toStdString().c_str(), p.toStdString().c_str());
         return QJsonObject();
     }
     case 1:
@@ -317,8 +395,7 @@ QVariant PasswordManager::getCredentials(QVariant host, QVariant path) noexcept
         }
         catch (std::exception& e)
         {
-            std::cout << "PasswordManager::getCredentials(): failed: " <<
-                e.what() << std::endl;
+            qCCritical(passManLog, "getCredentials() failed: %s", e.what());
         }
     } break;
     default:
@@ -328,16 +405,4 @@ QVariant PasswordManager::getCredentials(QVariant host, QVariant path) noexcept
     }
 
     return QJsonObject();
-}
-
-std::shared_ptr<db::DbGroup> PasswordManager::getDefDbGroup()
-{
-    QSettings settings;
-    if (settings.contains(conf::Databases::defPassManDb))
-    {
-        QString dbName = settings.value(conf::Databases::defPassManDb).toString();
-        return db::DbGroup::getGroup(dbName);
-    }        
-
-    return nullptr;
 }

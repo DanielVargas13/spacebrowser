@@ -115,8 +115,8 @@ int main(int argc, char *argv[])
     if (!encKeyConfDialog)
         throw std::runtime_error("No encryptionKeyConfigDialog object found");
 
-    QObject::connect(encKeyConfDialog, SIGNAL(keySelected(QString)),
-                     &passMan, SLOT(keySelected(QString)));
+    QObject::connect(encKeyConfDialog, SIGNAL(keySelected(QString, QString)),
+                     &passMan, SLOT(keySelected(QString, QString)));
 
     QQuickItem* passwordManagerButton = qobject_cast<QQuickItem*>(
             view->rootObject()->findChild<QObject*>("passwordManagerButton"));
@@ -138,12 +138,12 @@ int main(int argc, char *argv[])
 
 */
 
-    QObject::connect(&passMan, SIGNAL(shouldBeSaved(QVariant, QVariant)),
-            view->rootObject(), SLOT(shouldBeSaved(QVariant, QVariant)));
-    QObject::connect(&passMan, SIGNAL(shouldBeUpdated(QVariant, QVariant)),
-                view->rootObject(), SLOT(shouldBeUpdated(QVariant, QVariant)));
-    QObject::connect(view->rootObject(), SIGNAL(savePasswordAccepted(QString, bool)),
-            &passMan, SLOT(saveAccepted(QString, bool)));
+    QObject::connect(&passMan, SIGNAL(shouldBeSaved(QVariant, QVariant, QVariant)),
+                     view->rootObject(), SLOT(shouldBeSaved(QVariant, QVariant, QVariant)));
+    QObject::connect(&passMan, SIGNAL(shouldBeUpdated(QVariant, QVariant, QVariant)),
+                     view->rootObject(), SLOT(shouldBeUpdated(QVariant, QVariant, QVariant)));
+    QObject::connect(view->rootObject(), SIGNAL(savePasswordAccepted(QString, QString, bool)),
+                     &passMan, SLOT(saveAccepted(QString, QString, bool)));
 
 
     /// Setup View Handler
@@ -155,8 +155,8 @@ int main(int argc, char *argv[])
 
     ViewHandler vh(view, dbBackend);
     vh.setObjectName("ViewHandler");
-    QObject::connect(&dbBackend, SIGNAL(dbConnected(QString, QString)),
-                     &vh, SLOT(dbConnected(QString, QString)), Qt::QueuedConnection);
+    QObject::connect(&dbBackend, SIGNAL(dbReady(QString, QString)),
+                     &vh, SLOT(dbReady(QString, QString)), Qt::QueuedConnection);
 
     QObject* tabSelectorPanel = view->rootObject()->
         findChild<QObject*>("tabSelectorPanel");
@@ -168,6 +168,13 @@ int main(int argc, char *argv[])
 
     QObject::connect(tabSelectorPanel, SIGNAL(openScriptBlockingView(QString, int)),
                      &vh, SLOT(openScriptBlockingView(QString, int)));
+
+
+    /// Setup signals to update PasswordManager status icon
+    QObject::connect(&vh, &ViewHandler::panelSelected,
+                     &passMan, &PasswordManager::checkIfEncryptionReady);
+    QObject::connect(&passMan, SIGNAL(encryptionReady(QVariant, QVariant)),
+                     view->rootObject(), SLOT(encryptionStatus(QVariant, QVariant)));
 
 
     /// Load tabs, set-up signals

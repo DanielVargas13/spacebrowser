@@ -1,5 +1,5 @@
 (function(window)
-{
+ {
     function attachFormListener(form)
     {
         form.addEventListener('submit', function(event)
@@ -23,7 +23,6 @@
 
             if (hasPassword)
             {
-                console.log("has password")
                 fields.push({ name: 'host', value: window.location.host, type: 'host'});
                 fields.push({ name: 'path', value: window.location.pathname, type: 'path'});
 
@@ -33,12 +32,14 @@
                         qt.webChannelTransport,
                         function(channel) {
                             window.pwManager = channel.objects.pwManager
-                            window.pwManager.savePassword(fields, function(retVal) {});
+                            window.pwManager.savePassword(
+                                channel.objects.dbName.objectName, fields, function(retVal) {});
                         });
                 }
                 else
                 {
-                    window.pwManager.savePassword(fields, function(retVal) {});
+                    window.pwManager.savePassword(
+                        window.channel.objects.dbName.objectName, fields, function(retVal) {});
                 }
             }
         });

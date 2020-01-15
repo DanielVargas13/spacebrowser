@@ -294,16 +294,11 @@ std::shared_ptr<TabModel> ViewHandler::createTabModel(QString dbName)
 
 }
 
-void ViewHandler::dbConnected(QString dbName, QString schemaName)
+void ViewHandler::dbReady(QString dbName, QString schemaName)
 {
     qCDebug(dbLogs, "Database %s connected, setting up", dbName.toStdString().c_str());
 
-    /// After db is connected, we can create database group
-    ///
-    db::Backend* backend = dynamic_cast<db::Backend*>(sender());
-    db::DbGroup::createGroup(dbName, schemaName, *backend);
-
-    /// Next create and fill model
+    /// Create and fill model
     ///
     QSettings settings;
     auto dbConnData = db::Backend::readAllConnectionEntries(settings);
@@ -353,6 +348,8 @@ void ViewHandler::selectPanel(QString dbName)
         return;
     }
 
+    // FIXME: consider creating separate TabSelector for each panel
+    //        to optimize panel switching time (avoid calls to setModel())
     QQuickItem* tabSelectorPanel = qobject_cast<QQuickItem*>(
         qView->rootObject()->findChild<QObject*>("tabSelectorPanel"));
 
@@ -376,6 +373,8 @@ void ViewHandler::selectPanel(QString dbName)
 
     QSettings settings;
     settings.setValue(conf::Databases::currentPanel, dbName);
+
+    emit panelSelected(dbName);
 }
 
 void ViewHandler::openDbConfig()

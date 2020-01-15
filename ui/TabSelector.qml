@@ -132,7 +132,6 @@ TabView
 
     function setModel(model)
     {
-        console.log("Model has been set")
         visualModel.model = model
     }
 
