@@ -7,7 +7,7 @@
 #ifndef TEST_BUILD
 #include <db/DbGroup.h>
 #else
-#include <test/ViewHandler_test_mock.h>
+#include <test/TabModel_test_mock.h>
 #endif
 
 #include <QObject>

@@ -4,8 +4,8 @@
 #ifndef TEST_BUILD
 #include <ContentFilter.h>
 #else
-class ViewHandler_test;
-#include <test/ViewHandler_test_mock.h>
+class TabModel_test;
+#include <test/TabModel_test_mock.h>
 #endif
 
 #include <BasicDownloader.h>
@@ -117,7 +117,7 @@ private:
     QQuickItem* scriptBlockingView;      /// Pointer to ScriptBlockingView QML object
     QQuickItem* webViewContainer;        /// Pointer to WebViewContainer QML object
 #else
-    friend ViewHandler_test;
+    //friend TabModel_test;
     QQuickItem_mock* scriptBlockingView;
     QQuickItem_mock* webViewContainer;
 #endif

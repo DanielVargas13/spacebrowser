@@ -13,7 +13,7 @@
 #include <QQuickWebEngineProfile>
 #include <QSqlDatabase>
 #else
-#include <test/ViewHandler_test.h>
+#include <test/TabModel_test.h>
 #endif
 
 #include <QAbstractListModel>

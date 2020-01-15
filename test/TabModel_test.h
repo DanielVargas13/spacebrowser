@@ -6,7 +6,7 @@
 
 #include <QStandardPaths>
 
-#include <test/ViewHandler_test_mock.h>
+#include <test/TabModel_test_mock.h>
 
 #include <Tab.h>
 #include <TabModel.h>
