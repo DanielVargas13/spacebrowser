@@ -1,5 +1,5 @@
-#ifndef VIEWHANDLER_TEST_MOCK_H_
-#define VIEWHANDLER_TEST_MOCK_H_
+#ifndef TABMODEL_TEST_MOCK_H_
+#define TABMODEL_TEST_MOCK_H_
 
 #include <QQuickItem>
 #include <QString>
@@ -80,24 +80,16 @@ public:
 
 struct DbGroup
 {
-    //db::Backend& backend;
-    //db::DbClient dbc;
     Config_mock config;
-    //db::Keys2 keys;
-    //db::Passwords2 pwds;
     ScriptBlock_mock scb;
     Tabs_mock tabs;
 
-    //static void createGroup(QString dbName, QString schemaName, Backend& backend);
-    //static std::shared_ptr<DbGroup> getGroup(QString dbName);
 
 private:
-    //static std::map<QString, std::shared_ptr<DbGroup>> groups;
 
-    //DbGroup(QString dbName, QString schemaName, Backend& _backend);
 };
 
 
 }
 
-#endif /* VIEWHANDLER_TEST_MOCK_H_ */
+#endif /* TABMODEL_TEST_MOCK_H_ */
