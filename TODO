@@ -3,7 +3,7 @@
 #3. Allow for async db connections, start even with no db backend
 #4. Rewrite (?) TabSelectorPanel, so that it can be instantiated multiple times
 #5. Instantiate at least 2 db backends and improve interface so that it can handle it
-6. Fix unit tests
+#6. Fix unit tests
 #7. Fix db editing panel to allow adding more backends
 8. Make TabSelectorPanel read-only variant, for search results
 9. Add searching of tabs, display results in new TabSelectorPanel
