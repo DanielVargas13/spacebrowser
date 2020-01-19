@@ -4,19 +4,34 @@
      {
          if (typeof window.pwManager !== 'undefined')
          {
+             var dbName;
+             if (typeof channel.objects.dbName_other !== 'undefined')
+             {
+                 console.log("dbName_other set")
+                 dbName = channel.objects.dbName_other.objectName
+             }
+             else
+                 dbName = channel.objects.dbName.objectName
+
              window.pwManager.getCredentials(
-                 channel.objects.dbName.objectName,
+                 dbName,
                  window.location.host, window.location.pathname,
-                 function(retVal) {
+                 function(retVal)
+                 {
+                     if (typeof channel.objects.dbName_other !== 'undefined')
+                         delete channel.objects.dbName_other
+
+                     if (typeof retVal.login === 'undefined' || typeof retVal.pass === 'undefined')
+                     {
+                         console.log("Empty credentials received")
+                         return;
+                     }
+
                      loginInput.value = retVal.login
                      loginInput.dispatchEvent(new Event("input", { bubbles: true}));
 
                      passInput.value = retVal.pass
                      passInput.dispatchEvent(new Event("input", { bubbles: true}));
-                     /*
-                     if (typeof angular !== 'undefined') {
-                         e = angular.element(passInput).triggerHandler('input')
-                     }*/
                  });
          } else {
              console.log("formFiller: Couldn't find pwManager");

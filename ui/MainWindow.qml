@@ -95,6 +95,7 @@ Rectangle
             objectName: "passwordManagerButton"
 
             signal passwordFillRequest(var webView)
+            signal passwordFillRequestDBN(var dbName,  var webView)
 
             source: "qrc:/ui/icons/lock.svg"
             visible: webViewContainer.currentView ?
@@ -103,7 +104,41 @@ Rectangle
             MouseArea
             {
                 anchors.fill: passwordManagerButton
-                onClicked: passwordManagerButton.passwordFillRequest(webViewContainer.currentView)
+                onClicked:
+                {
+                    if (webViewContainer.currentView.passCount == 1 &&
+                        webViewContainer.currentView.dbName == webViewContainer.currentView.passDbNames[0])
+                    {
+                        passwordManagerButton.passwordFillRequest(webViewContainer.currentView)
+                    }
+                    else
+                    {
+                        pwdChoiceInst.model = webViewContainer.currentView.passDbNames
+                        pwdChoice.x = mouseX
+                        pwdChoice.y = mouseY
+                        pwdChoice.popup()
+                    }
+                }
+
+                Menu
+                {
+                    id: pwdChoice
+
+                    Instantiator
+                    {
+                        id: pwdChoiceInst
+
+                        MenuItem {
+                            text: modelData
+
+                            onTriggered: passwordManagerButton.
+                                passwordFillRequestDBN(text, webViewContainer.currentView);
+                        }
+
+                        onObjectAdded: pwdChoice.insertItem(index, object)
+                        onObjectRemoved: pwdChoice.removeItem(object)
+                    }
+                }
             }
         }
 

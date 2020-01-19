@@ -125,6 +125,8 @@ int main(int argc, char *argv[])
 
     QObject::connect(passwordManagerButton, SIGNAL(passwordFillRequest(QVariant)),
                      &passMan, SLOT(fillPassword(QVariant)));
+    QObject::connect(passwordManagerButton, SIGNAL(passwordFillRequestDBN(QVariant, QVariant)),
+                     &passMan, SLOT(fillPassword(QVariant, QVariant)));
 
 
 /* FIXME: this has to be run after db gets connected

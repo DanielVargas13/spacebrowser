@@ -36,6 +36,7 @@ signals:
 public slots:
     void checkIfEncryptionReady(QString dbName);
     void fillPassword(QVariant view);
+    void fillPassword(QVariant dbName, QVariant view);
     void keySelected(QString id, QString dbName);
     void loadSucceeded(QVariant view);
     void saveAccepted(QString dbName, QString url, bool accepted);

@@ -107,6 +107,10 @@ int Passwords2::countSavedCredentials(QString host, QString path)
 
 std::vector<Passwords2::entry_t> Passwords2::getCredentials(QString host, QString path)
 {
+    qCDebug(dbLogs, "getCredentials(host=%s, path=%s)",
+            host.toStdString().c_str(),
+            path.toStdString().c_str());
+
     Backend::funRet_t result = backend.performQuery(
         [this, host, path]()->Backend::funRet_t
         {
@@ -142,6 +146,7 @@ std::vector<Passwords2::entry_t> Passwords2::getCredentials(QString host, QStrin
                 r.push_back(e);
             }
 
+            qCDebug(dbLogs, "Returning %zu credentials", r.size());
             return QVariant::fromValue<std::vector<entry_t>>(std::move(r));
             //return std::move(query);
         }).get();

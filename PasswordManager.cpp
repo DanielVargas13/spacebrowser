@@ -50,6 +50,32 @@ void PasswordManager::fillPassword(QVariant view)
     }
 }
 
+void PasswordManager::fillPassword(QVariant dbName, QVariant view)
+{
+    qCDebug(passManLog, "fillPassword(dbName=%s)", dbName.toString().toStdString().c_str());
+
+    QObject* v = qvariant_cast<QObject *>(view);
+
+    QObject* wc = qvariant_cast<QObject *>(v->property("webChannel"));
+
+    std::shared_ptr<QObject> name(new QObject());
+    name->setObjectName(dbName.toString());
+
+    if (dbNameCache.count(dbName.toString()) == 0)
+        dbNameCache[dbName.toString()] = name;
+
+    bool ok = QMetaObject::invokeMethod(wc, "registerObject",
+                                        Q_ARG(QString, "dbName_other"),
+                                        Q_ARG(QObject*, dbNameCache.at(dbName.toString()).get()));
+
+    if (!ok)
+    {
+        qCWarning(passManLog, "Failed to provide correct dbName to formFiller script");
+    }
+
+    fillPassword(view);
+}
+
 void PasswordManager::keySelected(QString id, QString dbName)
 {
     qCDebug(passManLog, "keySelected(id=%s, dbName=%s)",
@@ -114,14 +140,24 @@ void PasswordManager::loadSucceeded(QVariant view)
     auto groups = db::DbGroup::getGroupMap();
 
     int passCount = 0;
+    QStringList dbNames;
     for (auto& grp: groups)
     {
         if (grp.second)
-            passCount += grp.second->pwds.countSavedCredentials(host, path);
+        {
+            if (int count = grp.second->pwds.countSavedCredentials(host, path))
+            {
+                passCount += count;
+                dbNames += grp.first;
+            }
+        }
     }
 
     qCDebug(passManLog, "%i passwords available", passCount);
-    ok = QMetaObject::invokeMethod(v, "passAvailable", Q_ARG(QVariant, QVariant(passCount)));
+
+    ok = QMetaObject::invokeMethod(v, "passAvailable",
+                                   Q_ARG(QVariant, QVariant(passCount)),
+                                   Q_ARG(QVariant, QVariant(dbNames)));
     if (!ok)
     {
         qCCritical(passManLog, "Failed to propagate available passwords count");
@@ -213,7 +249,7 @@ bool PasswordManager::savePassword(QString dbName, QVariant fields_qv)
         qCCritical(passManLog, "Failed to save password");
         qCDebug(passManLog, "savePassword(): one of the fields was empty");
         qCDebug(passManLog, "login: %s", fields.login.toStdString().c_str());
-        qCDebug(passManLog, "pass_len: %i", fields.password.length());
+        qCDebug(passManLog, "pass_len: %s", fields.password.length() ? "non-zero" : "zero");
         qCDebug(passManLog, "url: %s%s",fields.host.toStdString().c_str(),
                 fields.path.toStdString().c_str());
 

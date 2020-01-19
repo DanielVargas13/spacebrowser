@@ -12,8 +12,9 @@ WebEngineView
     property var viewContainer
     property var tabModel
 
-    property var targetUrl // FIXME: these two are needed to handle lazy loading of webpages
+    property var targetUrl
     property int passCount: 0
+    property var passDbNames
 
     signal updateTitle(int viewId, string title)
     signal updateIcon(int viewId, string iconUri)
@@ -74,13 +75,13 @@ WebEngineView
             url = targetUrl
     }
 
-    function passAvailable(passCount) {
+    function passAvailable(passCount, dbNames) {
         root.passCount = passCount
+        root.passDbNames = dbNames
     }
 
     Menu {
         id: contextMenu
-
 
         MenuItem {
             text: "Back"
