@@ -23,3 +23,5 @@ Currently the only option is to compile this software by yourself. The procedure
 7. cd spacebrowser/build
 8. cmake -DCMAKE_PREFIX_PATH="PATH TO QT" ../
 9. make browser -jX # substitute number of cores on your system for X
+
+I developed browser with PostgreSQL as backend and that works 100% correctly. In theory any Qt supported backend can be chosen upon starting the browser, but they are not tested and might not work. Feel free to open a ticked if you stumble upon an issue. Or even better, create a pull request :)
