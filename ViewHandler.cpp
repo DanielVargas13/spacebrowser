@@ -251,6 +251,8 @@ void ViewHandler::createWebProfile(QString dbName)
     webProfiles[dbName]->setStorageName(dbName);
     webProfiles[dbName]->setRequestInterceptor(&cf);
 
+    webProfiles[dbName]->setOffTheRecord(false);
+
     QObject::connect(scriptBlockingView, SIGNAL(whitelistLocal(QString, QString, QString)),
                      &cf, SLOT(whitelistLocal(QString, QString, QString)));
     QObject::connect(scriptBlockingView, SIGNAL(whitelistGlobal(QString, QString)),
