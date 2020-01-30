@@ -56,12 +56,14 @@ int main(int argc, char *argv[])
 
     /// Create and setup QApplication
     ///
+    QtWebEngine::initialize();
+
     QApplication app(argc, argv);
     app.setOrganizationName("SpaceFoundation");
     app.setApplicationName("SpaceBrowser");
+
     //FIXME: test this
     //QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-    QtWebEngine::initialize();
 
     /// Create and setup QQuickView with MainWindow
     ///
