@@ -5,10 +5,18 @@ import "."
 TextField
 {
     id: root
-    
+
     property real loadProgress: 0;
     property bool loadProgressVisible: false;
-    
+
+    property Rectangle style: Rectangle
+    {
+        color: Style.lightBackground
+        border.color: Style.border
+        border.width: 2
+        radius: 4
+    }
+
     ProgressComponent
     {
         id: pageLoadProgressBar
@@ -36,11 +44,10 @@ TextField
         progress: 1.0
         text: "Downloading: "
         stateVisible: progress != 1.0
-        
+
         function updateProgress(total)
         {
             downloadProgressBar.progress = total
         }
     }
-
 }

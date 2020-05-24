@@ -34,7 +34,10 @@ Rectangle
         id: addressBar
 
         height: Style.addressBar.height
-        background: Style.addressBar.style
+        background: style
+        style.color: (webViewContainer.currentView &&
+                      webViewContainer.currentView.certError) ?
+            Style.certErrorColor : Style.lightBackground;
 
         anchors.left: parent.left
         anchors.leftMargin: Style.margin
@@ -229,8 +232,17 @@ Rectangle
             }
 
             onLoadingChanged: {
-                if (loadRequest.status == WebEngineLoadRequest.LoadSucceededStatus) {
-                    mainWindow.loadSucceeded(this)
+
+                switch(loadRequest.status)
+                {
+                    case WebEngineLoadRequest.LoadStartedStatus:
+                    {
+                        webView.certError = false
+                    } break;
+                    case WebEngineLoadRequest.LoadSucceededStatus:
+                    {
+                        mainWindow.loadSucceeded(this)
+                    }
                 }
             }
         }

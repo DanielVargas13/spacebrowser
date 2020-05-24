@@ -8,6 +8,7 @@ QtObject
     property color background: "#444444"
     property color lightBackground: "#777777"
     property color border: "#222222"
+    property color certErrorColor: "#FC4E03"
 
     property int margin: 5
     property int buttonWidth: 120  // Context menu buttons

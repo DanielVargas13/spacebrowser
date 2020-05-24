@@ -16,6 +16,8 @@ WebEngineView
     property int passCount: 0
     property var passDbNames
 
+    property bool certError
+
     signal updateTitle(int viewId, string title)
     signal updateIcon(int viewId, string iconUri)
     signal updateUrl(int viewId, string url)
@@ -68,6 +70,11 @@ WebEngineView
         redoItem.visible = (request.editFlags & ContextMenuRequest.CanRedo) != 0
 
         contextMenu.popup();
+    }
+
+    onCertificateError:{
+        error.ignoreCertificateError()
+        root.certError = true
     }
 
     function setup() {
