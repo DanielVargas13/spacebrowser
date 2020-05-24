@@ -16,10 +16,11 @@ Item {
 
         height: Style.panelSelector.height
 
-        anchors.left: parent.left
+        anchors.left: root.left
         anchors.leftMargin: Style.margin
-        anchors.top: parent.top
-        anchors.right: parent.right
+        anchors.top: root.top
+        anchors.right: root.right
+        anchors.rightMargin: Style.margin
     }
 
     ScrollView

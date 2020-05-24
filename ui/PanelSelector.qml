@@ -23,6 +23,7 @@ ScrollView
             color: ListView.isCurrentItem ? Style.lightBackground : Style.background
             height: Style.panelSelector.height
             width: Style.panelSelector.entry.width
+            clip: true
 
             Item
             {
