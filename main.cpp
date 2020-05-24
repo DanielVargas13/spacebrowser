@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
     QString colorsStart = "%{if-debug}\033[34m%{endif}%{if-warning}\033[33m%{endif}"
         "%{if-critical}\033[31m%{endif}";
     qSetMessagePattern(colorsStart +
-                       "[%{category}] %{function}[:%{line}]\033[0m: %{message}");
+                       "[%{category}]\033[0m %{function}[:%{line}]: \033[32m%{message}\033[0m");
 
     /// Create and setup QApplication
     ///
